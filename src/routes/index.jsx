@@ -7,6 +7,7 @@ import { useStore } from '../stores/user.js';
 //import view login
 import Login from "../views/auth/login.jsx";
 import Dashboard from "../views/dashboard/index.jsx";
+import Register from "../views/auth/register.jsx";
 
 export default function AppRoutes() {
 
@@ -18,6 +19,11 @@ export default function AppRoutes() {
 
       <Route path="/" element={
         token ? <Navigate to="/dashboard" replace /> : <Login />
+      } />
+
+      {/* route "/register" */}
+      <Route path="/register" element={
+        <Register />
       } />
 
       {/* route "/dashboard" */}
