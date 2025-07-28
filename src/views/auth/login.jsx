@@ -5,7 +5,7 @@ import LayoutAuth from '../../layouts/auth'
 import React, { useState } from 'react';
 
 //import hook useNavigate from react router dom
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 //import store
 import { useStore } from '../../stores/user';
@@ -150,7 +150,8 @@ export default function Login() {
                 </div>
 
                 <div className="text-center text-muted mt-4">
-                    Belum punya akun? <a href="/register" className="text-decoration-none">Daftar disini</a>
+                    Belum punya akun?
+                    <Link to={"/register"} className="text-decoration-none">Daftar disini</Link>
                 </div>
             </div>
 
