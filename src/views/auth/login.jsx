@@ -157,9 +157,9 @@ export default function Login() {
                                     }}
                                     placeholder="Password Anda"
                                 />
-                                {errors.password && (
+                                {errors.message && (
                                     <div className="invalid-feedback">
-                                        {errors.password}
+                                        {errors.message}
                                     </div>
                                 )}
                             </div>
