@@ -2,16 +2,13 @@
 import LayoutAuth from '../../layouts/auth'
 
 //import hook react
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 //import hook useNavigate from react router dom
 import { Link, useNavigate } from "react-router-dom";
 
 //import store
 import { useStore } from '../../stores/user';
-
-//import handler error
-import { handleErrors } from "../../utils/handleErrors";
 
 export default function Login() {
     //navigate
@@ -30,6 +27,33 @@ export default function Login() {
     const [errors, setErrors] = useState({});
     const [loginFailed, setLoginFailed] = useState('');
 
+    //function to handle errors from server
+    const handleServerErrors = (errorData) => {
+        // Handle authorization type error
+        if (errorData.error?.type === 'authorization') {
+            setLoginFailed(errorData.error.message);
+            // Also highlight the specific field if provided
+            if (errorData.error.field) {
+                setErrors(prev => ({
+                    ...prev,
+                    [errorData.error.field]: errorData.error.message
+                }));
+            }
+            return;
+        }
+        
+        // Handle validation errors array
+        if (errorData.errors && Array.isArray(errorData.errors)) {
+            const newErrors = {};
+            errorData.errors.forEach(error => {
+                if (error.path && !newErrors[error.path]) {
+                    newErrors[error.path] = error.msg;
+                }
+            });
+            setErrors(newErrors);
+        }
+    };
+
     //function "loginHanlder"
     const loginHandler = async (e) => {
         e.preventDefault();
@@ -44,12 +68,19 @@ export default function Login() {
             navigate('/dashboard');
         } catch (error) {
             setIsLoading(false);
-            if (error.response?.data?.message) {
-                setLoginFailed(error.response.data.message);
-                return;
+            
+            if (error.response?.data) {
+                if (error.response.data.message) {
+                    // Handle general error message
+                    setLoginFailed(error.response.data.message);
+                } else {
+                    // Handle structured errors
+                    handleServerErrors(error.response.data);
+                }
+            } else {
+                // Handle network or other errors
+                setLoginFailed('Terjadi kesalahan pada server. Silakan coba lagi.');
             }
-            //assign error to function "handleErrors"
-            handleErrors(error.response?.data, setErrors);
         }
     };
 
@@ -71,14 +102,14 @@ export default function Login() {
                         <h2 className="h3 text-center mb-4">Selamat datang kembali</h2>
                         <p className="text-center text-muted mb-4">Silakan masuk untuk mengakses akun Anda</p>
 
-                        {loginFailed && (
+                        {(loginFailed || errors.general) && (
                             <div className="alert alert-danger d-flex align-items-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-alert-circle me-2">
                                     <circle cx="12" cy="12" r="10"></circle>
                                     <line x1="12" y1="8" x2="12" y2="12"></line>
                                     <line x1="12" y1="16" x2="12.01" y2="16"></line>
                                 </svg>
-                                <div>{loginFailed}</div>
+                                <div>{loginFailed || errors.general}</div>
                             </div>
                         )}
 
@@ -89,7 +120,14 @@ export default function Login() {
                                     type="email"
                                     className={`form-control ${errors.email ? 'is-invalid' : ''}`}
                                     value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    onChange={(e) => {
+                                        setEmail(e.target.value);
+                                        // Clear email error when user types
+                                        if (errors.email) {
+                                            setErrors(prev => ({ ...prev, email: '' }));
+                                            setLoginFailed('');
+                                        }
+                                    }}
                                     placeholder="your@email.com"
                                     autoFocus
                                 />
@@ -103,14 +141,21 @@ export default function Login() {
                             <div className="mb-3">
                                 <div className="d-flex justify-content-between align-items-center">
                                     <label className="form-label">Password</label>
-                                    {/* <a href="/forgot-password" className="form-label-link text-decoration-none">Forgot password?</a> */}
+                                    <Link to="/forgot-password" className="form-label-link text-decoration-none">Lupa password?</Link>
                                 </div>
                                 <input
                                     type="password"
                                     className={`form-control ${errors.password ? 'is-invalid' : ''}`}
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Your password"
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        // Clear password error when user types
+                                        if (errors.password) {
+                                            setErrors(prev => ({ ...prev, password: '' }));
+                                            setLoginFailed('');
+                                        }
+                                    }}
+                                    placeholder="Password Anda"
                                 />
                                 {errors.password && (
                                     <div className="invalid-feedback">
@@ -127,7 +172,7 @@ export default function Login() {
                                         checked={rememberMe}
                                         onChange={(e) => setRememberMe(e.target.checked)}
                                     />
-                                    <label className="form-check-label">Remember me</label>
+                                    <label className="form-check-label">Ingat saya</label>
                                 </div>
                             </div>
 
@@ -140,9 +185,9 @@ export default function Login() {
                                     {isLoading ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                            Signing in...
+                                            Sedang masuk...
                                         </>
-                                    ) : 'Sign in'}
+                                    ) : 'Masuk'}
                                 </button>
                             </div>
                         </form>
@@ -150,7 +195,7 @@ export default function Login() {
                 </div>
 
                 <div className="text-center text-muted mt-4">
-                    Belum punya akun?
+                    Belum punya akun?{' '}
                     <Link to={"/register"} className="text-decoration-none">Daftar disini</Link>
                 </div>
             </div>
@@ -182,6 +227,14 @@ export default function Login() {
                 }
                 .container-sm {
                     max-width: 420px;
+                }
+                .invalid-feedback {
+                    display: block;
+                }
+                .alert-danger {
+                    background-color: #f8d7da;
+                    border-color: #f5c6cb;
+                    color: #721c24;
                 }
             `}</style>
         </LayoutAuth>
