@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Laboratorium Kesehatan Daerah - Sidoarjo</title>
+    <!-- CSS files -->
+    <link href="/css/tabler.min.css?1684106062" rel="stylesheet" />
+    <link href="/css/tabler-flags.min.css?1684106062" rel="stylesheet" />
+    <link href="/css/tabler-payments.min.css?1684106062" rel="stylesheet" />
+    <link href="/css/tabler-vendors.min.css?1684106062" rel="stylesheet" />
+    <link href="/css/demo.min.css?1684106062" rel="stylesheet" />
+    <style>
+        [data-bs-theme=dark] .navbar-brand-autodark .navbar-brand-image {
+            filter: none !important
+        }
+        
+        .horizontal-scroll {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            white-space: nowrap;
+            cursor: grab;
+        }
+        
+        .horizontal-scroll .row {
+            display: flex;
+            flex-wrap: nowrap;
+            width: max-content;
+            padding-bottom: 10px
+        }
+        
+        .horizontal-scroll .col-2 {
+            min-width: 150px;
+            display: inline-block;
+            float: none
+        }
+        
+        .scrollable-card-body {
+            max-height: 400px;
+            overflow-y: auto
+        }
+        
+        .scrollable-card-body::-webkit-scrollbar {
+            width: 6px
+        }
+        
+        .scrollable-card-body::-webkit-scrollbar-track {
+            background: #f1f1f1
+        }
+        
+        .scrollable-card-body::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px
+        }
+        
+        .scrollable-card-body::-webkit-scrollbar-thumb:hover {
+            background: #555
+        }
+        
+        .rounded {
+            border-radius: 1rem !important
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+    <!-- Tabler Core -->
+    <script src="/js/tabler.min.js?1684106062" defer></script>
+    <script src="/js/demo.min.js?1684106062" defer></script>
+    <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>
