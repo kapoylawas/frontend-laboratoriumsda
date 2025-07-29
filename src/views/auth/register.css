@@ -1,0 +1,306 @@
+.register-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.register-header {
+    margin-bottom: 3rem;
+}
+
+.logo-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.logo-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100px;
+    height: 100px;
+    background: rgba(70, 146, 245, 0.1);
+    border-radius: 50%;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.logo-image {
+    height: 60px;
+    width: auto;
+}
+
+.lab-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    line-height: 1.3;
+}
+
+.register-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #3498db;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(45deg, #3498db, #2ecc71);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.register-subtitle {
+    color: #7f8c8d;
+    font-size: 1rem;
+    margin-bottom: 0;
+}
+
+.register-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    border: none;
+    max-width: 1000px;
+    margin: 0 auto;
+    overflow: hidden;
+    width: 100%;
+}
+
+.card-body {
+    padding: 2.5rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #34495e;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.form-control,
+.form-select {
+    border: 1px solid #dfe6e9;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.2);
+}
+
+.is-invalid {
+    border-color: #e74c3c !important;
+}
+
+.invalid-feedback {
+    color: #e74c3c;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+.password-requirements {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: #7f8c8d;
+}
+
+.requirements-title {
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+.requirements-list {
+    padding-left: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.password-strength {
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+.btn-register {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    margin-top: 1rem;
+    transition: all 0.3s ease;
+    background: linear-gradient(45deg, #3498db, #2ecc71);
+    border: none;
+}
+
+.btn-register:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.btn-register:disabled {
+    opacity: 0.7;
+    transform: none;
+    box-shadow: none;
+}
+
+.form-footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #ecf0f1;
+}
+
+.login-link {
+    color: #3498db;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.login-link:hover {
+    color: #2980b9;
+    text-decoration: underline;
+}
+
+@media (max-width: 992px) {
+    .register-card {
+        max-width: 95%;
+    }
+}
+
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .register-card {
+        border-radius: 0;
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+}
+
+.password-feedback-wrapper {
+    grid-column: 1 / -1;
+    margin-top: -0.5rem;
+    margin-bottom: 1rem;
+}
+
+.password-feedback {
+    margin-top: 0.75rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    width: 100%;
+}
+
+.rules-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.rules-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.rule-item {
+    display: flex;
+    align-items: center;
+    font-size: 0.8125rem;
+    padding: 0.25rem 0;
+    transition: all 0.2s ease;
+}
+
+.rule-icon {
+    display: inline-flex;
+    margin-right: 0.5rem;
+    width: 16px;
+    height: 16px;
+}
+
+.rule-item.valid {
+    color: #28a745;
+}
+
+.rule-item.invalid {
+    color: #6c757d;
+}
+
+.password-strength-indicator {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.strength-meter {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.strength-bar {
+    height: 4px;
+    flex: 1;
+    background-color: #e9ecef;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+
+.strength-bar.active {
+    background-color: currentColor;
+}
+
+.password-strength-indicator.danger .strength-bar.active {
+    background-color: #dc3545;
+}
+
+.password-strength-indicator.warning .strength-bar.active {
+    background-color: #ffc107;
+}
+
+.password-strength-indicator.success .strength-bar.active {
+    background-color: #28a745;
+}
+
+.strength-text {
+    font-size: 0.8125rem;
+    display: block;
+}
+
+.password-strength-indicator.danger {
+    color: #dc3545;
+}
+
+.password-strength-indicator.warning {
+    color: #ffc107;
+}
+
+.password-strength-indicator.success {
+    color: #28a745;
+}
+
+.password-strength-indicator.muted {
+    color: #6c757d;
+}
