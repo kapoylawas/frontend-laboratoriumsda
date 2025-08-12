@@ -8,11 +8,13 @@ import { useStore } from '../stores/user.js';
 import Login from "../views/auth/login.jsx";
 import Dashboard from "../views/dashboard/index.jsx";
 import Register from "../views/auth/register.jsx";
+import Categories from "../views/categories/index.jsx";
+import Forbidden from "../views/forbidden/index.jsx";
 
 export default function AppRoutes() {
 
   //destruct state "token" from store
-  const { token } = useStore();
+  const { token, user } = useStore();
 
   return (
     <Routes>
@@ -30,6 +32,22 @@ export default function AppRoutes() {
       <Route path="/dashboard" element={
         token ? <Dashboard /> : <Navigate to="/" replace />
       } />
+
+      {/* route "/categories" */}
+      <Route path="/categories" element={
+        token ? (
+          user?.role_id === 2 ? (
+            <Categories />
+          ) : (
+            <Forbidden /> // atau <Navigate to="/dashboard" replace />
+          )
+        ) : (
+          <Navigate to="/" replace />
+        )
+      } />
+
+      {/* Tambahkan route untuk halaman forbidden jika diperlukan */}
+      <Route path="/forbidden" element={<Forbidden />} />
 
     </Routes>
   );
