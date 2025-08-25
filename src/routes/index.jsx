@@ -10,6 +10,7 @@ import Dashboard from "../views/dashboard/index.jsx";
 import Register from "../views/auth/register.jsx";
 import Categories from "../views/categories/index.jsx";
 import Forbidden from "../views/forbidden/index.jsx";
+import Aktifasi from "../views/activite/index.jsx";
 
 export default function AppRoutes() {
 
@@ -26,6 +27,11 @@ export default function AppRoutes() {
       {/* route "/register" */}
       <Route path="/register" element={
         <Register />
+      } />
+
+      {/* route "/aktifasi" */}
+      <Route path="/aktifasi/:token" element={
+        <Aktifasi />
       } />
 
       {/* route "/dashboard" */}
