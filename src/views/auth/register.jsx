@@ -1,8 +1,5 @@
-//import layout auth
-import LayoutAuth from "../../layouts/auth";
 
-//import hook react
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 //import hook useNavigate from react router dom
 import { Link, useNavigate } from "react-router-dom";
