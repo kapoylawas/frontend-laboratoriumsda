@@ -1,6 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import Api from "../../services/api";
 
 export default function Aktifasi() {
     const { token } = useParams();
@@ -21,7 +20,12 @@ export default function Aktifasi() {
             }
 
             try {
-               const response = await Api.get(`/api/activate/${token}`);
+                const response = await fetch(`http://localhost:3001/api/activate/${token}`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                });
 
                 const data = await response.json();
 
