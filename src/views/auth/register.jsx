@@ -12,6 +12,8 @@ import "./register.css"
 //import handler error
 import { handleErrors } from "../../utils/handleErrors";
 import Api from "../../services/api";
+import EmailConfirmationModal from "../../components/EmailConfirmationModal";
+import EmailInfoCard from "../../components/EmailInfoCard";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -22,6 +24,10 @@ export default function Register() {
     message: "",
     color: "text-muted",
   });
+
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
+  const [showEmailInfo, setShowEmailInfo] = useState(false);
 
   //state
   const [formData, setFormData] = useState({
@@ -155,12 +161,6 @@ export default function Register() {
     setIsSubmitting(true);
 
     try {
-      // Log data sebelum dikirim untuk debugging
-      console.log("Data yang dikirim:", {
-        ...formData,
-        password: "***", // Jangan log password sebenarnya
-      });
-
       // Pastikan gender dikirim dalam format yang benar (uppercase/lowercase)
       const payload = {
         name: formData.name,
@@ -185,6 +185,9 @@ export default function Register() {
         },
       });
 
+      // Simpan email yang didaftarkan dan tampilkan modal
+      setRegisteredEmail(formData.email);
+
       // Reset form
       setFormData({
         name: "",
@@ -197,8 +200,11 @@ export default function Register() {
         confirmPassword: "",
       });
 
-      // Redirect to login
-      navigate("/");
+      // Tampilkan modal setelah state diupdate
+      setTimeout(() => {
+        setShowEmailModal(true);
+      }, 100);
+
     } catch (error) {
       if (error.response) {
         // Handle 422 Unprocessable Entity khusus
@@ -210,9 +216,6 @@ export default function Register() {
             // Format error default
             handleErrors(error.response.data, setErrors);
           }
-
-          // Log error untuk debugging
-          console.error("Validation errors:", error.response.data);
         } else {
           // Handle error lainnya
           handleErrors(error.response.data, setErrors);
@@ -220,15 +223,18 @@ export default function Register() {
       } else if (error.request) {
         // Request dikirim tapi tidak ada response
         toast.error("Tidak ada respon dari server");
-        console.error("No response:", error.request);
       } else {
         // Error lainnya
         toast.error("Terjadi kesalahan jaringan");
-        console.error("Error:", error.message);
       }
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCloseModal = () => {
+    setShowEmailModal(false);
+    navigate("/");
   };
 
   return (
@@ -274,7 +280,7 @@ export default function Register() {
                   )}
                 </div>
 
-                <div className="form-group">
+                <div className="form-group email-input-container">
                   <label className="form-label">
                     Email <span className="text-danger">*</span>
                   </label>
@@ -285,10 +291,15 @@ export default function Register() {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
+                    onFocus={() => setShowEmailInfo(true)}
+                    onBlur={() => setShowEmailInfo(false)}
                   />
                   {errors.email && (
                     <div className="invalid-feedback">{errors.email}</div>
                   )}
+
+                  {/* Gunakan komponen EmailInfoCard */}
+                  {showEmailInfo && <EmailInfoCard />}
                 </div>
 
                 <div className="form-group">
@@ -622,6 +633,14 @@ export default function Register() {
             </form>
           </div>
         </div>
+
+        {/* Modal Konfirmasi Email */}
+        <EmailConfirmationModal
+          isOpen={showEmailModal}
+          onClose={handleCloseModal}
+          email={registeredEmail}
+        />
+
       </div>
     </>
   );
