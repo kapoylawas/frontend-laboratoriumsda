@@ -188,11 +188,9 @@
     .form-grid {
         grid-template-columns: 1fr;
     }
-
     .register-card {
         border-radius: 0;
     }
-
     .card-body {
         padding: 1.5rem;
     }
@@ -303,4 +301,36 @@
 
 .password-strength-indicator.muted {
     color: #6c757d;
+}
+
+
+/* Email Input Container */
+
+.email-input-container {
+    position: relative;
+}
+
+
+/* Responsive adjustments untuk email info card */
+
+@media (max-width: 768px) {
+    .email-input-container .email-info-card {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 90%;
+        max-width: 400px;
+        z-index: 1050;
+    }
+    .email-input-container .email-info-card::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: -1;
+    }
 }

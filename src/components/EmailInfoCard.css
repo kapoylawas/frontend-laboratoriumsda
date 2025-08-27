@@ -1,0 +1,245 @@
+/* Styles untuk modal */
+
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: transparent;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    padding: 16px;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 15px;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+    text-align: center;
+}
+
+.modal-header {
+    margin-bottom: 1.2rem;
+}
+
+.email-icon-container {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 0.8rem;
+    background-color: #e6f2ff;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-header h2 {
+    color: #2c5aa0;
+    margin-bottom: 0.8rem;
+    font-size: 1.5rem;
+}
+
+.modal-body {
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+.modal-body p {
+    margin-bottom: 0.8rem;
+    font-size: 1rem;
+}
+
+.email-tip {
+    font-size: 0.9rem !important;
+    color: #666;
+    font-style: italic;
+    margin-bottom: 0;
+}
+
+.confirm-button {
+    background-color: #2c5aa0;
+    color: white;
+    border: none;
+    padding: 0.7rem 1.8rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: background-color 0.3s;
+    width: 100%;
+    max-width: 200px;
+}
+
+.confirm-button:hover {
+    background-color: #1e3f73;
+}
+
+
+/* Styles untuk info card email */
+
+.email-info-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    padding: 16px;
+    margin-top: 8px;
+    z-index: 10;
+    border: 1px solid #e0e0e0;
+    animation: fadeIn 0.3s ease;
+}
+
+.email-info-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.email-info-header i {
+    font-size: 18px;
+    color: #007bff;
+    margin-right: 10px;
+}
+
+.email-info-header h5 {
+    margin: 0;
+    font-size: 16px;
+    color: #333;
+    font-weight: 600;
+}
+
+.email-info-body ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 16px 0;
+}
+
+.email-info-body li {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.email-info-body li i {
+    font-size: 14px;
+    margin-right: 10px;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.email-info-body li span {
+    font-size: 14px;
+    color: #555;
+    line-height: 1.4;
+}
+
+.email-tips {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+    border-left: 3px solid #f64914;
+}
+
+.email-tips p {
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #333;
+}
+
+.email-tips>div {
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: #666;
+}
+
+.email-tips i {
+    font-size: 12px;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* Responsive adjustments */
+
+@media (max-width: 768px) {
+    .modal-content {
+        padding: 1.2rem;
+        margin: 0 10px;
+    }
+    .email-icon-container {
+        width: 50px;
+        height: 50px;
+    }
+    .modal-header h2 {
+        font-size: 1.3rem;
+    }
+    .modal-body p {
+        font-size: 0.95rem;
+    }
+    .confirm-button {
+        padding: 0.6rem 1.5rem;
+        font-size: 0.95rem;
+    }
+    .email-info-card {
+        width: 100%;
+        padding: 12px;
+    }
+    .email-info-header h5 {
+        font-size: 15px;
+    }
+    .email-info-body li span {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-backdrop {
+        padding: 10px;
+    }
+    .modal-content {
+        padding: 1rem;
+    }
+    .modal-header {
+        margin-bottom: 1rem;
+    }
+    .email-icon-container {
+        width: 45px;
+        height: 45px;
+        margin-bottom: 0.6rem;
+    }
+    .modal-header h2 {
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+    }
+    .modal-body {
+        margin-bottom: 1.2rem;
+    }
+    .modal-body p {
+        font-size: 0.9rem;
+        margin-bottom: 0.7rem;
+    }
+    .email-tip {
+        font-size: 0.85rem !important;
+    }
+    .confirm-button {
+        padding: 0.6rem;
+        font-size: 0.9rem;
+        max-width: 180px;
+    }
+}
