@@ -82,7 +82,7 @@ export default function Header() {
                                     </Link>
                                 </li>
                                 {user?.role_id === 2 && (
-                                    <li className={`nav-item dropdown ${location.pathname === "/categories" || location.pathname === "/products" ? "active" : ""}`}>
+                                    <li className={`nav-item dropdown ${location.pathname === "/categories" || location.pathname === "/sampels" || location.pathname === "/users" ? "active" : ""}`}>
                                         <a className="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" aria-expanded="false">
                                             <span className="nav-link-icon d-md-none d-lg-inline-block">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icon">
