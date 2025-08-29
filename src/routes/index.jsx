@@ -11,6 +11,8 @@ import Register from "../views/auth/register.jsx";
 import Categories from "../views/categories/index.jsx";
 import Forbidden from "../views/forbidden/index.jsx";
 import Aktifasi from "../views/activite/index.jsx";
+import Sampels from "../views/sampels/index.jsx";
+import Users from "../views/user/index.jsx";
 
 export default function AppRoutes() {
 
@@ -44,6 +46,32 @@ export default function AppRoutes() {
         token ? (
           user?.role_id === 2 ? (
             <Categories />
+          ) : (
+            <Forbidden /> // atau <Navigate to="/dashboard" replace />
+          )
+        ) : (
+          <Navigate to="/" replace />
+        )
+      } />
+
+      {/* route "/sampels" */}
+      <Route path="/sampels" element={
+        token ? (
+          user?.role_id === 2 ? (
+            <Sampels />
+          ) : (
+            <Forbidden /> // atau <Navigate to="/dashboard" replace />
+          )
+        ) : (
+          <Navigate to="/" replace />
+        )
+      } />
+
+      {/* route "/users" */}
+      <Route path="/users" element={
+        token ? (
+          user?.role_id === 2 ? (
+            <Users />
           ) : (
             <Forbidden /> // atau <Navigate to="/dashboard" replace />
           )
