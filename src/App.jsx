@@ -9,6 +9,7 @@ import { useStore } from './stores/theme';
 
 // Import routes
 import AppRoutes from './routes';
+import OfflineNotification from './components/OfflineNotification';
 
 function App() {
 
@@ -20,10 +21,12 @@ function App() {
     document.documentElement.setAttribute('data-bs-theme', theme);
   }, [theme]);
 
+
   return (
     <>
       <AppRoutes />
       <Toaster />
+      <OfflineNotification />
     </>
   )
 }
