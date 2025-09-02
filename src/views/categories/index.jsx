@@ -38,6 +38,8 @@ export default function CategoriesIndex() {
     //state keyword
     const [keywords, setKeywords] = useState("");
 
+    const [tooltip, setTooltip] = useState({ show: false, content: '', x: 0, y: 0 });
+
     //define method "fetchData"
     const fetchData = async (pageNumber, keywords = "") => {
         setIsLoading(true);
@@ -57,6 +59,8 @@ export default function CategoriesIndex() {
                 const response = await Api.get(
                     `/api/categories?page=${page}&search=${keywords}`
                 );
+
+                console.log(response);
 
                 //assign response data to state "categories"
                 setCategories(response.data.data);
@@ -101,6 +105,20 @@ export default function CategoriesIndex() {
     const resetSearch = () => {
         setKeywords("");
         fetchData(1, "");
+    };
+
+    const handleMouseEnter = (e, content) => {
+        const rect = e.target.getBoundingClientRect();
+        setTooltip({
+            show: true,
+            content,
+            x: rect.left + rect.width / 2,
+            y: rect.top - 10
+        });
+    };
+
+    const handleMouseLeave = () => {
+        setTooltip({ show: false, content: '', x: 0, y: 0 });
     };
 
     return (
@@ -193,45 +211,56 @@ export default function CategoriesIndex() {
                                                 <thead>
                                                     <tr>
                                                         <th>Nama Kategori</th>
-                                                        <th>Jumlah Produk</th>
+                                                        <th>Jumlah Sampel</th>
                                                         <th>Tanggal Dibuat</th>
                                                         <th className="w-1 text-center">Aksi</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     {categories.length > 0 ? (
-                                                        categories.map((category, index) => (
-                                                            <tr key={index}>
-                                                                <td data-label="Nama Kategori">
-                                                                    <div className="d-flex align-items-center">
-                                                                        <div className="flex-fill">
-                                                                            <div className="font-weight-medium text-reset">
-                                                                                {category.name}
-                                                                            </div>
-                                                                            <div className="text-muted text-h5">
-                                                                                {category.slug}
+                                                        categories.map((category, index) => {
+                                                            const sampleNames = category.Sampel.map(sampel => sampel.parameter).join('\n');
+                                                            const hasSamples = category.Sampel.length > 0;
+
+                                                            return (
+                                                                <tr key={index}>
+                                                                    <td data-label="Nama Kategori">
+                                                                        <div className="d-flex align-items-center">
+                                                                            <div className="flex-fill">
+                                                                                <div className="font-weight-medium text-reset">
+                                                                                    {category.name}
+                                                                                </div>
+                                                                                <div className="text-muted text-h5">
+                                                                                    {category.slug}
+                                                                                </div>
                                                                             </div>
                                                                         </div>
-                                                                    </div>
-                                                                </td>
-                                                                <td data-label="Jumlah Produk">
-                                                                    <span className="badge bg-blue-lt">
-                                                                        {category.products_count || 0} Produk
-                                                                    </span>
-                                                                </td>
-                                                                <td data-label="Tanggal Dibuat">
-                                                                    <div className="text-muted">
-                                                                        {new Date(category.created_at).toLocaleDateString('id-ID')}
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <div className="btn-list justify-content-center">
-                                                                        <CategoryEdit categoryId={category.id} fetchData={fetchData} />
-                                                                        <DeleteButton id={category.id} endpoint="/api/categories" fetchData={fetchData} />
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        ))
+                                                                    </td>
+                                                                    <td data-label="Jumlah Sampel">
+                                                                        <div className="position-relative d-inline-block">
+                                                                            <span
+                                                                                className="badge bg-blue-lt cursor-pointer"
+                                                                                onMouseEnter={(e) => handleMouseEnter(e, hasSamples ? sampleNames : 'Tidak ada sampel')}
+                                                                                onMouseLeave={handleMouseLeave}
+                                                                            >
+                                                                                {category.Sampel.length || 0} Sampel
+                                                                            </span>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td data-label="Tanggal Dibuat">
+                                                                        <div className="text-muted">
+                                                                            {new Date(category.created_at).toLocaleDateString('id-ID')}
+                                                                        </div>
+                                                                    </td>
+                                                                    <td>
+                                                                        <div className="btn-list justify-content-center">
+                                                                            <CategoryEdit categoryId={category.id} fetchData={fetchData} />
+                                                                            <DeleteButton id={category.id} endpoint="/api/categories" fetchData={fetchData} />
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })
                                                     ) : (
                                                         <tr>
                                                             <td colSpan="4" className="text-center py-4">
@@ -284,6 +313,61 @@ export default function CategoriesIndex() {
                     </div>
                 </div>
             </div>
+
+            {/* Custom Tooltip */}
+            {tooltip.show && (
+                <div
+                    className="custom-tooltip"
+                    style={{
+                        position: 'fixed',
+                        left: tooltip.x,
+                        top: tooltip.y,
+                        transform: 'translateX(-50%) translateY(-100%)',
+                        zIndex: 9999,
+                        pointerEvents: 'none'
+                    }}
+                >
+                    <div className="tooltip-content bg-dark text-white p-3 rounded shadow-lg">
+                        <div className="fw-bold mb-2">Daftar Sampel:</div>
+                        {tooltip.content.split('\n').map((line, i) => (
+                            <div key={i} className="d-flex align-items-start mb-1">
+                                <span className="me-2">•</span>
+                                <span>{line}</span>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="tooltip-arrow" style={{
+                        position: 'absolute',
+                        bottom: '-6px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: 0,
+                        height: 0,
+                        borderLeft: '6px solid transparent',
+                        borderRight: '6px solid transparent',
+                        borderTop: '6px solid #2c3e50'
+                    }}></div>
+                </div>
+            )}
+
+            <style jsx>{`
+                .cursor-pointer {
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                }
+                .cursor-pointer:hover {
+                    background-color: #3b82f6 !important;
+                    color: white !important;
+                    transform: translateY(-1px);
+                }
+                .custom-tooltip {
+                    max-width: 300px;
+                }
+                .tooltip-content {
+                    font-size: 14px;
+                    line-height: 1.4;
+                }
+            `}</style>
         </LayoutAdmin>
     );
 }
