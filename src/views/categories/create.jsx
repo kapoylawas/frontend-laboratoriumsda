@@ -7,6 +7,7 @@ import { handleErrors } from "../../utils/handleErrors";
 export default function CategoryCreate({ fetchData }) {
     const [name, setName] = useState("");
     const [errors, setErrors] = useState({});
+    const [isLoading, setIsLoading] = useState(false); // State untuk loading
     const modalRef = useRef(null);
 
     const token = Cookies.get("token");
@@ -29,6 +30,9 @@ export default function CategoryCreate({ fetchData }) {
             setErrors({ name: "Category name is required" });
             return;
         }
+
+        // Set loading state
+        setIsLoading(true);
 
         // Set authorization header with token
         Api.defaults.headers.common['Authorization'] = token;
@@ -60,6 +64,10 @@ export default function CategoryCreate({ fetchData }) {
             .catch((error) => {
                 handleErrors(error.response.data, setErrors);
             })
+            .finally(() => {
+                // Reset loading state regardless of success or failure
+                setIsLoading(false);
+            });
     }
 
     return (
@@ -92,6 +100,7 @@ export default function CategoryCreate({ fetchData }) {
                                         placeholder='Enter category name'
                                         style={{ textAlign: 'center' }}
                                         autoFocus
+                                        disabled={isLoading} // Disable input saat loading
                                     />
                                     {errors.name && (
                                         <div className="invalid-feedback d-block mt-2">
@@ -101,15 +110,34 @@ export default function CategoryCreate({ fetchData }) {
                                 </div>
                             </div>
                             <div className="modal-footer justify-content-center py-4 border-top-0">
-                                <button type="button" className="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-secondary rounded-pill px-4"
+                                    data-bs-dismiss="modal"
+                                    disabled={isLoading} // Disable tombol cancel saat loading
+                                >
                                     Cancel
                                 </button>
-                                <button type='submit' className="btn btn-primary rounded-pill px-4 ms-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-check" width="20" height="20" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                        <path d="M5 12l5 5l10 -10" />
-                                    </svg>
-                                    Save Category
+                                <button
+                                    type='submit'
+                                    className="btn btn-primary rounded-pill px-4 ms-3 d-flex align-items-center justify-content-center"
+                                    disabled={isLoading} // Disable tombol save saat loading
+                                    style={{ minWidth: '140px' }}
+                                >
+                                    {isLoading ? (
+                                        <>
+                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-check me-1" width="20" height="20" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                <path d="M5 12l5 5l10 -10" />
+                                            </svg>
+                                            Save Category
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </form>
@@ -146,6 +174,10 @@ export default function CategoryCreate({ fetchData }) {
                     .btn-primary:hover {
                         background-color: #1a5aa0;
                         border-color: #1a5aa0;
+                    }
+                    .btn:disabled {
+                        opacity: 0.65;
+                        pointer-events: none;
                     }
                     @media (max-width: 576px) {
                         .modal-content {
