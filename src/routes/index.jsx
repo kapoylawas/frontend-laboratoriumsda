@@ -13,6 +13,7 @@ import Forbidden from "../views/forbidden/index.jsx";
 import Aktifasi from "../views/activite/index.jsx";
 import Sampels from "../views/sampels/index.jsx";
 import Users from "../views/user/index.jsx";
+import Profile from "../views/profile/index.jsx";
 
 export default function AppRoutes() {
 
@@ -39,6 +40,11 @@ export default function AppRoutes() {
       {/* route "/dashboard" */}
       <Route path="/dashboard" element={
         token ? <Dashboard /> : <Navigate to="/" replace />
+      } />
+
+      {/* route "/profile" */}
+      <Route path="/profile" element={
+        token ? <Profile /> : <Navigate to="/" replace />
       } />
 
       {/* route "/categories" */}

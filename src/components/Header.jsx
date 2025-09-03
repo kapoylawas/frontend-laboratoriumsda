@@ -54,7 +54,7 @@ export default function Header() {
                                 </div>
                             </a>
                             <div className="dropdown-menu dropdown-menu-end dropdown-menu-arrow rounded mt-3">
-                                <Link to={`/users/${user?.id}`} className="dropdown-item">Profile</Link>
+                                <Link to="/profile" className="dropdown-item">Profile</Link>
                                 <div className="dropdown-divider"></div>
                                 <a href="#" onClick={logoutHandler} className="dropdown-item">Logout</a>
                             </div>
