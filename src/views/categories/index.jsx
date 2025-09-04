@@ -60,8 +60,6 @@ export default function CategoriesIndex() {
                     `/api/categories?page=${page}&search=${keywords}`
                 );
 
-                console.log(response);
-
                 //assign response data to state "categories"
                 setCategories(response.data.data);
 
