@@ -83,7 +83,7 @@ export default function SampelCreate({ fetchData }) {
         await Api.post('/api/sampels', {
             category_id: categoryID,
             parameter: parameter,
-            price_sell: getNumericValue(priceSell), // Konversi format Rupiah ke angka
+            price_sell: getNumericValue(priceSell) || 0, // Konversi format Rupiah ke angka
         }).then((response) => {
             toast.success(`${response.data.meta.message}`, {
                 duration: 4000,
@@ -125,7 +125,7 @@ export default function SampelCreate({ fetchData }) {
                     <path d="M12 5l0 14" />
                     <path d="M5 12l14 0" />
                 </svg>
-                Add New
+                Tambah Data
             </a>
 
             <div className="modal fade" id="modal-create-category" tabIndex="-1" role="dialog" aria-hidden="true" ref={modalRef}>
