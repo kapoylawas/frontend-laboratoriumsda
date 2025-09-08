@@ -3,8 +3,9 @@ import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import Api from "../../services/api";
 import { handleErrors } from "../../utils/handleErrors";
+import { IconEdit } from "@tabler/icons-react";
 
-export default function SampelCreate({ fetchData }) {
+export default function SampelEdit({ fetchData, sampelsId }) {
     const [categoryID, setCategoryID] = useState("");
     const [parameter, setParameter] = useState("");
     const [priceSell, setPriceSell] = useState("");
@@ -12,7 +13,9 @@ export default function SampelCreate({ fetchData }) {
     const [categories, setCategories] = useState([]);
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
+    const [currentSampelId, setCurrentSampelId] = useState(null);
     const modalRef = useRef(null);
+    const selectRef = useRef(null);
 
     const token = Cookies.get("token");
 
@@ -25,12 +28,43 @@ export default function SampelCreate({ fetchData }) {
             });
     }
 
-    // Inisialisasi modal setelah komponen dimount
-    useEffect(() => {
-        if (modalRef.current) {
-            const modal = new bootstrap.Modal(modalRef.current);
+    const fetchSampels = async (id) => {
+        if (id) {
+            try {
+                // Set authorization header with token
+                Api.defaults.headers.common['Authorization'] = token;
+                const response = await Api.get(`/api/sampels/${id}`);
+                const sampel = response.data.data;
+
+                // Set form values from API response
+                setCategoryID(sampel.category_id);
+                setParameter(sampel.parameter);
+                setPriceSell(formatRupiah(sampel.price_sell.toString()));
+                setCurrentSampelId(id);
+            } catch (error) {
+                console.error("There was an error fetching the sampel data!", error);
+                toast.error("Failed to fetch sampel data");
+            }
         }
-    }, []);
+    };
+
+    useEffect(() => {
+        const modalElement = modalRef.current;
+
+        const handleShowModal = () => {
+            fetchSampels(sampelsId);
+        };
+
+        if (modalElement) {
+            modalElement.addEventListener('show.bs.modal', handleShowModal);
+        }
+
+        return () => {
+            if (modalElement) {
+                modalElement.removeEventListener('show.bs.modal', handleShowModal);
+            }
+        };
+    }, [sampelsId, token]);
 
     useEffect(() => {
         fetchCategories();
@@ -58,7 +92,7 @@ export default function SampelCreate({ fetchData }) {
         return formattedValue.replace(/\./g, '');
     };
 
-    const storeSampels = async (e) => {
+    const updateSampels = async (e) => {
         e.preventDefault();
 
         // Reset errors
@@ -80,7 +114,7 @@ export default function SampelCreate({ fetchData }) {
 
         // Set authorization header with token
         Api.defaults.headers.common['Authorization'] = token;
-        await Api.post('/api/sampels', {
+        await Api.put(`/api/sampels/${currentSampelId}`, {
             category_id: categoryID,
             parameter: parameter,
             price_sell: getNumericValue(priceSell), // Konversi format Rupiah ke angka
@@ -107,6 +141,7 @@ export default function SampelCreate({ fetchData }) {
             setCategoryID("");
             setParameter("");
             setPriceSell("");
+            setCurrentSampelId(null);
         })
             .catch((error) => {
                 handleErrors(error.response.data, setErrors);
@@ -119,24 +154,31 @@ export default function SampelCreate({ fetchData }) {
 
     return (
         <>
-            <a href="#" className="btn btn-primary d-sm-inline-block" data-bs-toggle="modal" data-bs-target="#modal-create-category">
-                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                    <path d="M12 5l0 14" />
-                    <path d="M5 12l14 0" />
-                </svg>
-                Add New
-            </a>
+            <button
+                className="btn btn-icon btn-sm btn-outline-primary"
+                title="Edit Sampel"
+                data-bs-toggle="modal"
+                data-bs-target={`#modal-edit-sampel-${sampelsId}`}
+            >
+                <IconEdit size={16} />
+            </button>
 
-            <div className="modal fade" id="modal-create-category" tabIndex="-1" role="dialog" aria-hidden="true" ref={modalRef}>
+            <div
+                className="modal fade"
+                id={`modal-edit-sampel-${sampelsId}`}
+                tabIndex="-1"
+                role="dialog"
+                aria-hidden="true"
+                ref={modalRef}
+            >
                 <div className="modal-dialog modal-dialog-centered" role="document">
                     <div className="modal-content" style={{ borderRadius: '16px', overflow: 'hidden', maxWidth: '500px', margin: '0 auto' }}>
                         <button type="button" className="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
-                        <form onSubmit={storeSampels}>
+                        <form onSubmit={updateSampels}>
                             <div className="modal-header bg-light px-4 pt-4 pb-0 border-0">
                                 <div className="w-100 text-center">
-                                    <h3 className="fw-bold mb-1">Create New Sample</h3>
-                                    <p className="text-muted">Add a new sample to organize your content</p>
+                                    <h3 className="fw-bold mb-1">Edit Sample</h3>
+                                    <p className="text-muted">Update sample information</p>
                                 </div>
                             </div>
                             <div className="modal-body p-4">
@@ -217,7 +259,7 @@ export default function SampelCreate({ fetchData }) {
                                     {isLoading ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                            Saving...
+                                            Updating...
                                         </>
                                     ) : (
                                         <>
@@ -225,7 +267,7 @@ export default function SampelCreate({ fetchData }) {
                                                 <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                                                 <path d="M5 12l5 5l10 -10" />
                                             </svg>
-                                            Save Sample
+                                            Update Sample
                                         </>
                                     )}
                                 </button>
@@ -241,7 +283,7 @@ export default function SampelCreate({ fetchData }) {
                     .modal-backdrop {
                         z-index: 1040;
                     }
-                    #modal-create-category {
+                    #modal-edit-sampel-${sampelsId} {
                         z-index: 1050;
                     }
                     .modal-content {

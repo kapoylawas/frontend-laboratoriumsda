@@ -10,6 +10,8 @@ import {
     IconChevronUp,
 } from "@tabler/icons-react";
 import SampelCreate from './create';
+import SampelEdit from './edit';
+import DeleteButton from '../../components/DeleteButton';
 
 export default function Sampels() {
     const [sampels, setSampel] = useState([]);
@@ -222,7 +224,7 @@ export default function Sampels() {
                                                     value={keywords}
                                                     onChange={(e) => setKeywords(e.target.value)}
                                                     onKeyDown={handleKeyDown}
-                                                    placeholder="Cari berdasarkan nama sampel atau kategori..."
+                                                    placeholder="Cari berdasarkan nama sampel..."
                                                     disabled={isLoading}
                                                 />
                                                 {keywords && (
@@ -251,11 +253,35 @@ export default function Sampels() {
 
                         <div className="col-12">
                             <div className="card">
-                                <div className="card-header">
-                                    <h3 className="card-title">Daftar Sampel Berdasarkan Kategori</h3>
-                                    <small className="text-muted">
-                                        Total: {Object.keys(groupedSampels).length} kategori, {sampels.length} sampel
-                                    </small>
+                                <div className="card-header bg-transparent border-bottom-0 pb-0">
+                                    <div className="d-flex justify-content-between align-items-start mb-3">
+                                        <div>
+                                            <h3 className="card-title mb-1" style={{
+                                                color: '#2c3e50',
+                                                fontWeight: 700,
+                                                fontSize: '1.4rem'
+                                            }}>
+                                                Daftar Sampel Berdasarkan Kategori
+                                            </h3>
+                                            <div className="d-flex align-items-center text-muted">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-category me-1" width="18" height="18" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                    <path d="M4 4h6v6h-6z" />
+                                                    <path d="M14 4h6v6h-6z" />
+                                                    <path d="M4 14h6v6h-6z" />
+                                                    <path d="M17 17m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                                                </svg>
+                                                <span style={{ fontSize: '0.9rem' }}>
+                                                    {Object.keys(groupedSampels).length} kategori • {sampels.length} sampel
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <hr style={{
+                                        borderTop: '2px solid #206bc4',
+                                        opacity: 0.3,
+                                        margin: 0
+                                    }} />
                                 </div>
                                 <div className="table-responsive">
                                     {isLoading ? (
@@ -314,8 +340,8 @@ export default function Sampels() {
                                                                                     <td>
                                                                                         <div className="btn-list justify-content-center">
                                                                                             {/* Action buttons can be added here */}
-                                                                                            <button className="btn btn-sm btn-primary">Edit</button>
-                                                                                            <button className="btn btn-sm btn-danger">Hapus</button>
+                                                                                            <SampelEdit sampelsId={sampel.id} fetchData={fetchData} />
+                                                                                            <DeleteButton id={sampel.id} endpoint="/api/sampels" fetchData={fetchData} />
                                                                                         </div>
                                                                                     </td>
                                                                                 </tr>
@@ -392,6 +418,7 @@ export default function Sampels() {
                 .category-header:hover {
                     background-color: #e3f2fd !important;
                 }
+                
             `}</style>
         </LayoutAdmin>
     )
