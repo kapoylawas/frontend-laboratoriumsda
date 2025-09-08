@@ -8,8 +8,8 @@ import {
     IconRefresh,
     IconChevronDown,
     IconChevronUp,
-    IconPlus
 } from "@tabler/icons-react";
+import SampelCreate from './create';
 
 export default function Sampels() {
     const [sampels, setSampel] = useState([]);
@@ -186,12 +186,7 @@ export default function Sampels() {
                                     <IconRefresh size={18} className="me-1" />
                                     {isLoading ? "Memuat..." : "Refresh"}
                                 </button>
-                                <button
-                                    className="btn btn-outline-primary d-none d-sm-inline-block"
-                                >
-                                    <IconPlus size={18} className="me-1" />
-                                    {isLoading ? "Memuat..." : "Tambah Data"}
-                                </button>
+                                <SampelCreate fetchData={fetchData} />
                                 <button
                                     onClick={toggleAllCategories}
                                     className="btn btn-outline-secondary d-none d-sm-inline-block"
