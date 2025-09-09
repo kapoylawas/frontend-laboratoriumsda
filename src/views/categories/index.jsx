@@ -1,4 +1,3 @@
-//import useState dan useEffect
 import { useState, useEffect } from "react";
 
 //import layout admin
