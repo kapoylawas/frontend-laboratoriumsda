@@ -472,7 +472,7 @@ export default function Sampels() {
                                     )}
                                 </div>
 
-                                {sampels.length > 0 && (
+                                {/* {sampels.length > 0 && (
                                     <div className="card-footer">
                                         <div className="d-flex flex-column flex-md-row align-items-center justify-content-between">
                                             <div className="text-muted mb-2 mb-md-0">
@@ -487,7 +487,7 @@ export default function Sampels() {
                                             />
                                         </div>
                                     </div>
-                                )}
+                                )} */}
                             </div>
                         </div>
                     </div>
