@@ -12,13 +12,16 @@ import {
     IconMapPin,
     IconGenderMale,
     IconGenderFemale,
-    IconEdit,
-    IconTrash,
     IconUserPlus,
     IconUserCheck,
     IconUserOff,
-    IconLicense
+    IconLicense,
+    IconPower,
+    IconCircleCheck,
+    IconCircleX // Icon untuk notifikasi error
 } from "@tabler/icons-react";
+import UserEdit from "./edit";
+import DeleteButton from "../../components/DeleteButton";
 
 export default function Users() {
     const [users, setUsers] = useState([]);
@@ -30,6 +33,10 @@ export default function Users() {
     });
     const [keywords, setKeywords] = useState("");
     const [roles, setRoles] = useState([]);
+    const [activatingUser, setActivatingUser] = useState(null);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
 
     // Fetch roles data
     useEffect(() => {
@@ -56,9 +63,7 @@ export default function Users() {
         if (token) {
             Api.defaults.headers.common["Authorization"] = token;
             try {
-                // Build query parameters
                 let queryParams = `page=${pageNumber}&search=${keywords}`;
-
                 const response = await Api.get(`/api/users?${queryParams}`);
 
                 setUsers(response.data.data);
@@ -95,6 +100,32 @@ export default function Users() {
     const resetSearch = () => {
         setKeywords("");
         fetchData(1, "");
+    };
+
+    // Fungsi untuk mengaktifkan pengguna
+    const activateUser = async (userId) => {
+        setActivatingUser(userId);
+        const token = Cookies.get("token");
+
+        if (token) {
+            Api.defaults.headers.common["Authorization"] = token;
+            try {
+                await Api.put(`/api/aktifUsers/${userId}`);
+
+                setUsers(users.map(user =>
+                    user.id === userId ? { ...user, is_active: true } : user
+                ));
+
+                setShowSuccessModal(true);
+
+            } catch (error) {
+                console.error("Error activating user:", error);
+                setErrorMessage("Gagal mengaktifkan pengguna. Silakan coba lagi.");
+                setShowErrorModal(true);
+            } finally {
+                setActivatingUser(null);
+            }
+        }
     };
 
     // Count users by status and role based on actual data
@@ -367,18 +398,24 @@ export default function Users() {
                                                         </td>
                                                         <td>
                                                             <div className="btn-list justify-content-center">
-                                                                <button
-                                                                    className="btn btn-icon btn-sm btn-outline-primary"
-                                                                    title="Edit pengguna"
-                                                                >
-                                                                    <IconEdit size={16} />
-                                                                </button>
-                                                                <button
-                                                                    className="btn btn-icon btn-sm btn-outline-danger"
-                                                                    title="Hapus pengguna"
-                                                                >
-                                                                    <IconTrash size={16} />
-                                                                </button>
+                                                                <UserEdit userId={user.id} fetchData={fetchData} />
+
+                                                                {!user.is_active && (
+                                                                    <button
+                                                                        className="btn btn-icon btn-sm btn-outline-success"
+                                                                        title="Aktifkan pengguna"
+                                                                        onClick={() => activateUser(user.id)}
+                                                                        disabled={activatingUser === user.id}
+                                                                    >
+                                                                        {activatingUser === user.id ? (
+                                                                            <div className="spinner-border spinner-border-sm" role="status"></div>
+                                                                        ) : (
+                                                                            <IconPower size={16} />
+                                                                        )}
+                                                                    </button>
+                                                                )}
+
+                                                                <DeleteButton id={user.id} endpoint="/api/users" fetchData={fetchData} />
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -436,6 +473,109 @@ export default function Users() {
                     </div>
                 </div>
             </div>
+
+            {/* Modal Notifikasi Sukses */}
+            {showSuccessModal && (
+                <>
+                    <div className="modal-backdrop fade show"></div>
+                    <div className="modal fade show d-block" tabIndex="-1">
+                        <div className="modal-dialog modal-sm modal-dialog-centered">
+                            <div className="modal-content">
+                                <div className="modal-status bg-success"></div>
+                                <div className="modal-body text-center py-4">
+                                    <IconCircleCheck size={48} className="text-success mb-2" />
+                                    <h3>Berhasil!</h3>
+                                    <div className="text-muted">
+                                        Pengguna berhasil diaktifkan!
+                                    </div>
+                                </div>
+                                <div className="modal-footer">
+                                    <div className="w-100">
+                                        <div className="row">
+                                            <div className="col">
+                                                <button
+                                                    className="btn btn-success w-100"
+                                                    onClick={() => setShowSuccessModal(false)}
+                                                >
+                                                    OK
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {/* Modal Notifikasi Error */}
+            {showErrorModal && (
+                <>
+                    <div className="modal-backdrop fade show"></div>
+                    <div className="modal fade show d-block" tabIndex="-1">
+                        <div className="modal-dialog modal-sm modal-dialog-centered">
+                            <div className="modal-content">
+                                <div className="modal-status bg-danger"></div>
+                                <div className="modal-body text-center py-4">
+                                    <IconCircleX size={48} className="text-danger mb-2" />
+                                    <h3>Gagal!</h3>
+                                    <div className="text-muted">
+                                        {errorMessage}
+                                    </div>
+                                </div>
+                                <div className="modal-footer">
+                                    <div className="w-100">
+                                        <div className="row">
+                                            <div className="col">
+                                                <button
+                                                    className="btn btn-danger w-100"
+                                                    onClick={() => setShowErrorModal(false)}
+                                                >
+                                                    Tutup
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            <style jsx>{`
+                .cursor-pointer {
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                }
+                .cursor-pointer:hover {
+                    background-color: #3b82f6 !important;
+                    color: white !important;
+                    transform: translateY(-1px);
+                }
+                .custom-tooltip {
+                    max-width: 300px;
+                }
+                .tooltip-content {
+                    font-size: 14px;
+                    line-height: 1.4;
+                }
+                .modal-content {
+                    border-radius: 12px;
+                    overflow: hidden;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+                    border: none;
+                }
+                .modal-status {
+                    height: 6px;
+                    background-position: center;
+                    background-size: cover;
+                }
+                .modal.show {
+                    backdrop-filter: blur(4px);
+                }
+            `}</style>
         </LayoutAdmin>
     )
 }
