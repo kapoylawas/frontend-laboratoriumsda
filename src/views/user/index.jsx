@@ -22,6 +22,7 @@ import {
 } from "@tabler/icons-react";
 import UserEdit from "./edit";
 import DeleteButton from "../../components/DeleteButton";
+import UserCreate from "./create";
 
 export default function Users() {
     const [users, setUsers] = useState([]);
@@ -45,7 +46,7 @@ export default function Users() {
             if (token) {
                 Api.defaults.headers.common["Authorization"] = token;
                 try {
-                    const response = await Api.get('/api/roles');
+                    const response = await Api.get('/api/roles-all');
                     setRoles(response.data.data);
                 } catch (error) {
                     console.error("Error fetching roles:", error);
@@ -143,10 +144,7 @@ export default function Users() {
                         </div>
                         <div className="col-auto ms-auto d-print-none">
                             <div className="btn-list">
-                                <button className="btn btn-primary d-none d-sm-inline-block">
-                                    <IconUserPlus size={18} className="me-1" />
-                                    Tambah Pengguna
-                                </button>
+                                <UserCreate fetchData={fetchData} />
                                 <button
                                     onClick={() => fetchData()}
                                     className="btn btn-outline-primary"

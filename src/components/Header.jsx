@@ -4,7 +4,6 @@ import { useStore as useUserStore } from '../stores/user';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import "./Header.css"; // File CSS terpisah
 
-
 export default function Header() {
     const { theme, changeTheme } = useThemeStore();
     const { user, logout } = useUserStore();
@@ -81,6 +80,22 @@ export default function Header() {
                                         <span className="nav-link-title">HOME</span>
                                     </Link>
                                 </li>
+
+                                {/* Menu Order Pesanan - Ditambahkan di sini */}
+                                <li className={`nav-item ${location.pathname === "/orders" || location.pathname.startsWith("/orders/") ? "active" : ""}`}>
+                                    <Link className="nav-link" to="/orders">
+                                        <span className="nav-link-icon d-md-none d-lg-inline-block">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                <path d="M15 19l-6 -2l-6 2v-10a6 6 0 1 1 12 0v10" />
+                                                <path d="M9 8h6" />
+                                                <path d="M9 12h6" />
+                                            </svg>
+                                        </span>
+                                        <span className="nav-link-title">ORDER</span>
+                                    </Link>
+                                </li>
+
                                 {user?.role_id === 2 && (
                                     <li className={`nav-item dropdown ${location.pathname === "/categories" || location.pathname === "/sampels" || location.pathname === "/users" ? "active" : ""}`}>
                                         <a className="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" aria-expanded="false">
