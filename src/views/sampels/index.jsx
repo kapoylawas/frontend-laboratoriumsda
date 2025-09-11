@@ -47,7 +47,7 @@ export default function Sampels() {
     };
 
     const isPackageCategory = (categoryId) => {
-        return categoryId === 1 || categoryId === 3;
+        return categoryId === 39 || categoryId === 40;
     };
 
     const fetchData = async (pageNumber, keywords = "") => {
