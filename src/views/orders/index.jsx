@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import LayoutAdmin from '../../layouts/admin'
 import Cookies from "js-cookie";
 import Api from "../../services/api";
-import PaginationComponent from "../../components/Pagination";
 import {
     IconSearch,
     IconRefresh,
@@ -12,9 +11,15 @@ import {
     IconInfoCircle,
     IconShoppingCart,
     IconCheck,
-    IconPackage
+    IconPackage,
+    IconCircleCheck,
+    IconPlus,
+    IconMinus,
+    IconListCheck,
 } from "@tabler/icons-react";
 import { toast } from 'react-toastify';
+import OrderConfirmationModal from './orderConfirmationModal';
+import OrderSuccessModal from './orderSuccessModal';
 
 export default function Orders() {
     const [sampels, setSampel] = useState([]);
@@ -24,33 +29,31 @@ export default function Orders() {
     const [selectedSampels, setSelectedSampels] = useState([]);
     const [quantities, setQuantities] = useState({});
     const [showOrderModal, setShowOrderModal] = useState(false);
-
-    //state loading
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [orderDetails, setOrderDetails] = useState([]);
+    const [orderTotal, setOrderTotal] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    //define state "pagination"
     const [pagination, setPagination] = useState({
         currentPage: 1,
         perPage: 0,
         total: 0
     });
-
     const [keywords, setKeywords] = useState("");
+    const [activeCategory, setActiveCategory] = useState(null);
 
-    // Daftar warna untuk kategori
+    // Warna yang lebih soft dan professional
     const categoryColors = [
-        { bg: '#e3f2fd', text: '#0d47a1', border: '#bbdefb' },
-        { bg: '#e8f5e9', text: '#1b5e20', border: '#c8e6c9' },
-        { bg: '#fff3e0', text: '#e65100', border: '#ffe0b2' },
-        { bg: '#fce4ec', text: '#880e4f', border: '#f8bbd0' },
-        { bg: '#f3e5f5', text: '#4a148c', border: '#e1bee7' },
-        { bg: '#e8eaf6', text: '#1a237e', border: '#c5cae9' },
-        { bg: '#e0f2f1', text: '#004d40', border: '#b2dfdb' },
-        { bg: '#fff8e1', text: '#ff6f00', border: '#ffecb3' },
+        { bg: '#f0f7ff', text: '#1e40af', border: '#dbeafe', light: '#3b82f6' },
+        { bg: '#f0fdf4', text: '#166534', border: '#dcfce7', light: '#22c55e' },
+        { bg: '#fffbeb', text: '#92400e', border: '#fef3c7', light: '#f59e0b' },
+        { bg: '#fdf2f8', text: '#be185d', border: '#fce7f3', light: '#ec4899' },
+        { bg: '#faf5ff', text: '#7c3aed', border: '#f3e8ff', light: '#a855f7' },
+        { bg: '#eff6ff', text: '#3730a3', border: '#e0e7ff', light: '#6366f1' },
+        { bg: '#ecfdf5', text: '#047857', border: '#d1fae5', light: '#10b981' },
+        { bg: '#fff7ed', text: '#ea580c', border: '#ffedd5', light: '#f97316' },
     ];
 
-    // Kategori dengan tipe paket
     const packageCategories = [39, 40];
 
     const getCategoryColor = (categoryId) => {
@@ -64,13 +67,11 @@ export default function Orders() {
 
     const fetchData = async (pageNumber, keywords = "") => {
         setIsLoading(true);
-
         const page = pageNumber ? pageNumber : pagination.currentPage;
         const token = Cookies.get("token");
 
         if (token) {
             Api.defaults.headers.common["Authorization"] = token;
-
             try {
                 const categoriesResponse = await Api.get('/api/categories');
                 const categoriesMap = {};
@@ -84,7 +85,6 @@ export default function Orders() {
                 );
 
                 setSampel(response.data.data);
-
                 const grouped = groupSampelsByCategoryId(response.data.data, categoriesMap);
                 setGroupedSampels(grouped);
 
@@ -114,21 +114,18 @@ export default function Orders() {
 
     const groupSampelsByCategoryId = (sampelsData, categoriesMap) => {
         const groups = {};
-
         Object.keys(categoriesMap).forEach(categoryId => {
             groups[categoryId] = {
                 category: categoriesMap[categoryId],
                 sampels: []
             };
         });
-
         sampelsData.forEach(sampel => {
             const categoryId = sampel.category_id;
             if (groups[categoryId]) {
                 groups[categoryId].sampels.push(sampel);
             }
         });
-
         return groups;
     };
 
@@ -137,6 +134,7 @@ export default function Orders() {
             ...prev,
             [categoryId]: !prev[categoryId]
         }));
+        setActiveCategory(activeCategory === categoryId ? null : categoryId);
     };
 
     const toggleAllCategories = () => {
@@ -161,7 +159,6 @@ export default function Orders() {
         });
     };
 
-    // Fungsi untuk memilih semua sampel dalam kategori paket
     const toggleAllSampelsInPackage = (categoryId) => {
         const categorySampels = groupedSampels[categoryId]?.sampels || [];
         const allSelected = categorySampels.every(sampel =>
@@ -169,31 +166,25 @@ export default function Orders() {
         );
 
         if (allSelected) {
-            // Hapus semua sampel dari kategori ini
             const newSelectedSampels = selectedSampels.filter(id => {
                 const sampel = sampels.find(s => s.id === id);
                 return sampel?.category_id !== parseInt(categoryId);
             });
-
             const newQuantities = { ...quantities };
             categorySampels.forEach(sampel => {
                 delete newQuantities[sampel.id];
             });
-
             setSelectedSampels(newSelectedSampels);
             setQuantities(newQuantities);
         } else {
-            // Tambahkan semua sampel dari kategori ini
             const newSelectedSampels = [...selectedSampels];
             const newQuantities = { ...quantities };
-
             categorySampels.forEach(sampel => {
                 if (!newSelectedSampels.includes(sampel.id)) {
                     newSelectedSampels.push(sampel.id);
                     newQuantities[sampel.id] = 1;
                 }
             });
-
             setSelectedSampels(newSelectedSampels);
             setQuantities(newQuantities);
         }
@@ -201,11 +192,25 @@ export default function Orders() {
 
     const updateQuantity = (sampelId, quantity) => {
         const qty = parseInt(quantity) || 1;
-        if (qty >= 1) {
+        if (qty >= 1 && qty <= 999) {
             setQuantities(prev => ({
                 ...prev,
                 [sampelId]: qty
             }));
+        }
+    };
+
+    const incrementQuantity = (sampelId) => {
+        const currentQty = quantities[sampelId] || 1;
+        if (currentQty < 999) {
+            updateQuantity(sampelId, currentQty + 1);
+        }
+    };
+
+    const decrementQuantity = (sampelId) => {
+        const currentQty = quantities[sampelId] || 1;
+        if (currentQty > 1) {
+            updateQuantity(sampelId, currentQty - 1);
         }
     };
 
@@ -226,59 +231,71 @@ export default function Orders() {
         return { totalItems, totalPrice };
     };
 
-    // Hitung total untuk kategori paket
     const calculatePackageTotal = (categoryId) => {
         const categorySampels = groupedSampels[categoryId]?.sampels || [];
         let total = 0;
-
         categorySampels.forEach(sampel => {
             if (selectedSampels.includes(sampel.id) && sampel.price_sell) {
                 const qty = quantities[sampel.id] || 1;
                 total += qty * sampel.price_sell;
             }
         });
-
         return total;
     };
 
-    // Cek apakah semua sampel dalam kategori paket sudah dipilih
     const isAllSampelsSelected = (categoryId) => {
         const categorySampels = groupedSampels[categoryId]?.sampels || [];
         if (categorySampels.length === 0) return false;
+        return categorySampels.every(sampel => selectedSampels.includes(sampel.id));
+    };
 
-        return categorySampels.every(sampel =>
-            selectedSampels.includes(sampel.id)
-        );
+    const prepareOrderDetails = () => {
+        const details = selectedSampels.map(sampelId => {
+            const sampel = sampels.find(s => s.id === sampelId);
+            const qty = quantities[sampelId] || 1;
+            const subtotal = sampel && sampel.price_sell ? qty * sampel.price_sell : 0;
+
+            return {
+                id: sampelId,
+                parameter: sampel?.parameter || 'Tidak ada parameter',
+                quantity: qty,
+                price: sampel?.price_sell || 0,
+                subtotal: subtotal
+            };
+        });
+
+        const total = details.reduce((sum, item) => sum + item.subtotal, 0);
+        return { details, total };
     };
 
     const submitOrder = async () => {
         setIsSubmitting(true);
-
         try {
-            // Format data sesuai dengan yang diharapkan backend
             const orderData = selectedSampels.map(sampelId => ({
                 sampel_id: sampelId,
                 qty: quantities[sampelId] || 1
             }));
 
-            console.log("Data order:", orderData); // Untuk debugging
-
             const response = await Api.post("/api/order", {
                 items: orderData
             });
 
-            toast.success(`✅ Pesanan berhasil dibuat! Total: ${formatCurrency(calculateOrderSummary().totalPrice)}`, {
-                position: "top-right",
-                autoClose: 5000,
-            });
+            const { details, total } = prepareOrderDetails();
+            setOrderDetails(details);
+            setOrderTotal(total);
 
+            setShowOrderModal(false);
+            setShowSuccessModal(true);
             setSelectedSampels([]);
             setQuantities({});
-            setShowOrderModal(false);
+
+            toast.success(`✅ Pesanan berhasil dibuat!`, {
+                position: "top-right",
+                autoClose: 3000,
+            });
 
         } catch (error) {
             console.error("Error creating order:", error);
-
             if (error.response?.data?.errors) {
                 toast.error(`❌ ${error.response.data.errors[0].msg}`);
             } else {
@@ -287,6 +304,12 @@ export default function Orders() {
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleSuccessModalClose = () => {
+        setShowSuccessModal(false);
+        setOrderDetails([]);
+        setOrderTotal(0);
     };
 
     useEffect(() => {
@@ -318,6 +341,21 @@ export default function Orders() {
 
     const orderSummary = calculateOrderSummary();
 
+    const handlePrint = () => {
+        window.print();
+    };
+
+    const handleOrderAgain = () => {
+        setShowSuccessModal(false);
+        setOrderDetails([]);
+        setOrderTotal(0);
+    };
+
+    const handleViewOrders = () => {
+        // Navigasi ke halaman daftar pesanan
+        window.location.href = '/admin/orders-list';
+    };
+
     return (
         <LayoutAdmin>
             <div className="page-header">
@@ -325,9 +363,9 @@ export default function Orders() {
                     <div className="row g-2 align-items-center">
                         <div className="col">
                             <div className="page-pretitle text-muted">Pemesanan</div>
-                            <h2 className="page-title">Pilih Sampel</h2>
+                            <h2 className="page-title">Pilih Sampel untuk Dipesan</h2>
                             <div className="text-muted mt-1">
-                                Pilih sampel yang ingin dipesan dari berbagai kategori
+                                Pilih sampel yang Anda butuhkan dari berbagai kategori yang tersedia
                             </div>
                         </div>
                         <div className="col-auto ms-auto">
@@ -335,10 +373,11 @@ export default function Orders() {
                                 {selectedSampels.length > 0 && (
                                     <button
                                         onClick={() => setShowOrderModal(true)}
-                                        className="btn btn-success"
+                                        className="btn btn-success btn-lg"
                                     >
-                                        <IconShoppingCart size={18} className="me-1" />
+                                        <IconShoppingCart size={20} className="me-2" />
                                         Buat Pesanan ({selectedSampels.length})
+                                        <div className="small fw-normal">Total: {formatCurrency(orderSummary.totalPrice)}</div>
                                     </button>
                                 )}
                                 <button
@@ -349,16 +388,6 @@ export default function Orders() {
                                     <IconRefresh size={18} className="me-1" />
                                     {isLoading ? "Memuat..." : "Refresh"}
                                 </button>
-
-                                <button
-                                    onClick={toggleAllCategories}
-                                    className="btn btn-outline-secondary"
-                                    disabled={isLoading || Object.keys(groupedSampels).length === 0}
-                                >
-                                    {Object.values(expandedCategories).every(val => val)
-                                        ? "Tutup Semua"
-                                        : "Buka Semua"}
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -367,56 +396,68 @@ export default function Orders() {
 
             <div className="page-body">
                 <div className="container-xl">
-                    {/* Order Summary Bar */}
+                    {/* Floating Order Summary */}
                     {selectedSampels.length > 0 && (
-                        <div className="alert alert-success d-flex justify-content-between align-items-center mb-4">
-                            <div>
-                                <strong>{selectedSampels.length} sampel</strong> dipilih •
-                                <strong> {orderSummary.totalItems} item</strong> •
-                                Total: <strong>{formatCurrency(orderSummary.totalPrice)}</strong>
-                            </div>
-                            <div className="btn-group">
-                                <button
-                                    className="btn btn-sm btn-outline-secondary"
-                                    onClick={() => {
-                                        setSelectedSampels([]);
-                                        setQuantities({});
-                                    }}
-                                >
-                                    Batalkan
-                                </button>
-                                <button
-                                    className="btn btn-sm btn-success"
-                                    onClick={() => setShowOrderModal(true)}
-                                >
-                                    <IconCheck size={16} className="me-1" />
-                                    Pesan Sekarang
-                                </button>
+                        <div className="floating-order-summary">
+                            <div className="card shadow-lg border-0">
+                                <div className="card-body p-3">
+                                    <div className="row align-items-center">
+                                        <div className="col">
+                                            <div className="d-flex align-items-center">
+                                                <IconListCheck size={24} className="text-success me-3" />
+                                                <div>
+                                                    <div className="fw-bold">{selectedSampels.length} sampel dipilih</div>
+                                                    <div className="text-muted small">
+                                                        {orderSummary.totalItems} item • {formatCurrency(orderSummary.totalPrice)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-auto">
+                                            <div className="btn-group">
+                                                <button
+                                                    className="btn btn-outline-danger btn-sm"
+                                                    onClick={() => {
+                                                        setSelectedSampels([]);
+                                                        setQuantities({});
+                                                    }}
+                                                >
+                                                    Batalkan
+                                                </button>
+                                                <button
+                                                    className="btn btn-success btn-sm"
+                                                    onClick={() => setShowOrderModal(true)}
+                                                >
+                                                    <IconCheck size={16} className="me-1" />
+                                                    Pesan Sekarang
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
 
-                    <div className="row">
-                        <div className="col-12 mb-4">
-                            <div className="card">
-                                <div className="card-header">
-                                    <h3 className="card-title">Cari Sampel</h3>
-                                </div>
+                    {/* Search Section */}
+                    <div className="row mb-4">
+                        <div className="col-12">
+                            <div className="card shadow-sm">
                                 <div className="card-body">
-                                    <div className="row g-2 align-items-center">
-                                        <div className="col">
-                                            <label className="form-label">Cari berdasarkan nama sampel</label>
-                                            <div className="input-group">
-                                                <span className="input-group-text">
-                                                    <IconSearch size={18} />
+                                    <div className="row g-3 align-items-center">
+                                        <div className="col-md-8">
+                                            <label className="form-label fw-semibold">Cari Sampel</label>
+                                            <div className="input-group input-group-lg">
+                                                <span className="input-group-text bg-light border-end-0">
+                                                    <IconSearch size={20} />
                                                 </span>
                                                 <input
                                                     type="text"
-                                                    className="form-control"
+                                                    className="form-control border-start-0"
                                                     value={keywords}
                                                     onChange={(e) => setKeywords(e.target.value)}
                                                     onKeyDown={handleKeyDown}
-                                                    placeholder="Ketik nama sampel dan tekan Enter..."
+                                                    placeholder="Ketik nama sampel yang dicari..."
                                                     disabled={isLoading}
                                                 />
                                                 {keywords && (
@@ -429,12 +470,17 @@ export default function Orders() {
                                                         Hapus
                                                     </button>
                                                 )}
+                                            </div>
+                                        </div>
+                                        <div className="col-md-4">
+                                            <label className="form-label fw-semibold">&nbsp;</label>
+                                            <div className="d-grid gap-2">
                                                 <button
                                                     onClick={searchHandlder}
-                                                    className="btn btn-primary"
+                                                    className="btn btn-primary btn-lg"
                                                     disabled={isLoading}
                                                 >
-                                                    {isLoading ? "Mencari..." : "Cari"}
+                                                    {isLoading ? "Mencari..." : "Cari Sampel"}
                                                 </button>
                                             </div>
                                         </div>
@@ -442,26 +488,54 @@ export default function Orders() {
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div className="col-12">
-                            <div className="card">
-                                <div className="card-header">
-                                    <div className="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h3 className="card-title">Daftar Sampel Tersedia</h3>
-                                            <div className="text-muted">
-                                                <IconCategory size={16} className="me-1" />
-                                                {Object.keys(groupedSampels).length} kategori • {sampels.length} sampel
+                    {/* Categories Navigation */}
+                    {Object.keys(groupedSampels).length > 0 && (
+                        <div className="row mb-4">
+                            <div className="col-12">
+                                <div className="card shadow-sm">
+                                    <div className="card-body py-3">
+                                        <div className="d-flex justify-content-between align-items-center">
+                                            <div className="d-flex align-items-center">
+                                                <IconCategory size={20} className="text-primary me-2" />
+                                                <span className="fw-semibold">Kategori Sampel:</span>
+                                            </div>
+                                            <div className="d-flex gap-2">
+                                                <button
+                                                    onClick={toggleAllCategories}
+                                                    className="btn btn-outline-primary btn-sm"
+                                                    disabled={isLoading}
+                                                >
+                                                    {Object.values(expandedCategories).every(val => val)
+                                                        ? "Tutup Semua"
+                                                        : "Buka Semua"}
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Sampels List */}
+                    <div className="row">
+                        <div className="col-12">
+                            <div className="card shadow-sm">
+                                <div className="card-header bg-light">
+                                    <h3 className="card-title mb-0">
+                                        <IconListCheck size={20} className="me-2" />
+                                        Daftar Sampel Tersedia
+                                        <span className="badge bg-primary ms-2">{sampels.length}</span>
+                                    </h3>
                                 </div>
 
                                 <div className="card-body p-0">
                                     {isLoading ? (
                                         <div className="text-center p-5">
-                                            <div className="spinner-border text-primary" role="status"></div>
-                                            <p className="mt-2">Memuat data sampel...</p>
+                                            <div className="spinner-border text-primary" style={{ width: '3rem', height: '3rem' }} role="status"></div>
+                                            <p className="mt-3 text-muted">Memuat data sampel...</p>
                                         </div>
                                     ) : (
                                         <>
@@ -473,132 +547,128 @@ export default function Orders() {
                                                         const isPackage = isPackageCategory(categoryId);
                                                         const packageTotal = isPackage ? calculatePackageTotal(categoryId) : 0;
                                                         const allSelected = isPackage ? isAllSampelsSelected(categoryId) : false;
+                                                        const isExpanded = expandedCategories[categoryId];
 
                                                         return (
-                                                            <div key={categoryId} className="category-group">
+                                                            <div key={categoryId} className="category-group border-bottom">
                                                                 <div
-                                                                    className="category-header p-3 d-flex justify-content-between align-items-center cursor-pointer"
+                                                                    className="category-header p-4 d-flex justify-content-between align-items-center cursor-pointer"
                                                                     onClick={() => toggleCategory(categoryId)}
                                                                     style={{
-                                                                        backgroundColor: color.bg,
+                                                                        backgroundColor: isExpanded ? color.bg : '#f8f9fa',
                                                                         borderLeft: `4px solid ${color.text}`,
-                                                                        transition: 'all 0.2s ease'
+                                                                        transition: 'all 0.3s ease'
                                                                     }}
                                                                 >
-                                                                    <div className="d-flex align-items-center">
-                                                                        <div className="me-2" style={{ color: color.text }}>
-                                                                            {expandedCategories[categoryId] ?
-                                                                                <IconChevronUp /> :
-                                                                                <IconChevronDown />
-                                                                            }
+                                                                    <div className="d-flex align-items-center flex-fill">
+                                                                        <div className="me-3" style={{ color: color.text }}>
+                                                                            {isExpanded ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
                                                                         </div>
-                                                                        <h4
-                                                                            className="m-0 fw-semibold"
-                                                                            style={{ color: color.text }}
-                                                                        >
-                                                                            {categoryData.category.name}
-                                                                            {isPackage && (
-                                                                                <span className="badge bg-azure-lt text-azure ms-2">
-                                                                                    <IconPackage size={12} className="me-1" />
-                                                                                    Paket
-                                                                                </span>
-                                                                            )}
+                                                                        <div className="flex-fill">
+                                                                            <h4 className="m-0 fw-semibold" style={{ color: color.text }}>
+                                                                                {categoryData.category.name}
+                                                                                {isPackage && (
+                                                                                    <span className="badge bg-warning text-dark ms-2">
+                                                                                        <IconPackage size={12} className="me-1" />
+                                                                                        Paket
+                                                                                    </span>
+                                                                                )}
+                                                                            </h4>
                                                                             {hasSampels && (
-                                                                                <span
-                                                                                    className="badge ms-2"
-                                                                                    style={{
-                                                                                        backgroundColor: color.text,
-                                                                                        color: 'white'
-                                                                                    }}
-                                                                                >
-                                                                                    {categoryData.sampels.length} sampel
-                                                                                </span>
+                                                                                <div className="text-muted small mt-1">
+                                                                                    {categoryData.sampels.length} sampel tersedia
+                                                                                </div>
                                                                             )}
-                                                                        </h4>
+                                                                        </div>
                                                                     </div>
-                                                                    <div className="d-flex align-items-center">
+                                                                    <div className="d-flex align-items-center gap-3">
                                                                         {isPackage && hasSampels && packageTotal > 0 && (
-                                                                            <div className="me-3 fw-bold" style={{ color: color.text }}>
-                                                                                Total: {formatCurrency(packageTotal)}
+                                                                            <div className="fw-bold fs-5" style={{ color: color.text }}>
+                                                                                {formatCurrency(packageTotal)}
                                                                             </div>
                                                                         )}
-                                                                        <div className="text-muted small">
-                                                                            {hasSampels ?
-                                                                                `Klik untuk ${expandedCategories[categoryId] ? 'menutup' : 'membuka'}` :
-                                                                                'Tidak ada sampel'}
-                                                                        </div>
+                                                                        {isPackage && hasSampels && (
+                                                                            <button
+                                                                                className="btn btn-outline-primary btn-sm"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    toggleAllSampelsInPackage(categoryId);
+                                                                                }}
+                                                                            >
+                                                                                {allSelected ? 'Batal Pilih Semua' : 'Pilih Semua'}
+                                                                            </button>
+                                                                        )}
                                                                     </div>
                                                                 </div>
-                                                                {expandedCategories[categoryId] && hasSampels && (
-                                                                    <div className="table-responsive">
-                                                                        <table className="table table-hover table-mobile-md card-table mb-0">
-                                                                            <thead>
-                                                                                <tr>
-                                                                                    <th width="5%">
-                                                                                        {isPackage ? (
-                                                                                            <div className="form-check">
-                                                                                                <input
-                                                                                                    type="checkbox"
-                                                                                                    className="form-check-input"
-                                                                                                    checked={allSelected}
-                                                                                                    onChange={() => toggleAllSampelsInPackage(categoryId)}
-                                                                                                />
-                                                                                                <label className="form-check-label small">Semua</label>
-                                                                                            </div>
-                                                                                        ) : (
-                                                                                            "Pilih"
-                                                                                        )}
-                                                                                    </th>
-                                                                                    <th width="60%">Nama Parameter</th>
-                                                                                    <th width="20%">Harga</th>
-                                                                                    <th width="15%">Jumlah</th>
-                                                                                </tr>
-                                                                            </thead>
-                                                                            <tbody>
-                                                                                {categoryData.sampels.map((sampel, index) => (
-                                                                                    <tr key={`${categoryId}-${index}`}
-                                                                                        className={selectedSampels.includes(sampel.id) ? "table-success" : ""}>
-                                                                                        <td data-label="Pilih" className="text-center">
-                                                                                            <input
-                                                                                                type="checkbox"
-                                                                                                className="form-check-input"
-                                                                                                checked={selectedSampels.includes(sampel.id)}
-                                                                                                onChange={() => toggleSampelSelection(sampel.id)}
-                                                                                            />
-                                                                                        </td>
-                                                                                        <td data-label="Parameter">
-                                                                                            <div className="d-flex align-items-center">
-                                                                                                <div
-                                                                                                    className="flex-fill fw-medium"
-                                                                                                    style={{ color: color.text }}
-                                                                                                >
-                                                                                                    {sampel.parameter || 'Tidak ada parameter'}
+
+                                                                {isExpanded && hasSampels && (
+                                                                    <div className="p-3">
+                                                                        <div className="row g-3">
+                                                                            {categoryData.sampels.map((sampel) => (
+                                                                                <div key={sampel.id} className="col-lg-6 col-xl-4">
+                                                                                    <div className={`card sampel-card ${selectedSampels.includes(sampel.id) ? 'border-success' : ''}`}>
+                                                                                        <div className="card-body">
+                                                                                            <div className="d-flex justify-content-between align-items-start mb-2">
+                                                                                                <div className="form-check">
+                                                                                                    <input
+                                                                                                        type="checkbox"
+                                                                                                        className="form-check-input"
+                                                                                                        checked={selectedSampels.includes(sampel.id)}
+                                                                                                        onChange={() => toggleSampelSelection(sampel.id)}
+                                                                                                        id={`sampel-${sampel.id}`}
+                                                                                                    />
+                                                                                                    <label className="form-check-label fw-medium" htmlFor={`sampel-${sampel.id}`}>
+                                                                                                        {sampel.parameter || 'Tidak ada parameter'}
+                                                                                                    </label>
                                                                                                 </div>
                                                                                             </div>
-                                                                                        </td>
-                                                                                        <td data-label="Harga">
-                                                                                            <div className={sampel.price_sell ? "fw-semibold" : "text-muted"}>
-                                                                                                {sampel.price_sell ? formatCurrency(sampel.price_sell) : 'Harga tidak tersedia'}
+
+                                                                                            <div className="d-flex justify-content-between align-items-center mt-3">
+                                                                                                <div className="text-success fw-bold fs-5">
+                                                                                                    {sampel.price_sell ? formatCurrency(sampel.price_sell) : 'Gratis'}
+                                                                                                </div>
+
+                                                                                                {selectedSampels.includes(sampel.id) ? (
+                                                                                                    <div className="quantity-controls">
+                                                                                                        <div className="input-group input-group-sm" style={{ width: '120px' }}>
+                                                                                                            <button
+                                                                                                                className="btn btn-outline-secondary"
+                                                                                                                type="button"
+                                                                                                                onClick={() => decrementQuantity(sampel.id)}
+                                                                                                            >
+                                                                                                                <IconMinus size={14} />
+                                                                                                            </button>
+                                                                                                            <input
+                                                                                                                type="number"
+                                                                                                                className="form-control text-center"
+                                                                                                                value={quantities[sampel.id] || 1}
+                                                                                                                onChange={(e) => updateQuantity(sampel.id, e.target.value)}
+                                                                                                                min="1"
+                                                                                                                max="999"
+                                                                                                            />
+                                                                                                            <button
+                                                                                                                className="btn btn-outline-secondary"
+                                                                                                                type="button"
+                                                                                                                onClick={() => incrementQuantity(sampel.id)}
+                                                                                                            >
+                                                                                                                <IconPlus size={14} />
+                                                                                                            </button>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                ) : (
+                                                                                                    <button
+                                                                                                        className="btn btn-outline-primary btn-sm"
+                                                                                                        onClick={() => toggleSampelSelection(sampel.id)}
+                                                                                                    >
+                                                                                                        Pilih
+                                                                                                    </button>
+                                                                                                )}
                                                                                             </div>
-                                                                                        </td>
-                                                                                        <td data-label="Jumlah">
-                                                                                            {selectedSampels.includes(sampel.id) ? (
-                                                                                                <input
-                                                                                                    type="number"
-                                                                                                    min="1"
-                                                                                                    className="form-control form-control-sm"
-                                                                                                    value={quantities[sampel.id] || 1}
-                                                                                                    onChange={(e) => updateQuantity(sampel.id, e.target.value)}
-                                                                                                    style={{ width: '80px' }}
-                                                                                                />
-                                                                                            ) : (
-                                                                                                <span className="text-muted">-</span>
-                                                                                            )}
-                                                                                        </td>
-                                                                                    </tr>
-                                                                                ))}
-                                                                            </tbody>
-                                                                        </table>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -608,11 +678,11 @@ export default function Orders() {
                                             ) : (
                                                 <div className="text-center p-5">
                                                     <div className="d-flex flex-column align-items-center">
-                                                        <div className="bg-azure-lt p-4 rounded-circle mb-3">
-                                                            <IconSearch size={32} className="text-azure" />
+                                                        <div className="bg-light p-4 rounded-circle mb-3">
+                                                            <IconSearch size={48} className="text-muted" />
                                                         </div>
-                                                        <h3 className="h5">Data tidak ditemukan</h3>
-                                                        <p className="text-muted">
+                                                        <h3 className="h4 text-muted">Data tidak ditemukan</h3>
+                                                        <p className="text-muted mb-4">
                                                             {keywords
                                                                 ? `Tidak ada hasil untuk "${keywords}". Coba dengan kata kunci lain.`
                                                                 : "Belum ada data sampel yang tersedia."}
@@ -637,110 +707,200 @@ export default function Orders() {
                 </div>
             </div>
 
-            {/* Order Modal */}
-            {showOrderModal && (
-                <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                    <div className="modal-dialog modal-lg">
-                        <div className="modal-content">
-                            <div className="modal-header">
-                                <h5 className="modal-title">Konfirmasi Pesanan</h5>
-                                <button type="button" className="btn-close" onClick={() => setShowOrderModal(false)}></button>
-                            </div>
-                            <div className="modal-body">
-                                <div className="alert alert-info mb-3">
-                                    <IconInfoCircle size={18} className="me-2" />
-                                    Pastikan data pesanan sudah benar sebelum mengirimkan.
-                                </div>
+            {/* Modal Components */}
+            <OrderConfirmationModal
+                show={showOrderModal}
+                onClose={() => setShowOrderModal(false)}
+                selectedSampels={selectedSampels}
+                sampels={sampels}
+                quantities={quantities}
+                categories={categories}
+                formatCurrency={formatCurrency}
+                orderSummary={orderSummary}
+                isSubmitting={isSubmitting}
+                onSubmit={submitOrder}
+                onBackToEdit={() => setShowOrderModal(false)}
+            />
 
-                                <div className="table-responsive">
-                                    <table className="table table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th>Nama Sampel</th>
-                                                <th>Jumlah</th>
-                                                <th>Harga Satuan</th>
-                                                <th>Subtotal</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {selectedSampels.map(sampelId => {
-                                                const sampel = sampels.find(s => s.id === sampelId);
-                                                const qty = quantities[sampelId] || 1;
-                                                const subtotal = sampel && sampel.price_sell ? qty * sampel.price_sell : 0;
-
-                                                return sampel ? (
-                                                    <tr key={sampelId}>
-                                                        <td>{sampel.parameter}</td>
-                                                        <td>{qty}</td>
-                                                        <td>{sampel.price_sell ? formatCurrency(sampel.price_sell) : 'N/A'}</td>
-                                                        <td>{formatCurrency(subtotal)}</td>
-                                                    </tr>
-                                                ) : null;
-                                            })}
-                                        </tbody>
-                                        <tfoot>
-                                            <tr>
-                                                <th colSpan="3" className="text-end">Total:</th>
-                                                <th>{formatCurrency(orderSummary.totalPrice)}</th>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            </div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowOrderModal(false)}>
-                                    Kembali
-                                </button>
-                                <button
-                                    type="button"
-                                    className="btn btn-primary"
-                                    onClick={submitOrder}
-                                    disabled={isSubmitting}
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                                            Memproses...
-                                        </>
-                                    ) : (
-                                        'Konfirmasi Pesanan'
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <OrderSuccessModal
+                show={showSuccessModal}
+                onClose={handleSuccessModalClose}
+                orderDetails={orderDetails}
+                orderTotal={orderTotal}
+                formatCurrency={formatCurrency}
+                onPrint={handlePrint}
+                onOrderAgain={handleOrderAgain}
+                onViewOrders={handleViewOrders}
+            />
 
             <style jsx>{`
+                /* ===== FIX UNTUK FONT ===== */
+                body {
+                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 
+                                'Oxygen', 'Ubuntu', 'Cantarell', sans-serif !important;
+                    -webkit-font-smoothing: antialiased;
+                    -moz-osx-font-smoothing: grayscale;
+                }
+
+                /* ===== CUSTOM MODAL ORDER - FIXED ===== */
+                .custom-order-modal {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0, 0, 0, 0.6) !important; /* Lebih gelap */
+                    display: flex !important;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 1050;
+                    backdrop-filter: blur(5px); /* Efek blur background */
+                }
+
+                .custom-order-modal-dialog {
+                    width: 95%;
+                    max-width: 1400px;
+                    margin: 0 auto;
+                }
+
+                .custom-order-modal-content {
+                    background: white !important; /* Pastikan background putih */
+                    border: none;
+                    border-radius: 12px;
+                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+                    animation: customModalSlideIn 0.3s ease-out;
+                    overflow: hidden;
+                }
+
+                .custom-order-modal-header {
+                    background: linear-gradient(135deg, #198754, #157347) !important;
+                    color: white;
+                    border-radius: 12px 12px 0 0;
+                    padding: 1.5rem 2rem;
+                    border-bottom: none;
+                }
+
+                .custom-order-modal-body {
+                    background: white !important;
+                    padding: 2rem;
+                    max-height: 70vh;
+                    overflow-y: auto;
+                    color: #333 !important; /* Pastikan warna teks gelap */
+                }
+
+                .custom-order-modal-footer {
+                    background: white !important;
+                    border-top: 1px solid #e9ecef;
+                    padding: 1.5rem 2rem;
+                    border-radius: 0 0 12px 12px;
+                }
+
+                .custom-order-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    background: white !important;
+                }
+
+                .custom-order-table th {
+                    background-color: #f8f9fa !important;
+                    font-weight: 600;
+                    padding: 1rem;
+                    border-bottom: 2px solid #dee2e6;
+                    color: #333 !important;
+                }
+
+                .custom-order-table td {
+                    background: white !important;
+                    padding: 1rem;
+                    border-bottom: 1px solid #dee2e6;
+                    vertical-align: middle;
+                    color: #333 !important;
+                }
+
+                .custom-order-table tfoot th {
+                    background-color: #f8f9fa !important;
+                    font-size: 1.1em;
+                    color: #333 !important;
+                }
+
+                /* Pastikan semua teks visible */
+                .custom-order-modal-body * {
+                    color: #333 !important;
+                }
+
+                .modal-title {
+                    color: white !important;
+                    font-weight: 600;
+                }
+
+                /* Animasi */
+                @keyframes customModalSlideIn {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-50px) scale(0.9);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0) scale(1);
+                    }
+                }
+
+                /* Responsive */
+                @media (max-width: 768px) {
+                    .custom-order-modal-dialog {
+                        width: 98%;
+                        margin: 10px;
+                    }
+                    
+                    .custom-order-modal-body {
+                        padding: 1rem;
+                        max-height: 80vh;
+                    }
+                    
+                    .custom-order-table {
+                        font-size: 0.9em;
+                    }
+                    
+                    .custom-order-table th,
+                    .custom-order-table td {
+                        padding: 0.5rem;
+                    }
+                }
+
+                /* ===== STYLE EXISTING ===== */
                 .cursor-pointer {
                     cursor: pointer;
                 }
                 .category-group {
                     transition: all 0.3s ease;
-                    border-bottom: 1px solid #e9ecef;
-                }
-                .category-group:last-child {
-                    border-bottom: none;
                 }
                 .category-header:hover {
-                    opacity: 0.9;
                     transform: translateY(-1px);
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
                 }
-                .table th {
-                    border-top: none;
-                    font-weight: 600;
-                    font-size: 0.85rem;
-                    text-transform: uppercase;
-                    color: #5c6b7a;
-                    background-color: #f8f9fa;
+                .sampel-card {
+                    transition: all 0.3s ease;
+                    height: 100%;
                 }
-                .table tr:hover {
-                    background-color: #f8f9fa;
+                .sampel-card:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
                 }
-                .table-success {
-                    background-color: rgba(25, 135, 84, 0.1) !important;
+                .sampel-card.border-success {
+                    border-width: 2px !important;
+                }
+                .quantity-controls .input-group {
+                    width: 120px;
+                }
+                .quantity-controls input {
+                    text-align: center;
+                    font-family: inherit !important;
+                }
+                .floating-order-summary {
+                    position: sticky;
+                    top: 20px;
+                    z-index: 1000;
+                    margin-bottom: 20px;
                 }
                 .form-check-input {
                     width: 18px;
@@ -750,6 +910,11 @@ export default function Orders() {
                 .form-check-input:checked {
                     background-color: #198754;
                     border-color: #198754;
+                }
+                .form-check-label {
+                    cursor: pointer;
+                    user-select: none;
+                    font-family: inherit !important;
                 }
             `}</style>
         </LayoutAdmin>
