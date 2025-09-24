@@ -117,14 +117,8 @@ export default function Orders() {
         Object.keys(categoriesMap).forEach(categoryId => {
             groups[categoryId] = {
                 category: categoriesMap[categoryId],
-                sampels: []
+                sampels: sampelsData.filter(sampel => sampel.category_id == categoryId)
             };
-        });
-        sampelsData.forEach(sampel => {
-            const categoryId = sampel.category_id;
-            if (groups[categoryId]) {
-                groups[categoryId].sampels.push(sampel);
-            }
         });
         return groups;
     };
@@ -574,11 +568,12 @@ export default function Orders() {
                                                                                     </span>
                                                                                 )}
                                                                             </h4>
-                                                                            {hasSampels && (
-                                                                                <div className="text-muted small mt-1">
-                                                                                    {categoryData.sampels.length} sampel tersedia
-                                                                                </div>
-                                                                            )}
+                                                                            <div className="text-muted small mt-1">
+                                                                                {hasSampels
+                                                                                    ? `${categoryData.sampels.length} sampel tersedia`
+                                                                                    : 'Sampel belum tersedia'
+                                                                                }
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                     <div className="d-flex align-items-center gap-3">
@@ -601,74 +596,88 @@ export default function Orders() {
                                                                     </div>
                                                                 </div>
 
-                                                                {isExpanded && hasSampels && (
+                                                                {isExpanded && (
                                                                     <div className="p-3">
-                                                                        <div className="row g-3">
-                                                                            {categoryData.sampels.map((sampel) => (
-                                                                                <div key={sampel.id} className="col-lg-6 col-xl-4">
-                                                                                    <div className={`card sampel-card ${selectedSampels.includes(sampel.id) ? 'border-success' : ''}`}>
-                                                                                        <div className="card-body">
-                                                                                            <div className="d-flex justify-content-between align-items-start mb-2">
-                                                                                                <div className="form-check">
-                                                                                                    <input
-                                                                                                        type="checkbox"
-                                                                                                        className="form-check-input"
-                                                                                                        checked={selectedSampels.includes(sampel.id)}
-                                                                                                        onChange={() => toggleSampelSelection(sampel.id)}
-                                                                                                        id={`sampel-${sampel.id}`}
-                                                                                                    />
-                                                                                                    <label className="form-check-label fw-medium" htmlFor={`sampel-${sampel.id}`}>
-                                                                                                        {sampel.parameter || 'Tidak ada parameter'}
-                                                                                                    </label>
-                                                                                                </div>
-                                                                                            </div>
-
-                                                                                            <div className="d-flex justify-content-between align-items-center mt-3">
-                                                                                                <div className="text-success fw-bold fs-5">
-                                                                                                    {sampel.price_sell ? formatCurrency(sampel.price_sell) : 'Gratis'}
-                                                                                                </div>
-
-                                                                                                {selectedSampels.includes(sampel.id) ? (
-                                                                                                    <div className="quantity-controls">
-                                                                                                        <div className="input-group input-group-sm" style={{ width: '120px' }}>
-                                                                                                            <button
-                                                                                                                className="btn btn-outline-secondary"
-                                                                                                                type="button"
-                                                                                                                onClick={() => decrementQuantity(sampel.id)}
-                                                                                                            >
-                                                                                                                <IconMinus size={14} />
-                                                                                                            </button>
-                                                                                                            <input
-                                                                                                                type="number"
-                                                                                                                className="form-control text-center"
-                                                                                                                value={quantities[sampel.id] || 1}
-                                                                                                                onChange={(e) => updateQuantity(sampel.id, e.target.value)}
-                                                                                                                min="1"
-                                                                                                                max="999"
-                                                                                                            />
-                                                                                                            <button
-                                                                                                                className="btn btn-outline-secondary"
-                                                                                                                type="button"
-                                                                                                                onClick={() => incrementQuantity(sampel.id)}
-                                                                                                            >
-                                                                                                                <IconPlus size={14} />
-                                                                                                            </button>
-                                                                                                        </div>
+                                                                        {hasSampels ? (
+                                                                            <div className="row g-3">
+                                                                                {categoryData.sampels.map((sampel) => (
+                                                                                    <div key={sampel.id} className="col-lg-6 col-xl-4">
+                                                                                        <div className={`card sampel-card ${selectedSampels.includes(sampel.id) ? 'border-success' : ''}`}>
+                                                                                            <div className="card-body">
+                                                                                                <div className="d-flex justify-content-between align-items-start mb-2">
+                                                                                                    <div className="form-check">
+                                                                                                        <input
+                                                                                                            type="checkbox"
+                                                                                                            className="form-check-input"
+                                                                                                            checked={selectedSampels.includes(sampel.id)}
+                                                                                                            onChange={() => toggleSampelSelection(sampel.id)}
+                                                                                                            id={`sampel-${sampel.id}`}
+                                                                                                        />
+                                                                                                        <label className="form-check-label fw-medium" htmlFor={`sampel-${sampel.id}`}>
+                                                                                                            {sampel.parameter || 'Tidak ada parameter'}
+                                                                                                        </label>
                                                                                                     </div>
-                                                                                                ) : (
-                                                                                                    <button
-                                                                                                        className="btn btn-outline-primary btn-sm"
-                                                                                                        onClick={() => toggleSampelSelection(sampel.id)}
-                                                                                                    >
-                                                                                                        Pilih
-                                                                                                    </button>
-                                                                                                )}
+                                                                                                </div>
+
+                                                                                                <div className="d-flex justify-content-between align-items-center mt-3">
+                                                                                                    <div className="text-success fw-bold fs-5">
+                                                                                                        {sampel.price_sell ? formatCurrency(sampel.price_sell) : 'Gratis'}
+                                                                                                    </div>
+
+                                                                                                    {selectedSampels.includes(sampel.id) ? (
+                                                                                                        <div className="quantity-controls">
+                                                                                                            <div className="input-group input-group-sm" style={{ width: '120px' }}>
+                                                                                                                <button
+                                                                                                                    className="btn btn-outline-secondary"
+                                                                                                                    type="button"
+                                                                                                                    onClick={() => decrementQuantity(sampel.id)}
+                                                                                                                >
+                                                                                                                    <IconMinus size={14} />
+                                                                                                                </button>
+                                                                                                                <input
+                                                                                                                    type="number"
+                                                                                                                    className="form-control text-center"
+                                                                                                                    value={quantities[sampel.id] || 1}
+                                                                                                                    onChange={(e) => updateQuantity(sampel.id, e.target.value)}
+                                                                                                                    min="1"
+                                                                                                                    max="999"
+                                                                                                                />
+                                                                                                                <button
+                                                                                                                    className="btn btn-outline-secondary"
+                                                                                                                    type="button"
+                                                                                                                    onClick={() => incrementQuantity(sampel.id)}
+                                                                                                                >
+                                                                                                                    <IconPlus size={14} />
+                                                                                                                </button>
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    ) : (
+                                                                                                        <button
+                                                                                                            className="btn btn-outline-primary btn-sm"
+                                                                                                            onClick={() => toggleSampelSelection(sampel.id)}
+                                                                                                        >
+                                                                                                            Pilih
+                                                                                                        </button>
+                                                                                                    )}
+                                                                                                </div>
                                                                                             </div>
                                                                                         </div>
                                                                                     </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className="text-center p-5">
+                                                                                <div className="d-flex flex-column align-items-center">
+                                                                                    <div className="bg-light p-4 rounded-circle mb-3">
+                                                                                        <IconInfoCircle size={48} className="text-muted" />
+                                                                                    </div>
+                                                                                    <h4 className="h5 text-muted">Sampel Belum Tersedia</h4>
+                                                                                    <p className="text-muted mb-0">
+                                                                                        Untuk kategori {categoryData.category.name} saat ini belum ada sampel yang tersedia.
+                                                                                    </p>
                                                                                 </div>
-                                                                            ))}
-                                                                        </div>
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -685,7 +694,7 @@ export default function Orders() {
                                                         <p className="text-muted mb-4">
                                                             {keywords
                                                                 ? `Tidak ada hasil untuk "${keywords}". Coba dengan kata kunci lain.`
-                                                                : "Belum ada data sampel yang tersedia."}
+                                                                : "Belum ada data kategori sampel yang tersedia."}
                                                         </p>
                                                         {keywords && (
                                                             <button
