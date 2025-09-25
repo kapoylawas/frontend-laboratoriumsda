@@ -12,7 +12,6 @@ import {
     IconShoppingCart,
     IconCheck,
     IconPackage,
-    IconCircleCheck,
     IconPlus,
     IconMinus,
     IconListCheck,
@@ -20,6 +19,7 @@ import {
 import { toast } from 'react-toastify';
 import OrderConfirmationModal from './orderConfirmationModal';
 import OrderSuccessModal from './orderSuccessModal';
+import { useNavigate } from 'react-router-dom';
 
 export default function Orders() {
     const [sampels, setSampel] = useState([]);
@@ -345,9 +345,11 @@ export default function Orders() {
         setOrderTotal(0);
     };
 
+    const navigate = useNavigate();
+
     const handleViewOrders = () => {
         // Navigasi ke halaman daftar pesanan
-        window.location.href = '/admin/orders-list';
+        navigate('/cart');
     };
 
     return (
