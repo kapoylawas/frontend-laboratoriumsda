@@ -81,7 +81,7 @@ export default function Header() {
                                     </Link>
                                 </li>
 
-                                {/* Menu Order Pesanan - Ditambahkan di sini */}
+                                {/* Menu Order Pesanan */}
                                 <li className={`nav-item ${location.pathname === "/orders" || location.pathname.startsWith("/orders/") ? "active" : ""}`}>
                                     <Link className="nav-link" to="/orders">
                                         <span className="nav-link-icon d-md-none d-lg-inline-block">
@@ -93,6 +93,36 @@ export default function Header() {
                                             </svg>
                                         </span>
                                         <span className="nav-link-title">ORDER</span>
+                                    </Link>
+                                </li>
+
+                                {/* Menu Cart - Ditambahkan di sini */}
+                                {/* <li className={`nav-item ${location.pathname === "/cart" ? "active" : ""}`}>
+                                    <Link className="nav-link" to="/cart">
+                                        <span className="nav-link-icon d-md-none d-lg-inline-block">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                <path d="M6 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                                                <path d="M17 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                                                <path d="M17 17h-11v-14h-2" />
+                                                <path d="M6 5l14 1l-1 7h-13" />
+                                            </svg>
+                                        </span>
+                                        <span className="nav-link-title">CART</span>
+                                    </Link>
+                                </li> */}
+
+                                {/* Menu History cart - Ditambahkan di sini */}
+                                <li className={`nav-item ${location.pathname === "/cart" || location.pathname.startsWith("/cart/") ? "active" : ""}`}>
+                                    <Link className="nav-link" to="/cart">
+                                        <span className="nav-link-icon d-md-none d-lg-inline-block">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                <path d="M12 8l0 4l2 2" />
+                                                <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" />
+                                            </svg>
+                                        </span>
+                                        <span className="nav-link-title">HISTORY</span>
                                     </Link>
                                 </li>
 

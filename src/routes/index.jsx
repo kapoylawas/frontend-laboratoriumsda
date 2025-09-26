@@ -15,6 +15,7 @@ import Sampels from "../views/sampels/index.jsx";
 import Users from "../views/user/index.jsx";
 import Profile from "../views/profile/index.jsx";
 import Orders from "../views/orders/index.jsx";
+import Cart from "../views/card/index.jsx";
 
 export default function AppRoutes() {
 
@@ -51,6 +52,11 @@ export default function AppRoutes() {
       {/* route "/orders" */}
       <Route path="/orders" element={
         token ? <Orders /> : <Navigate to="/" replace />
+      } />
+
+      {/* route "/cart" */}
+      <Route path="/cart" element={
+        token ? <Cart /> : <Navigate to="/" replace />
       } />
 
       {/* route "/categories" */}

@@ -48,7 +48,7 @@ export default function UserEdit({ fetchData, userId }) {
                     phone: user.phone || "",
                     gender: user.gender || "",
                     alamat: user.alamat || "",
-                    password: user.alamat || "",
+                    password: user.password || "",
                 });
             } catch (error) {
                 console.error("There was an error fetching the user data!", error);
