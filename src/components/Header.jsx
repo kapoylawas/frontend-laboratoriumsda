@@ -97,7 +97,7 @@ export default function Header() {
                                 </li>
 
                                 {/* Menu Cart - Ditambahkan di sini */}
-                                {/* <li className={`nav-item ${location.pathname === "/cart" ? "active" : ""}`}>
+                                <li className={`nav-item ${location.pathname === "/cart" ? "active" : ""}`}>
                                     <Link className="nav-link" to="/cart">
                                         <span className="nav-link-icon d-md-none d-lg-inline-block">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -110,10 +110,10 @@ export default function Header() {
                                         </span>
                                         <span className="nav-link-title">CART</span>
                                     </Link>
-                                </li> */}
+                                </li>
 
                                 {/* Menu History cart - Ditambahkan di sini */}
-                                <li className={`nav-item ${location.pathname === "/cart" || location.pathname.startsWith("/cart/") ? "active" : ""}`}>
+                                {/* <li className={`nav-item ${location.pathname === "/cart" || location.pathname.startsWith("/cart/") ? "active" : ""}`}>
                                     <Link className="nav-link" to="/cart">
                                         <span className="nav-link-icon d-md-none d-lg-inline-block">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -124,7 +124,7 @@ export default function Header() {
                                         </span>
                                         <span className="nav-link-title">HISTORY</span>
                                     </Link>
-                                </li>
+                                </li> */}
 
                                 {user?.role_id === 2 && (
                                     <li className={`nav-item dropdown ${location.pathname === "/categories" || location.pathname === "/sampels" || location.pathname === "/users" ? "active" : ""}`}>
