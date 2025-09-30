@@ -17,18 +17,55 @@ Template starter untuk proyek React modern dengan Vite, TypeScript, dan ESLint y
 ## 🛠️ Panduan Instalasi
 
 ### Prasyarat
-- Node.js ≥18.x
+- Node.js ≥20.x
 - npm/yarn/pnpm
 
 ### Langkah Setup
 ```bash
-# 1. Clone repo (jika menggunakan template ini)
-git clone https://github.com/username/repo.git
-cd nama-project
-
+# 1.
+install nginx
 # 2. Install dependencies
+curl -sL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+# 3.
+sudo apt-get install -y nodejs
+node -v
+# 5.
+cd /var/www
+# 6.
+git clone https://github.com/kapoylawas/frontend-laboratoriumsda.git
+# 7.
+cd frontend-laboratoriumsda
+# 8.
 npm install
-# atau
-yarn
-# atau
-pnpm install
+# 9.
+nano .env
+
+copas di bawah ini :
+
+VITE_APP_BASEURL=https://api-lab.sidoarjokab.go.id
+# 10.
+npm run build
+# 11.
+cd /etc/nginx/sites-available
+
+copas di bawah ini :
+
+server {
+    listen 80 default_server;
+    server_name express-react.my.id;
+
+    root /var/www/frontend-pos/dist;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    error_page 404 /index.html;
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+# 12.
+sudo service nginx restart
