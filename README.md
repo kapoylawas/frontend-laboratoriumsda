@@ -54,7 +54,7 @@ server {
     listen 80 default_server;
     server_name express-react.my.id;
 
-    root /var/www/frontend-pos/dist;
+    root /var/www/frontend-laboratoriumsda/dist;
     index index.html;
 
     location / {
