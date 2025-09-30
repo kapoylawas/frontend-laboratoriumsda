@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { FaLock, FaArrowLeft, FaHome } from "react-icons/fa";
-import "./Forbidden.css"; // File CSS terpisah
+import "./forbidden.css"; // File CSS terpisah
 
 const Forbidden = () => {
     const navigate = useNavigate();
