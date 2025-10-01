@@ -20,7 +20,7 @@ export default function Aktifasi() {
             }
 
             try {
-                const response = await fetch(`http://localhost:3001/api/activate/${token}`, {
+                const response = await fetch(`https://api-lab.sidoarjokab.go.id/api/activate/${token}`, {
                     method: "GET",
                     headers: {
                         "Content-Type": "application/json",
