@@ -54,7 +54,7 @@ export default function Orders() {
         { bg: '#fff7ed', text: '#ea580c', border: '#ffedd5', light: '#f97316' },
     ];
 
-    const packageCategories = [39, 40];
+    const packageCategories = [1, 2];
 
     const getCategoryColor = (categoryId) => {
         const index = parseInt(categoryId) % categoryColors.length;
