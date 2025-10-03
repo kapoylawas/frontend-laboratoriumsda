@@ -1,0 +1,789 @@
+/* Professional Color Scheme untuk Badge */
+
+.category-badge.professional-blue {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    border: 2px solid #60a5fa;
+    color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.category-badge.professional-teal {
+    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+    border: 2px solid #2dd4bf;
+    color: white;
+    box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+}
+
+.category-badge.professional-indigo {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    border: 2px solid #818cf8;
+    color: white;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.category-badge.professional-slate {
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    border: 2px solid #94a3b8;
+    color: white;
+    box-shadow: 0 4px 12px rgba(100, 116, 139, 0.3);
+}
+
+.category-badge.professional-emerald {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: 2px solid #34d399;
+    color: white;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.category-badge.professional-violet {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    border: 2px solid #a78bfa;
+    color: white;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+
+/* Styling untuk tombol merah di modal */
+
+.modal-footer-custom .btn-outline-danger {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(254, 242, 242, 0.8) 100%);
+    border: 2px solid #ef4444;
+    color: #dc2626;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-footer-custom .btn-outline-danger:hover {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border-color: #ef4444;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -8px rgba(239, 68, 68, 0.4);
+}
+
+.modal-footer-custom .btn-outline-danger:active {
+    transform: translateY(0);
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+.modal-footer-custom .btn-outline-danger:disabled {
+    background: rgba(248, 250, 252, 0.6);
+    border-color: #d1d5db;
+    color: #9ca3af;
+    transform: none;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+
+/* Styling untuk tombol hijau di modal */
+
+.modal-footer-custom .btn-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: 2px solid #10b981;
+    color: white;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-footer-custom .btn-success:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    border-color: #059669;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -8px rgba(16, 185, 129, 0.4);
+}
+
+.modal-footer-custom .btn-success:active {
+    transform: translateY(0);
+    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+}
+
+.modal-footer-custom .btn-success:disabled {
+    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+    border-color: #9ca3af;
+    transform: none;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+
+/* Styling untuk tombol secondary di modal */
+
+.modal-footer-custom .btn-outline-secondary {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.8) 100%);
+    border: 2px solid #64748b;
+    color: #475569;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-footer-custom .btn-outline-secondary:hover {
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    color: white;
+    border-color: #64748b;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -8px rgba(100, 116, 139, 0.4);
+}
+
+
+/* Modal LG Size Custom */
+
+.modal-lg-custom {
+    max-width: 800px;
+}
+
+.modal-dialog.modal-lg-custom {
+    max-width: 800px;
+    margin: 1.75rem auto;
+}
+
+@media (min-width: 992px) {
+    .modal-lg-custom {
+        max-width: 800px;
+    }
+}
+
+
+/* Modal XL Size Custom */
+
+.modal-xl-custom {
+    max-width: 1140px;
+}
+
+.modal-dialog.modal-xl-custom {
+    max-width: 1140px;
+    margin: 1.75rem auto;
+}
+
+@media (min-width: 1200px) {
+    .modal-xl-custom {
+        max-width: 1140px;
+    }
+}
+
+
+/* Modal Backdrop Custom - Warna Soft & Nyaman */
+
+.modal-backdrop-custom {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1040;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.15) 0%, rgba(59, 130, 246, 0.12) 25%, rgba(14, 165, 233, 0.1) 50%, rgba(45, 212, 191, 0.08) 75%, rgba(34, 197, 94, 0.06) 100%);
+    backdrop-filter: blur(8px);
+}
+
+.modal-backdrop-custom.fade {
+    opacity: 0;
+}
+
+.modal-backdrop-custom.show {
+    opacity: 1;
+}
+
+
+/* Modal Container Custom */
+
+.modal-custom {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1050;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    outline: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modal-custom.fade {
+    opacity: 0;
+    transition: opacity 0.25s ease-in-out;
+}
+
+.modal-custom.show {
+    opacity: 1;
+}
+
+.modal-custom .modal-dialog {
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform: translateY(-15px) scale(0.98);
+    opacity: 0;
+}
+
+.modal-custom.show .modal-dialog {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+}
+
+
+/* Modal Content Custom - Warna Soft & Elegant */
+
+.modal-content-custom {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    pointer-events: auto;
+    background: linear-gradient(165deg, #ffffff 0%, #fafbfc 30%, #f7f9fc 60%, #f5f8ff 100%);
+    background-clip: padding-box;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 16px;
+    box-shadow: 0 20px 40px -10px rgba(79, 70, 229, 0.15);
+    outline: 0;
+    overflow: hidden;
+}
+
+
+/* Modal Header Custom - Soft & Clean */
+
+.modal-header-custom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.75rem 2rem 1.25rem;
+    border-bottom: 1px solid rgba(241, 245, 249, 0.8);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 50%, rgba(241, 245, 249, 0.85) 100%);
+    backdrop-filter: blur(12px);
+    position: relative;
+}
+
+.modal-header-custom::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #10b981 75%, #84cc16 100%);
+    opacity: 0.7;
+    border-radius: 16px 16px 0 0;
+}
+
+.modal-header-custom .modal-title {
+    font-weight: 700;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    font-size: 1.3rem;
+    letter-spacing: -0.02em;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.modal-header-custom .btn-close-custom {
+    padding: 0.75rem;
+    margin: -0.75rem -0.75rem -0.75rem auto;
+    background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%2364748b'%3e%3cpath d='M.293.293a1 1 0 011.414 0L8 6.586 14.293.293a1 1 0 111.414 1.414L9.414 8l6.293 6.293a1 1 0 01-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 01-1.414-1.414L6.586 8 .293 1.707a1 1 0 010-1.414z'/%3e%3c/svg%3e") center/1.2em auto no-repeat;
+    border: 1px solid rgba(226, 232, 240, 0.6);
+    border-radius: 10px;
+    opacity: 0.7;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background-color: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(8px);
+}
+
+.modal-header-custom .btn-close-custom:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(148, 163, 184, 0.4);
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 4px 12px rgba(100, 116, 139, 0.15);
+}
+
+
+/* Modal Body Custom - Clean & Readable */
+
+.modal-body-custom {
+    position: relative;
+    flex: 1 1 auto;
+    padding: 2rem;
+    background: linear-gradient(135deg, #ffffff 0%, #fcfdfe 100%);
+    color: #374151;
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+
+/* Modal Footer Custom - Soft & Professional */
+
+.modal-footer-custom {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid rgba(241, 245, 249, 0.8);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.85) 50%, rgba(241, 245, 249, 0.8) 100%);
+    backdrop-filter: blur(12px);
+    gap: 0.75rem;
+}
+
+.modal-footer-custom>* {
+    margin: 0;
+}
+
+
+/* Modal Status Bar Custom - Soft Gradient */
+
+.modal-status-custom {
+    height: 4px;
+    border-radius: 16px 16px 0 0;
+    background: linear-gradient(90deg, #8b5cf6 0%, #3b82f6 25%, #06b6d4 50%, #10b981 75%, #84cc16 100%);
+    opacity: 0.8;
+}
+
+.modal-status-custom.bg-success {
+    background: linear-gradient(90deg, #22c55e 0%, #16a34a 25%, #15803d 50%, #166534 75%, #14532d 100%) !important;
+}
+
+.modal-status-custom.bg-danger {
+    background: linear-gradient(90deg, #f97316 0%, #ea580c 25%, #c2410c 50%, #9a3412 75%, #7c2d12 100%) !important;
+}
+
+.modal-status-custom.bg-warning {
+    background: linear-gradient(90deg, #eab308 0%, #ca8a04 25%, #a16207 50%, #854d0e 75%, #713f12 100%) !important;
+}
+
+.modal-status-custom.bg-info {
+    background: linear-gradient(90deg, #0ea5e9 0%, #0284c7 25%, #0369a1 50%, #075985 75%, #0c4a6e 100%) !important;
+}
+
+.modal-status-custom.bg-primary {
+    background: linear-gradient(90deg, #6366f1 0%, #4f46e5 25%, #4338ca 50%, #3730a3 75%, #312e81 100%) !important;
+}
+
+
+/* Responsive adjustments untuk modal custom */
+
+@media (max-width: 991.98px) {
+    .modal-lg-custom {
+        max-width: 90%;
+        margin: 1rem auto;
+    }
+    .modal-xl-custom {
+        max-width: 90%;
+        margin: 1rem auto;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .modal-lg-custom,
+    .modal-xl-custom {
+        max-width: 95%;
+        margin: 0.5rem;
+    }
+    .modal-header-custom {
+        padding: 1.5rem 1.5rem 1rem;
+    }
+    .modal-body-custom {
+        padding: 1.5rem;
+    }
+    .modal-footer-custom {
+        padding: 1.25rem 1.5rem;
+        flex-direction: column;
+    }
+    .modal-footer-custom .btn {
+        width: 100%;
+    }
+}
+
+
+/* Animation for modal custom - Smooth & Natural */
+
+@keyframes modalGentleAppear {
+    from {
+        transform: translateY(-20px) scale(0.96);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+.modal-custom.show .modal-dialog {
+    animation: modalGentleAppear 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+
+/* Enhanced button styling untuk modal - Soft & Modern */
+
+.modal-footer-custom .btn {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border: 1px solid transparent;
+    position: relative;
+    overflow: hidden;
+    font-size: 0.9rem;
+    letter-spacing: 0.02em;
+}
+
+.modal-footer-custom .btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transition: left 0.6s;
+}
+
+.modal-footer-custom .btn:hover::before {
+    left: 100%;
+}
+
+.modal-footer-custom .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -8px rgba(79, 70, 229, 0.25), 0 4px 12px -4px rgba(59, 130, 246, 0.15);
+}
+
+.modal-footer-custom .btn:active {
+    transform: translateY(0);
+    transition: transform 0.1s;
+}
+
+
+/* Custom scrollbar untuk modal body - Soft & Elegant */
+
+.modal-body-custom::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modal-body-custom::-webkit-scrollbar-track {
+    background: linear-gradient(180deg, rgba(241, 245, 249, 0.8) 0%, rgba(226, 232, 240, 0.6) 100%);
+    border-radius: 3px;
+}
+
+.modal-body-custom::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(148, 163, 184, 0.6) 0%, rgba(100, 116, 139, 0.4) 100%);
+    border-radius: 3px;
+    border: 1px solid rgba(241, 245, 249, 0.3);
+}
+
+.modal-body-custom::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(100, 116, 139, 0.5) 0%, rgba(71, 85, 105, 0.3) 100%);
+}
+
+
+/* Loading state untuk modal - Soft & Modern */
+
+.modal-processing .modal-content-custom {
+    position: relative;
+}
+
+.modal-processing .modal-content-custom::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(248, 250, 252, 0.9) 100%);
+    border-radius: 16px;
+    z-index: 10;
+    backdrop-filter: blur(4px);
+}
+
+.modal-processing .modal-content-custom::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 3rem;
+    height: 3rem;
+    border: 3px solid #3b82f6;
+    border-top: 3px solid transparent;
+    border-right: 3px solid transparent;
+    border-radius: 50%;
+    animation: spin 1.2s linear infinite;
+    z-index: 11;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+}
+
+
+/* Enhanced state variants untuk modal - Soft Colors */
+
+.modal-success .modal-status-custom {
+    background: linear-gradient(90deg, #22c55e 0%, #16a34a 25%, #15803d 50%, #166534 75%, #14532d 100%) !important;
+}
+
+.modal-success .modal-header-custom {
+    background: linear-gradient(135deg, rgba(240, 253, 244, 0.9) 0%, rgba(220, 252, 231, 0.85) 50%, rgba(187, 247, 208, 0.8) 100%);
+}
+
+.modal-success .modal-header-custom::before {
+    background: linear-gradient(90deg, #22c55e 0%, #16a34a 25%, #15803d 50%, #166534 75%, #14532d 100%);
+}
+
+.modal-danger .modal-status-custom {
+    background: linear-gradient(90deg, #f97316 0%, #ea580c 25%, #c2410c 50%, #9a3412 75%, #7c2d12 100%) !important;
+}
+
+.modal-danger .modal-header-custom {
+    background: linear-gradient(135deg, rgba(254, 242, 242, 0.9) 0%, rgba(254, 226, 226, 0.85) 50%, rgba(252, 165, 165, 0.8) 100%);
+}
+
+.modal-danger .modal-header-custom::before {
+    background: linear-gradient(90deg, #f97316 0%, #ea580c 25%, #c2410c 50%, #9a3412 75%, #7c2d12 100%);
+}
+
+.modal-warning .modal-status-custom {
+    background: linear-gradient(90deg, #eab308 0%, #ca8a04 25%, #a16207 50%, #854d0e 75%, #713f12 100%) !important;
+}
+
+.modal-warning .modal-header-custom {
+    background: linear-gradient(135deg, rgba(255, 251, 235, 0.9) 0%, rgba(254, 243, 199, 0.85) 50%, rgba(253, 230, 138, 0.8) 100%);
+}
+
+.modal-warning .modal-header-custom::before {
+    background: linear-gradient(90deg, #eab308 0%, #ca8a04 25%, #a16207 50%, #854d0e 75%, #713f12 100%);
+}
+
+.modal-info .modal-status-custom {
+    background: linear-gradient(90deg, #0ea5e9 0%, #0284c7 25%, #0369a1 50%, #075985 75%, #0c4a6e 100%) !important;
+}
+
+.modal-info .modal-header-custom {
+    background: linear-gradient(135deg, rgba(239, 246, 255, 0.9) 0%, rgba(219, 234, 254, 0.85) 50%, rgba(191, 219, 254, 0.8) 100%);
+}
+
+.modal-info .modal-header-custom::before {
+    background: linear-gradient(90deg, #0ea5e9 0%, #0284c7 25%, #0369a1 50%, #075985 75%, #0c4a6e 100%);
+}
+
+
+/* Print optimization untuk modal receipt */
+
+@media print {
+    .modal-backdrop-custom {
+        display: none !important;
+    }
+    .modal-custom {
+        position: static;
+        display: block !important;
+        height: auto;
+        padding: 0;
+    }
+    .modal-dialog {
+        max-width: none !important;
+        margin: 0 !important;
+    }
+    .modal-content-custom {
+        box-shadow: none;
+        border: 1px solid #d1d5db;
+        border-radius: 0;
+        background: white !important;
+    }
+    .modal-header-custom,
+    .modal-footer-custom {
+        display: none !important;
+    }
+    .modal-body-custom {
+        padding: 1rem;
+        background: white !important;
+    }
+}
+
+
+/* Light mode yang konsisten */
+
+.modal-content-custom {
+    background: linear-gradient(165deg, #ffffff 0%, #fafbfc 30%, #f7f9fc 60%, #f5f8ff 100%);
+    color: #374151;
+}
+
+.modal-header-custom {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 50%, rgba(241, 245, 249, 0.85) 100%);
+    color: #1e293b;
+}
+
+.modal-body-custom {
+    background: linear-gradient(135deg, #ffffff 0%, #fcfdfe 100%);
+    color: #374151;
+}
+
+.modal-footer-custom {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.85) 50%, rgba(241, 245, 249, 0.8) 100%);
+}
+
+
+/* Accessibility improvements */
+
+.modal-custom:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.modal-content-custom:focus {
+    outline: none;
+}
+
+
+/* High contrast mode support */
+
+@media (prefers-contrast: high) {
+    .modal-content-custom {
+        border: 2px solid #1e293b;
+        background: #ffffff;
+    }
+    .modal-header-custom {
+        border-bottom: 2px solid #1e293b;
+        background: #f8fafc;
+    }
+    .modal-footer-custom {
+        border-top: 2px solid #1e293b;
+        background: #f8fafc;
+    }
+}
+
+
+/* Reduced motion support */
+
+@media (prefers-reduced-motion: reduce) {
+    .modal-custom .modal-dialog {
+        transition: none;
+    }
+    .modal-custom.show .modal-dialog {
+        animation: none;
+        transform: none;
+    }
+    .modal-footer-custom .btn:hover {
+        transform: none;
+    }
+    .modal-header-custom .btn-close-custom:hover {
+        transform: none;
+    }
+}
+
+
+/* Spin animation untuk loading */
+
+@keyframes spin {
+    0% {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+    100% {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+
+/* CSS untuk kategori dan card parameter (tetap sama) */
+
+.unpaid-category {
+    border-left-color: #f59e0b;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border: 1px solid #fcd34d;
+}
+
+
+/* Styling untuk kategori yang sudah lunas (hijau professional) */
+
+.paid-category {
+    position: relative;
+    opacity: 0.95;
+    border-left-color: #10b981 !important;
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border: 1px solid #a7f3d0;
+    overflow: hidden;
+}
+
+.paid-category::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.03) 0%, rgba(16, 185, 129, 0.01) 100%);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.paid-category .watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    font-size: 3rem;
+    font-weight: 900;
+    color: rgba(16, 185, 129, 0.08);
+    z-index: 1;
+    pointer-events: none;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    /* Pastikan watermark hanya muncul ketika kategori expanded */
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+
+/* Ketika kategori collapsed, sembunyikan watermark */
+
+.paid-category:not(.expanded) .watermark {
+    opacity: 0;
+}
+
+.paid-category .watermark::before {
+    content: '✓ ';
+    margin-right: 8px;
+    font-size: 2.5rem;
+}
+
+.paid-category .category-header {
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border-bottom: 2px solid #a7f3d0;
+    position: relative;
+    z-index: 2;
+}
+
+.paid-category .category-header:hover {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+}
+
+.col-md-6.col-lg-4.mb-3.mt-3 {
+    margin-top: 1rem !important;
+}
+
+.category-content .card.card-sm {
+    margin-top: 1rem;
+}
+
+.card.card-sm.hover-shadow {
+    transition: all 0.3s ease;
+    margin-top: 0.5rem;
+}
+
+.card.card-sm.hover-shadow:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-outline-danger-custom {
+    color: #dc3545 !important;
+    border-color: #dc3545 !important;
+}
+
+.btn-outline-danger-custom:hover {
+    color: #fff !important;
+    background-color: #dc3545 !important;
+}
+
+.btn-outline-danger-custom:disabled {
+    color: #6c757d !important;
+    border-color: #6c757d !important;
+    background-color: transparent !important;
+}

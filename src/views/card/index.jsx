@@ -19,8 +19,12 @@ import {
     FiCalendar,
     FiAlertTriangle,
     FiClock,
-    FiArrowRight
+    FiArrowRight,
+    FiPrinter,
+    FiEdit,
+    FiUser
 } from "react-icons/fi";
+import "./cart.css"
 
 export default function Cart() {
     const [data, setData] = useState([]);
@@ -29,6 +33,15 @@ export default function Cart() {
     const [deletingId, setDeletingId] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [categoryToPay, setCategoryToPay] = useState(null);
+    const [paymentData, setPaymentData] = useState({
+        cash: 0,
+        discount: 0,
+        grand_total: 0
+    });
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+    const [userData, setUserData] = useState(null);
 
     const userCookie = Cookies.get("user");
     const parsedData = JSON.parse(userCookie);
@@ -43,6 +56,9 @@ export default function Cart() {
             try {
                 const response = await Api.get(`/api/sampels-by-user/${iduser}`);
                 setData(response.data.data);
+
+                // Simpan data user untuk print
+                setUserData(parsedData);
 
                 // Set semua kategori sebagai expanded secara default
                 const categories = [...new Set(response.data.data.map(item => item.sampel.category.name))];
@@ -138,36 +154,419 @@ export default function Cart() {
         }, {});
     };
 
+    // Fungsi untuk membuka modal pembayaran
+    const openPaymentModal = (categoryName) => {
+        const categoryData = groupedData[categoryName];
+        if (!categoryData || !categoryData.hasUnpaidItems) return;
+
+        setCategoryToPay(categoryName);
+        setPaymentData({
+            cash: categoryData.unpaidTotal,
+            discount: 0,
+            grand_total: categoryData.unpaidTotal
+        });
+        setShowPaymentModal(true);
+    };
+
+    // Fungsi untuk menutup modal pembayaran
+    const closePaymentModal = () => {
+        setShowPaymentModal(false);
+        setCategoryToPay(null);
+        setPaymentData({
+            cash: 0,
+            discount: 0,
+            grand_total: 0
+        });
+        setIsProcessingPayment(false);
+    };
+
+    // Fungsi untuk menghitung kembalian
+    const calculateChange = () => {
+        const change = paymentData.cash - paymentData.grand_total;
+        return change > 0 ? change : 0;
+    };
+
+    // Fungsi untuk update data pembayaran
+    const handlePaymentDataChange = (field, value) => {
+        setPaymentData(prev => {
+            const newData = { ...prev, [field]: parseFloat(value) || 0 };
+
+            // Otomatis hitung grand_total jika discount berubah
+            if (field === 'discount') {
+                const categoryData = groupedData[categoryToPay];
+                const originalTotal = categoryData ? categoryData.unpaidTotal : 0;
+                newData.grand_total = Math.max(0, originalTotal - newData.discount);
+            }
+
+            return newData;
+        });
+    };
+
     // Fungsi untuk handle pembayaran
-    const handlePayment = async (categoryName) => {
+    const handlePayment = async () => {
+        if (!categoryToPay) return;
+
+        setIsProcessingPayment(true);
         const token = Cookies.get("token");
+
         try {
             // Ambil semua item dalam kategori yang statusnya false
-            const unpaidItems = groupedData[categoryName].items.filter(item => !item.status);
+            const unpaidItems = groupedData[categoryToPay].items.filter(item => !item.status);
+            const cartIds = unpaidItems.map(item => item.id);
 
-            // Lakukan pembayaran untuk semua item dalam kategori
+            // Data untuk transaction
+            const transactionData = {
+                cash: paymentData.cash,
+                grand_total: paymentData.grand_total,
+                discount: paymentData.discount,
+                user_id: iduser,
+                cart_ids: cartIds,
+                change: calculateChange(),
+                category_name: categoryToPay
+            };
+
+            // Insert transaction ke API
+            Api.defaults.headers.common["Authorization"] = token;
+            const transactionResponse = await Api.post('/api/transactions', transactionData);
+
+            // Update status semua item yang dibayar
             for (const item of unpaidItems) {
                 await Api.patch(`/api/carts/${item.id}`, { status: true });
             }
 
             // Refresh data
-            fetchData();
-            alert(`Pembayaran untuk kategori ${categoryName} berhasil!`);
+            await fetchData();
+
+            // Tutup modal dan buka print
+            closePaymentModal();
+
+            // Cetak PDF dengan data dari sampels-by-user
+            printReceipt(transactionResponse.data.data, unpaidItems, categoryToPay);
+
+            alert(`Pembayaran untuk kategori ${categoryToPay} berhasil!`);
         } catch (error) {
             console.error("There was an error processing payment!", error);
             alert("Gagal memproses pembayaran. Silakan coba lagi.");
+        } finally {
+            setIsProcessingPayment(false);
         }
+    };
+
+    // Fungsi untuk mencetak PDF
+    const printReceipt = (transaction, items, categoryName) => {
+        const printWindow = window.open('', '_blank');
+        const currentDate = new Date();
+
+        const receiptContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Struk Pembayaran - ${categoryName}</title>
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+                    
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+                    
+                    body { 
+                        font-family: 'Courier Prime', monospace; 
+                        margin: 0; 
+                        padding: 20px; 
+                        font-size: 14px;
+                        line-height: 1.4;
+                        background: white;
+                        color: black;
+                    }
+                    
+                    .receipt {
+                        max-width: 300px;
+                        margin: 0 auto;
+                    }
+                    
+                    .header { 
+                        text-align: center; 
+                        margin-bottom: 15px; 
+                        padding-bottom: 10px;
+                        border-bottom: 2px dashed #000;
+                    }
+                    
+                    .company-name {
+                        font-size: 18px;
+                        font-weight: bold;
+                        margin-bottom: 5px;
+                        text-transform: uppercase;
+                    }
+                    
+                    .company-address {
+                        font-size: 12px;
+                        margin-bottom: 5px;
+                    }
+                    
+                    .receipt-title {
+                        font-size: 16px;
+                        font-weight: bold;
+                        margin: 10px 0;
+                        text-transform: uppercase;
+                    }
+                    
+                    .transaction-info {
+                        margin: 10px 0;
+                        padding: 10px 0;
+                        border-bottom: 1px dashed #000;
+                    }
+                    
+                    .info-row {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 3px;
+                    }
+                    
+                    .info-label {
+                        font-weight: bold;
+                    }
+                    
+                    .customer-info {
+                        margin: 10px 0;
+                        padding: 10px;
+                        background: #f5f5f5;
+                        border-radius: 5px;
+                    }
+                    
+                    .items-table {
+                        width: 100%;
+                        margin: 15px 0;
+                        border-collapse: collapse;
+                    }
+                    
+                    .items-table th {
+                        text-align: left;
+                        padding: 5px 0;
+                        border-bottom: 1px dashed #000;
+                        font-weight: bold;
+                    }
+                    
+                    .items-table td {
+                        padding: 4px 0;
+                        border-bottom: 1px dotted #ccc;
+                    }
+                    
+                    .items-table .item-name {
+                        width: 60%;
+                    }
+                    
+                    .items-table .item-qty {
+                        width: 15%;
+                        text-align: center;
+                    }
+                    
+                    .items-table .item-price {
+                        width: 25%;
+                        text-align: right;
+                    }
+                    
+                    .total-section {
+                        margin-top: 15px;
+                        padding-top: 10px;
+                        border-top: 2px dashed #000;
+                    }
+                    
+                    .total-row {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 5px;
+                    }
+                    
+                    .grand-total {
+                        font-weight: bold;
+                        font-size: 16px;
+                        margin: 10px 0;
+                        padding: 10px 0;
+                        border-top: 2px solid #000;
+                        border-bottom: 2px solid #000;
+                    }
+                    
+                    .payment-info {
+                        margin: 15px 0;
+                        padding: 10px;
+                        background: #f0f0f0;
+                        border-radius: 5px;
+                    }
+                    
+                    .footer { 
+                        margin-top: 20px; 
+                        text-align: center; 
+                        font-size: 11px;
+                        padding-top: 10px;
+                        border-top: 1px dashed #000;
+                    }
+                    
+                    .barcode {
+                        text-align: center;
+                        margin: 15px 0;
+                    }
+                    
+                    .thank-you {
+                        text-align: center;
+                        font-weight: bold;
+                        margin: 15px 0;
+                        font-style: italic;
+                    }
+                    
+                    @media print {
+                        body {
+                            padding: 10px;
+                        }
+                        
+                        .receipt {
+                            max-width: 100%;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="receipt">
+                    <div class="header">
+                        <div class="company-name">LABORATORIUM ANALIS</div>
+                        <div class="company-address">Jl. Contoh Alamat No. 123</div>
+                        <div class="company-address">Telp: (021) 123-4567</div>
+                    </div>
+                    
+                    <div class="receipt-title">STRUK PEMBAYARAN</div>
+                    
+                    <div class="transaction-info">
+                        <div class="info-row">
+                            <span class="info-label">No. Transaksi:</span>
+                            <span>${transaction.id || 'TRX-' + Date.now()}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Tanggal:</span>
+                            <span>${currentDate.toLocaleDateString('id-ID')}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Waktu:</span>
+                            <span>${currentDate.toLocaleTimeString('id-ID')}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Kategori:</span>
+                            <span>${categoryName}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="customer-info">
+                        <div class="info-row">
+                            <span class="info-label">Pelanggan:</span>
+                            <span>${userData?.name || 'Guest'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">ID User:</span>
+                            <span>${userData?.id || 'N/A'}</span>
+                        </div>
+                    </div>
+                    
+                    <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th class="item-name">Item</th>
+                                <th class="item-qty">Qty</th>
+                                <th class="item-price">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${items.map(item => `
+                                <tr>
+                                    <td class="item-name">${item.sampel.name}</td>
+                                    <td class="item-qty">${item.qty}</td>
+                                    <td class="item-price">${formatCurrency(item.price * item.qty)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    
+                    <div class="total-section">
+                        <div class="total-row">
+                            <span>Subtotal:</span>
+                            <span>${formatCurrency(transaction.grand_total + transaction.discount)}</span>
+                        </div>
+                        ${transaction.discount > 0 ? `
+                        <div class="total-row">
+                            <span>Diskon:</span>
+                            <span>-${formatCurrency(transaction.discount)}</span>
+                        </div>
+                        ` : ''}
+                        <div class="grand-total total-row">
+                            <span>TOTAL:</span>
+                            <span>${formatCurrency(transaction.grand_total)}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="payment-info">
+                        <div class="total-row">
+                            <span>Cash:</span>
+                            <span>${formatCurrency(transaction.cash)}</span>
+                        </div>
+                        <div class="total-row">
+                            <span>Kembali:</span>
+                            <span>${formatCurrency(transaction.change)}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="thank-you">
+                        Terima kasih atas kepercayaan Anda
+                    </div>
+                    
+                    <div class="footer">
+                        <div>*** Struk ini sebagai bukti pembayaran ***</div>
+                        <div>Simpan struk ini untuk keperluan klaim</div>
+                        <div>www.laboratorium-analis.com</div>
+                    </div>
+                </div>
+
+                <script>
+                    window.onload = function() {
+                        window.print();
+                        setTimeout(function() {
+                            window.close();
+                        }, 1000);
+                    }
+                </script>
+            </body>
+            </html>
+        `;
+
+        printWindow.document.write(receiptContent);
+        printWindow.document.close();
+    };
+
+    // Utility function untuk menentukan warna badge yang profesional
+    const getBadgeColor = (categoryName, index) => {
+        const colorSchemes = [
+            'professional-blue',      // Biru profesional
+            'professional-teal',      // Teal elegan
+            'professional-indigo',    // Indigo modern
+            'professional-slate',     // Slate netral
+            'professional-emerald',   // Emerald segar
+            'professional-violet'     // Violet kreatif
+        ];
+
+        // Untuk "PAKET PEMERIKSAAN AIR BERSIH" gunakan warna khusus
+        if (categoryName.includes('PAKET PEMERIKSAAN AIR BERSIH')) {
+            return 'professional-blue';
+        }
+
+        const colorIndex = index % colorSchemes.length;
+        return colorSchemes[colorIndex];
     };
 
     // Warna gradient untuk kategori
     const getCategoryColor = (categoryName) => {
         const colors = [
-            'from-pink-500 to-pink-600',
             'from-blue-500 to-blue-600',
+            'from-slate-500 to-slate-600',
             'from-emerald-500 to-emerald-600',
             'from-violet-500 to-violet-600',
-            'from-amber-500 to-amber-600',
-            'from-rose-500 to-rose-600',
             'from-cyan-500 to-cyan-600',
             'from-indigo-500 to-indigo-600'
         ];
@@ -178,12 +577,10 @@ export default function Cart() {
     // Warna background untuk kategori
     const getCategoryBgColor = (categoryName) => {
         const colors = [
-            'bg-pink-50 border-pink-200',
             'bg-blue-50 border-blue-200',
+            'bg-slate-50 border-slate-200',
             'bg-emerald-50 border-emerald-200',
             'bg-violet-50 border-violet-200',
-            'bg-amber-50 border-amber-200',
-            'bg-rose-50 border-rose-200',
             'bg-cyan-50 border-cyan-200',
             'bg-indigo-50 border-indigo-200'
         ];
@@ -194,14 +591,12 @@ export default function Cart() {
     // Warna untuk avatar/nomor sampel
     const getAvatarColor = (index, categoryName) => {
         const colors = [
-            'bg-gradient-to-r from-purple-500 to-purple-600 text-white',
             'bg-gradient-to-r from-blue-500 to-blue-600 text-white',
-            'bg-gradient-to-r from-green-500 to-green-600 text-white',
-            'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white',
-            'bg-gradient-to-r from-red-500 to-red-600 text-white',
-            'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white',
-            'bg-gradient-to-r from-pink-500 to-pink-600 text-white',
-            'bg-gradient-to-r from-teal-500 to-teal-600 text-white'
+            'bg-gradient-to-r from-slate-500 to-slate-600 text-white',
+            'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white',
+            'bg-gradient-to-r from-violet-500 to-violet-600 text-white',
+            'bg-gradient-to-r from-cyan-500 to-cyan-600 text-white',
+            'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white'
         ];
         const colorIndex = (index % colors.length);
         return colors[colorIndex];
@@ -447,17 +842,21 @@ export default function Cart() {
                                 </div>
                             ) : (
                                 <div className="divide-y">
-                                    {Object.entries(groupedData).map(([categoryName, categoryData]) => {
+                                    {Object.entries(groupedData).map(([categoryName, categoryData], categoryIndex) => {
                                         const isCategoryPaid = !categoryData.hasUnpaidItems;
                                         const unpaidCount = categoryData.unpaidCount;
                                         const unpaidTotal = categoryData.unpaidTotal;
+                                        const isExpanded = expandedCategories[categoryName];
 
                                         return (
-                                            <div key={categoryName} className={`category-section ${categoryData.bgColor} border-0 ${isCategoryPaid ? 'paid-category' : 'unpaid-category'}`}>
+                                            <div
+                                                key={categoryName}
+                                                className={`category-section ${categoryData.bgColor} border-0 ${isCategoryPaid ? 'paid-category' : 'unpaid-category'} ${isExpanded ? 'expanded' : ''}`}
+                                            >
                                                 {isCategoryPaid && (
                                                     <div className="watermark">
                                                         <FiCheckCircle className="me-2" />
-                                                        SUDAH LUNAS
+                                                        LUNAS
                                                     </div>
                                                 )}
                                                 <div
@@ -466,10 +865,11 @@ export default function Cart() {
                                                 >
                                                     <div className="d-flex align-items-center justify-content-between">
                                                         <div className="d-flex align-items-center">
-                                                            <div className={`category-badge bg-gradient-to-r ${categoryData.color} text-white rounded-pill px-3 py-1 me-3`}>
-                                                                <span className="fw-bold">
+                                                            <div className={`category-badge ${getBadgeColor(categoryName, categoryIndex)} rounded-pill px-3 py-2 me-3`}>
+                                                                <span className="fw-bold d-flex align-items-center">
                                                                     <FiBarChart2 className="me-1" />
-                                                                    {categoryData.itemCount} Sampel
+                                                                    <span className="sampel-count">{categoryData.itemCount}</span>
+                                                                    <span className="badge-text ms-1">Sampel</span>
                                                                 </span>
                                                             </div>
                                                             <div className="d-flex align-items-center">
@@ -498,7 +898,7 @@ export default function Cart() {
                                                                     className="btn btn-success btn-sm me-2"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        handlePayment(categoryName);
+                                                                        openPaymentModal(categoryName);
                                                                     }}
                                                                 >
                                                                     <FiCreditCard className="me-1" />
@@ -518,7 +918,7 @@ export default function Cart() {
                                                     <div className="category-content px-4 pb-4 position-relative">
                                                         <div className="row">
                                                             {categoryData.items.map((item, index) => (
-                                                                <div key={item.id} className="col-md-6 col-lg-4 mb-3">
+                                                                <div key={item.id} className="col-md-6 col-lg-4 mb-3 mt-3"> {/* Tambahkan mt-3 di sini */}
                                                                     <div className={`card card-sm hover-shadow ${item.status ? 'border-success paid-item' : 'border-warning unpaid-item'}`}>
                                                                         <div className="card-status ${item.status ? 'bg-success' : 'bg-warning'}"></div>
                                                                         <div className="card-body">
@@ -628,37 +1028,37 @@ export default function Cart() {
                 </div>
             </div>
 
-            {/* Delete Confirmation Modal */}
+            {/* Delete Confirmation Modal dengan Custom CSS */}
             {showDeleteModal && itemToDelete && (
                 <>
                     <div
-                        className="modal-backdrop fade show"
+                        className="modal-backdrop-custom fade show"
                         onClick={closeDeleteModal}
                         style={{ zIndex: 1040 }}
                     ></div>
 
                     <div
-                        className="modal fade show"
+                        className="modal-custom fade show"
                         style={{ display: 'block', zIndex: 1050 }}
                         tabIndex="-1"
                     >
-                        <div className="modal-dialog modal-sm modal-dialog-centered">
-                            <div className="modal-content">
-                                <div className="modal-status bg-danger"></div>
-                                <div className="modal-header">
+                        <div className="modal-dialog modal-lg-custom modal-dialog-centered">
+                            <div className="modal-content-custom">
+                                <div className="modal-status-custom bg-danger"></div>
+                                <div className="modal-header-custom">
                                     <h5 className="modal-title">
                                         <FiAlertTriangle className="me-2 text-danger" />
                                         Konfirmasi Hapus
                                     </h5>
                                     <button
                                         type="button"
-                                        className="btn-close"
+                                        className="btn-close-custom"
                                         onClick={closeDeleteModal}
                                         aria-label="Close"
                                         disabled={deletingId === itemToDelete.id}
                                     ></button>
                                 </div>
-                                <div className="modal-body text-center py-4">
+                                <div className="modal-body-custom text-center py-4">
                                     <FiAlertTriangle size={48} className="text-danger mb-3" />
                                     <h4>Hapus Sampel?</h4>
                                     <div className="text-muted mt-2">
@@ -676,20 +1076,19 @@ export default function Cart() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="modal-footer">
+                                <div className="modal-footer-custom">
                                     <div className="w-100">
                                         <div className="row g-2">
-                                            <div className="col">
-                                                <button
-                                                    className="btn btn-outline-secondary w-100"
-                                                    onClick={closeDeleteModal}
-                                                    disabled={deletingId === itemToDelete.id}
-                                                    type="button"
-                                                >
-                                                    <FiX className="me-1" />
-                                                    Batal
-                                                </button>
-                                            </div>
+
+                                            <button
+                                                className="btn btn-outline-danger-custom w-100"
+                                                onClick={closeDeleteModal}
+                                                disabled={deletingId === itemToDelete.id}
+                                                type="button"
+                                            >
+                                                <FiX className="me-1" />
+                                                Batal
+                                            </button>
                                             <div className="col">
                                                 <button
                                                     className="btn btn-danger w-100"
@@ -719,308 +1118,218 @@ export default function Cart() {
                 </>
             )}
 
-            <style jsx>{`
-                .category-badge {
-                    font-size: 0.75rem;
-                }
-                .cursor-pointer {
-                    cursor: pointer;
-                }
-                .hover-shadow:hover {
-                    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-                    transition: box-shadow 0.15s ease-in-out;
-                }
-                .rotate-180 {
-                    transform: rotate(180deg);
-                }
-                .category-section {
-                    border-left: 4px solid;
-                    border-left-color: inherit;
-                    position: relative;
-                    overflow: hidden;
-                    border-radius: 0.5rem;
-                    margin-bottom: 1rem;
-                }
-                .paid-category {
-                    position: relative;
-                    opacity: 0.8;
-                }
-                .unpaid-category {
-                    border-left-color: #f59e0b;
-                    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-                }
-                .watermark {
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%) rotate(-45deg);
-                    font-size: 2.5rem;
-                    font-weight: bold;
-                    color: rgba(0, 128, 0, 0.1);
-                    z-index: 1;
-                    pointer-events: none;
-                    white-space: nowrap;
-                    display: flex;
-                    align-items: center;
-                }
-                .avatar {
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    width: 2.5rem;
-                    height: 2.5rem;
-                    border-radius: 50%;
-                    font-weight: 600;
-                }
-                .avatar-sm {
-                    width: 2rem;
-                    height: 2rem;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-weight: 600;
-                    font-size: 0.75rem;
-                }
-                .bg-pink-lt { background-color: #fdf2f8; color: #be185d; }
-                .bg-blue-lt { background-color: #eff6ff; color: #1d4ed8; }
-                .bg-green-lt { background-color: #f0fdf4; color: #15803d; }
-                .bg-orange-lt { background-color: #fff7ed; color: #c2410c; }
-                .bg-red-lt { background-color: #fef2f2; color: #dc2626; }
-                .bg-yellow-lt { background-color: #fefce8; color: #ca8a04; }
-                .bg-warning-lt { background-color: #fffbeb; color: #d97706; border: 1px solid #fed7aa; }
-                .bg-success-lt { background-color: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+            {/* Payment Confirmation Modal dengan Custom CSS */}
+            {showPaymentModal && categoryToPay && (
+                <>
+                    <div
+                        className="modal-backdrop-custom fade show"
+                        onClick={closePaymentModal}
+                        style={{ zIndex: 1040 }}
+                    ></div>
 
-                /* Gradient colors untuk avatar */
-                .bg-gradient-to-r.from-purple-500.to-purple-600 { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
-                .bg-gradient-to-r.from-blue-500.to-blue-600 { background: linear-gradient(135deg, #3b82f6, #2563eb); }
-                .bg-gradient-to-r.from-green-500.to-green-600 { background: linear-gradient(135deg, #10b981, #059669); }
-                .bg-gradient-to-r.from-yellow-500.to-yellow-600 { background: linear-gradient(135deg, #f59e0b, #d97706); }
-                .bg-gradient-to-r.from-red-500.to-red-600 { background: linear-gradient(135deg, #ef4444, #dc2626); }
-                .bg-gradient-to-r.from-indigo-500.to-indigo-600 { background: linear-gradient(135deg, #6366f1, #4f46e5); }
-                .bg-gradient-to-r.from-pink-500.to-pink-600 { background: linear-gradient(135deg, #ec4899, #db2777); }
-                .bg-gradient-to-r.from-teal-500.to-teal-600 { background: linear-gradient(135deg, #14b8a6, #0d9488); }
+                    <div
+                        className="modal-custom fade show"
+                        style={{ display: 'block', zIndex: 1050 }}
+                        tabIndex="-1"
+                    >
+                        <div className="modal-dialog modal-xl-custom modal-dialog-centered">
+                            <div className="modal-content-custom">
+                                <div className="modal-status-custom bg-success"></div>
+                                <div className="modal-header-custom">
+                                    <h5 className="modal-title">
+                                        <FiCreditCard className="me-2 text-success" />
+                                        Konfirmasi Pembayaran - {categoryToPay}
+                                    </h5>
+                                    <button
+                                        type="button"
+                                        className="btn-close-custom"
+                                        onClick={closePaymentModal}
+                                        aria-label="Close"
+                                        disabled={isProcessingPayment}
+                                    ></button>
+                                </div>
+                                <div className="modal-body-custom">
+                                    <div className="row">
+                                        <div className="col-md-8">
+                                            <div className="card">
+                                                <div className="card-header">
+                                                    <h6 className="card-title mb-0">
+                                                        <FiUser className="me-2" />
+                                                        Detail Pelanggan & Item
+                                                    </h6>
+                                                </div>
+                                                <div className="card-body">
+                                                    <div className="row mb-4">
+                                                        <div className="col-md-6">
+                                                            <div className="mb-3">
+                                                                <label className="form-label fw-bold">Nama Pelanggan</label>
+                                                                <div className="form-control bg-light">
+                                                                    {userData?.name || 'Guest'}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
 
-                .category-section {
-                    transition: all 0.3s ease;
-                }
+                                                    <h6 className="mb-3">Item yang akan dibayar:</h6>
+                                                    <div className="table-responsive">
+                                                        <table className="table table-sm table-bordered">
+                                                            <thead className="bg-light">
+                                                                <tr>
+                                                                    <th>No</th>
+                                                                    <th>Nama Sampel</th>
+                                                                    <th className="text-center">Qty</th>
+                                                                    <th className="text-end">Harga</th>
+                                                                    <th className="text-end">Subtotal</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {groupedData[categoryToPay].items
+                                                                    .filter(item => !item.status)
+                                                                    .map((item, index) => (
+                                                                        <tr key={item.id}>
+                                                                            <td>{index + 1}</td>
+                                                                            <td>{item.sampel.name}</td>
+                                                                            <td className="text-center">{item.qty}</td>
+                                                                            <td className="text-end">{formatCurrency(item.price)}</td>
+                                                                            <td className="text-end fw-bold">{formatCurrency(item.price * item.qty)}</td>
+                                                                        </tr>
+                                                                    ))}
+                                                            </tbody>
+                                                            <tfoot className="bg-light">
+                                                                <tr>
+                                                                    <td colSpan="4" className="text-end fw-bold">Total:</td>
+                                                                    <td className="text-end fw-bold text-primary">
+                                                                        {formatCurrency(groupedData[categoryToPay].unpaidTotal)}
+                                                                    </td>
+                                                                </tr>
+                                                            </tfoot>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
 
-                .category-header {
-                    transition: background-color 0.2s ease;
-                    position: relative;
-                    z-index: 2;
-                    border-radius: 0.5rem 0.5rem 0 0;
-                }
+                                        <div className="col-md-4">
+                                            <div className="card">
+                                                <div className="card-header">
+                                                    <h6 className="card-title mb-0">
+                                                        <FiDollarSign className="me-2" />
+                                                        Informasi Pembayaran
+                                                    </h6>
+                                                </div>
+                                                <div className="card-body">
+                                                    <div className="mb-3">
+                                                        <label className="form-label fw-bold">Total Belanja</label>
+                                                        <div className="form-control bg-light fw-bold text-primary">
+                                                            {formatCurrency(groupedData[categoryToPay].unpaidTotal)}
+                                                        </div>
+                                                    </div>
 
-                .category-header:hover {
-                    background-color: rgba(0, 0, 0, 0.03);
-                }
+                                                    <div className="mb-3">
+                                                        <label className="form-label fw-bold">Diskon</label>
+                                                        <div className="input-group">
+                                                            <span className="input-group-text">Rp</span>
+                                                            <input
+                                                                type="number"
+                                                                className="form-control"
+                                                                value={paymentData.discount}
+                                                                onChange={(e) => handlePaymentDataChange('discount', e.target.value)}
+                                                                disabled={isProcessingPayment}
+                                                                min="0"
+                                                                max={groupedData[categoryToPay].unpaidTotal}
+                                                            />
+                                                        </div>
+                                                        <small className="text-muted">
+                                                            Maksimal diskon: {formatCurrency(groupedData[categoryToPay].unpaidTotal)}
+                                                        </small>
+                                                    </div>
 
-                .category-content {
-                    position: relative;
-                    z-index: 2;
-                }
+                                                    <div className="mb-3">
+                                                        <label className="form-label fw-bold">Grand Total</label>
+                                                        <div className="form-control bg-success text-white fw-bold">
+                                                            {formatCurrency(paymentData.grand_total)}
+                                                        </div>
+                                                    </div>
 
-                .card-sm {
-                    border: 1px solid #e5e7eb;
-                    border-radius: 0.5rem;
-                    transition: all 0.2s ease;
-                    position: relative;
-                    overflow: hidden;
-                }
+                                                    <div className="mb-3">
+                                                        <label className="form-label fw-bold">Cash</label>
+                                                        <div className="input-group">
+                                                            <span className="input-group-text">Rp</span>
+                                                            <input
+                                                                type="number"
+                                                                className="form-control"
+                                                                value={paymentData.cash}
+                                                                onChange={(e) => handlePaymentDataChange('cash', e.target.value)}
+                                                                disabled={isProcessingPayment}
+                                                                min={paymentData.grand_total}
+                                                            />
+                                                        </div>
+                                                        <small className="text-muted">
+                                                            Minimum cash: {formatCurrency(paymentData.grand_total)}
+                                                        </small>
+                                                    </div>
 
-                .card-sm:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-                }
+                                                    <div className="mb-3">
+                                                        <label className="form-label fw-bold">Kembalian</label>
+                                                        <div className={`form-control fw-bold ${calculateChange() > 0 ? 'bg-warning' : 'bg-light'
+                                                            }`}>
+                                                            {formatCurrency(calculateChange())}
+                                                        </div>
+                                                    </div>
 
-                .unpaid-item {
-                    border: 2px solid #fbbf24;
-                    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 50%);
-                    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
-                }
-
-                .unpaid-item:hover {
-                    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
-                    border-color: #f59e0b;
-                }
-
-                .paid-item {
-                    border: 1px solid #10b981;
-                    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%);
-                }
-
-                .card-status {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    height: 3px;
-                }
-
-                .bg-gradient-to-r {
-                    background-image: linear-gradient(to right, var(--tw-gradient-stops));
-                }
-
-                .empty {
-                    padding: 3rem 1rem;
-                    text-align: center;
-                }
-
-                .empty-img {
-                    margin-bottom: 1rem;
-                }
-
-                .empty-title {
-                    font-size: 1.25rem;
-                    font-weight: 600;
-                    margin-bottom: 0.5rem;
-                }
-
-                .empty-subtitle {
-                    font-size: 0.875rem;
-                }
-
-                /* Modal Styles */
-                .modal {
-                    background-color: rgba(0, 0, 0, 0.5);
-                }
-
-                .modal.show {
-                    display: block;
-                }
-
-                .modal-status {
-                    height: 4px;
-                    border-radius: 4px 4px 0 0;
-                }
-
-                .spinner {
-                    animation: spin 1s linear infinite;
-                }
-
-                @keyframes spin {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
-                }
-
-                /* Summary card improvements */
-                .card-sm .avatar {
-                    width: 3rem;
-                    height: 3rem;
-                }
-
-                .card-sm .icon {
-                    width: 1.5rem;
-                    height: 1.5rem;
-                }
-
-                /* Alert improvements */
-                .alert {
-                    border: 1px solid;
-                    border-left: 4px solid;
-                }
-
-                .alert-warning {
-                    border-color: #fed7aa;
-                    border-left-color: #f59e0b;
-                    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-                }
-
-                /* Responsive adjustments */
-                @media (max-width: 768px) {
-                    .category-header .d-flex {
-                        flex-direction: column;
-                        align-items: flex-start !important;
-                    }
-                    
-                    .category-header .d-flex > div {
-                        width: 100%;
-                        justify-content: space-between;
-                        margin-bottom: 0.5rem;
-                    }
-                    
-                    .card-sm .d-flex {
-                        flex-direction: column;
-                        text-align: center;
-                    }
-                    
-                    .card-sm .d-flex > div {
-                        margin-bottom: 0.5rem;
-                    }
-
-                    .card-sm .btn {
-                        margin-top: 0.5rem;
-                    }
-
-                    .modal-dialog {
-                        margin: 1rem;
-                    }
-
-                    .watermark {
-                        font-size: 1.5rem;
-                    }
-
-                    .summary-cards .col-sm-6 {
-                        margin-bottom: 1rem;
-                    }
-                }
-
-                /* Fix untuk modal backdrop */
-                .modal-backdrop {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100vw;
-                    height: 100vh;
-                    background-color: #000;
-                    opacity: 0.5;
-                }
-
-                .modal {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100vw;
-                    height: 100vh;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-
-                .modal-dialog {
-                    margin: 0 auto;
-                }
-
-                /* Improved typography */
-                .font-weight-medium {
-                    font-weight: 500;
-                }
-
-                /* Enhanced card shadows */
-                .card {
-                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                    border: 1px solid rgba(0, 0, 0, 0.05);
-                }
-
-                .card-sm {
-                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-                }
-
-                /* Pulsing animation for unpaid items */
-                @keyframes pulse-warning {
-                    0%, 100% {
-                        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
-                    }
-                    50% {
-                        box-shadow: 0 0 0 6px rgba(245, 158, 11, 0);
-                    }
-                }
-
-                .unpaid-item {
-                    animation: pulse-warning 2s infinite;
-                }
-            `}</style>
+                                                    {calculateChange() < 0 && (
+                                                        <div className="alert alert-danger">
+                                                            <FiAlertCircle className="me-2" />
+                                                            Cash tidak cukup! Tambahkan cash sebesar {formatCurrency(Math.abs(calculateChange()))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="modal-footer-custom">
+                                    <div className="w-100">
+                                        <div className="row g-2">
+                                            <div className="col">
+                                                <button
+                                                    className="btn btn-danger w-100 text-white"
+                                                    onClick={closePaymentModal}
+                                                    disabled={isProcessingPayment}
+                                                    type="button"
+                                                >
+                                                    <FiX className="me-1" />
+                                                    Batal
+                                                </button>
+                                            </div>
+                                            <div className="col">
+                                                <button
+                                                    className="btn btn-success w-100"
+                                                    onClick={handlePayment}
+                                                    disabled={isProcessingPayment || calculateChange() < 0}
+                                                    type="button"
+                                                >
+                                                    {isProcessingPayment ? (
+                                                        <>
+                                                            <FiLoader className="spinner me-2" />
+                                                            Memproses...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <FiPrinter className="me-2" />
+                                                            Bayar & Cetak Struk
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
         </LayoutAdmin>
     );
 }
