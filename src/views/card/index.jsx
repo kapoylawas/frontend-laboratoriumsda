@@ -953,6 +953,9 @@ export default function Cart() {
                                                                                         Qty: {item.qty} × {formatCurrency(item.price)}
                                                                                     </div>
                                                                                     <div className="text-muted small">
+                                                                                        {item.sampel.parameter}
+                                                                                    </div>
+                                                                                    <div className="text-muted small">
                                                                                         <FiCalendar className="me-1" />
                                                                                         {formatDate(item.created_at)}
                                                                                     </div>
