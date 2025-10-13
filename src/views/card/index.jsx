@@ -25,6 +25,7 @@ import {
     FiUser
 } from "react-icons/fi";
 import "./cart.css"
+import PaymentAllModal from "./paymentModal";
 
 export default function Cart() {
     const [data, setData] = useState([]);
@@ -34,6 +35,7 @@ export default function Cart() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [showAllPaymentModal, setShowAllPaymentModal] = useState(false);
     const [categoryToPay, setCategoryToPay] = useState(null);
     const [paymentData, setPaymentData] = useState({
         cash: 0,
@@ -154,7 +156,7 @@ export default function Cart() {
         }, {});
     };
 
-    // Fungsi untuk membuka modal pembayaran
+    // Fungsi untuk membuka modal pembayaran per kategori
     const openPaymentModal = (categoryName) => {
         const categoryData = groupedData[categoryName];
         if (!categoryData || !categoryData.hasUnpaidItems) return;
@@ -168,9 +170,39 @@ export default function Cart() {
         setShowPaymentModal(true);
     };
 
+    // Fungsi untuk membuka modal pembayaran semua
+    const openAllPaymentModal = () => {
+        if (!hasUnpaidItems) return;
+
+        // Hitung total semua item yang belum dibayar
+        const allUnpaidTotal = Object.values(groupedData).reduce((total, category) => {
+            return total + category.unpaidTotal;
+        }, 0);
+
+        setCategoryToPay("SEMUA KATEGORI");
+        setPaymentData({
+            cash: allUnpaidTotal,
+            discount: 0,
+            grand_total: allUnpaidTotal
+        });
+        setShowAllPaymentModal(true);
+    };
+
     // Fungsi untuk menutup modal pembayaran
     const closePaymentModal = () => {
         setShowPaymentModal(false);
+        setCategoryToPay(null);
+        setPaymentData({
+            cash: 0,
+            discount: 0,
+            grand_total: 0
+        });
+        setIsProcessingPayment(false);
+    };
+
+    // Fungsi untuk menutup modal pembayaran semua
+    const closeAllPaymentModal = () => {
+        setShowAllPaymentModal(false);
         setCategoryToPay(null);
         setPaymentData({
             cash: 0,
@@ -193,8 +225,19 @@ export default function Cart() {
 
             // Otomatis hitung grand_total jika discount berubah
             if (field === 'discount') {
-                const categoryData = groupedData[categoryToPay];
-                const originalTotal = categoryData ? categoryData.unpaidTotal : 0;
+                let originalTotal = 0;
+
+                if (categoryToPay === "SEMUA KATEGORI") {
+                    // Hitung total semua item belum bayar
+                    originalTotal = Object.values(groupedData).reduce((total, category) => {
+                        return total + category.unpaidTotal;
+                    }, 0);
+                } else {
+                    // Hitung total per kategori
+                    const categoryData = groupedData[categoryToPay];
+                    originalTotal = categoryData ? categoryData.unpaidTotal : 0;
+                }
+
                 newData.grand_total = Math.max(0, originalTotal - newData.discount);
             }
 
@@ -202,7 +245,7 @@ export default function Cart() {
         });
     };
 
-    // Fungsi untuk handle pembayaran
+    // Fungsi untuk handle pembayaran per kategori
     const handlePayment = async () => {
         if (!categoryToPay) return;
 
@@ -244,6 +287,59 @@ export default function Cart() {
             printReceipt(transactionResponse.data.data, unpaidItems, categoryToPay);
 
             alert(`Pembayaran untuk kategori ${categoryToPay} berhasil!`);
+        } catch (error) {
+            console.error("There was an error processing payment!", error);
+            alert("Gagal memproses pembayaran. Silakan coba lagi.");
+        } finally {
+            setIsProcessingPayment(false);
+        }
+    };
+
+    // Fungsi untuk handle pembayaran semua
+    const handleAllPayment = async () => {
+        setIsProcessingPayment(true);
+        const token = Cookies.get("token");
+
+        try {
+            // Kumpulkan semua item yang belum dibayar dari semua kategori
+            const allUnpaidItems = [];
+            Object.values(groupedData).forEach(category => {
+                const unpaidItems = category.items.filter(item => !item.status);
+                allUnpaidItems.push(...unpaidItems);
+            });
+
+            const cartIds = allUnpaidItems.map(item => item.id);
+
+            // Data untuk transaction
+            const transactionData = {
+                cash: paymentData.cash,
+                grand_total: paymentData.grand_total,
+                discount: paymentData.discount,
+                user_id: iduser,
+                cart_ids: cartIds,
+                change: calculateChange(),
+                category_name: "SEMUA KATEGORI"
+            };
+
+            // Insert transaction ke API
+            Api.defaults.headers.common["Authorization"] = token;
+            const transactionResponse = await Api.post('/api/transactions', transactionData);
+
+            // Update status semua item yang dibayar
+            for (const item of allUnpaidItems) {
+                await Api.patch(`/api/carts/${item.id}`, { status: true });
+            }
+
+            // Refresh data
+            await fetchData();
+
+            // Tutup modal dan buka print
+            closeAllPaymentModal();
+
+            // Cetak PDF untuk semua item
+            printReceipt(transactionResponse.data.data, allUnpaidItems, "SEMUA KATEGORI");
+
+            alert("Pembayaran untuk semua kategori berhasil!");
         } catch (error) {
             console.error("There was an error processing payment!", error);
             alert("Gagal memproses pembayaran. Silakan coba lagi.");
@@ -451,8 +547,14 @@ export default function Cart() {
                         </div>
                         <div class="info-row">
                             <span class="info-label">Kategori:</span>
-                            <span>${categoryName}</span>
+                            <span>${categoryName === "SEMUA KATEGORI" ? "SEMUA KATEGORI" : categoryName}</span>
                         </div>
+                        ${categoryName === "SEMUA KATEGORI" ? `
+                        <div class="info-row">
+                            <span class="info-label">Jumlah Item:</span>
+                            <span>${items.length} Item</span>
+                        </div>
+                        ` : ''}
                     </div>
                     
                     <div class="customer-info">
@@ -820,7 +922,14 @@ export default function Cart() {
                             </h3>
                             {hasUnpaidItems && (
                                 <div className="card-actions">
-                                    <span className="badge bg-warning">
+                                    <button
+                                        className="btn btn-success btn-sm"
+                                        onClick={openAllPaymentModal}
+                                    >
+                                        <FiCreditCard className="me-1" />
+                                        Bayar Semua
+                                    </button>
+                                    <span className="badge bg-warning ms-2">
                                         <FiClock className="me-1" />
                                         {Object.values(groupedData).reduce((sum, cat) => sum + cat.unpaidCount, 0)} Menunggu Pembayaran
                                     </span>
@@ -893,7 +1002,7 @@ export default function Cart() {
                                                                     </small>
                                                                 )}
                                                             </div>
-                                                            {!isCategoryPaid && (
+                                                            {/* {!isCategoryPaid && (
                                                                 <button
                                                                     className="btn btn-success btn-sm me-2"
                                                                     onClick={(e) => {
@@ -904,7 +1013,7 @@ export default function Cart() {
                                                                     <FiCreditCard className="me-1" />
                                                                     Bayar Sekarang
                                                                 </button>
-                                                            )}
+                                                            )} */}
                                                             <FiChevronDown
                                                                 className={`transition-transform ${expandedCategories[categoryName] ? 'rotate-180' : ''
                                                                     }`}
@@ -918,7 +1027,7 @@ export default function Cart() {
                                                     <div className="category-content px-4 pb-4 position-relative">
                                                         <div className="row">
                                                             {categoryData.items.map((item, index) => (
-                                                                <div key={item.id} className="col-md-6 col-lg-4 mb-3 mt-3"> {/* Tambahkan mt-3 di sini */}
+                                                                <div key={item.id} className="col-md-6 col-lg-4 mb-3 mt-3">
                                                                     <div className={`card card-sm hover-shadow ${item.status ? 'border-success paid-item' : 'border-warning unpaid-item'}`}>
                                                                         <div className="card-status ${item.status ? 'bg-success' : 'bg-warning'}"></div>
                                                                         <div className="card-body">
@@ -1082,16 +1191,17 @@ export default function Cart() {
                                 <div className="modal-footer-custom">
                                     <div className="w-100">
                                         <div className="row g-2">
-
-                                            <button
-                                                className="btn btn-outline-danger-custom w-100"
-                                                onClick={closeDeleteModal}
-                                                disabled={deletingId === itemToDelete.id}
-                                                type="button"
-                                            >
-                                                <FiX className="me-1" />
-                                                Batal
-                                            </button>
+                                            <div className="col">
+                                                <button
+                                                    className="btn btn-outline-danger-custom w-100"
+                                                    onClick={closeDeleteModal}
+                                                    disabled={deletingId === itemToDelete.id}
+                                                    type="button"
+                                                >
+                                                    <FiX className="me-1" />
+                                                    Batal
+                                                </button>
+                                            </div>
                                             <div className="col">
                                                 <button
                                                     className="btn btn-danger w-100"
@@ -1121,7 +1231,7 @@ export default function Cart() {
                 </>
             )}
 
-            {/* Payment Confirmation Modal dengan Custom CSS */}
+            {/* Payment Confirmation Modal untuk Per Kategori */}
             {showPaymentModal && categoryToPay && (
                 <>
                     <div
@@ -1191,7 +1301,7 @@ export default function Cart() {
                                                                     .map((item, index) => (
                                                                         <tr key={item.id}>
                                                                             <td>{index + 1}</td>
-                                                                            <td>{item.sampel.name}</td>
+                                                                            <td>{item.sampel.parameter}</td>
                                                                             <td className="text-center">{item.qty}</td>
                                                                             <td className="text-end">{formatCurrency(item.price)}</td>
                                                                             <td className="text-end fw-bold">{formatCurrency(item.price * item.qty)}</td>
@@ -1333,6 +1443,21 @@ export default function Cart() {
                     </div>
                 </>
             )}
+
+            {/* All Payment Confirmation Modal */}
+            <PaymentAllModal
+                showAllPaymentModal={showAllPaymentModal}
+                closeAllPaymentModal={closeAllPaymentModal}
+                isProcessingPayment={isProcessingPayment}
+                userData={userData}
+                groupedData={groupedData}
+                unpaidTotal={unpaidTotal}
+                paymentData={paymentData}
+                handlePaymentDataChange={handlePaymentDataChange}
+                calculateChange={calculateChange}
+                handleAllPayment={handleAllPayment}
+                formatCurrency={formatCurrency}
+            />
         </LayoutAdmin>
     );
 }
