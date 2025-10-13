@@ -627,3 +627,22 @@
     max-width: 1200px !important;
     width: 95vw !important;
 }
+
+.table-scroll-container {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.table-scroll-container thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 1;
+}
+
+.table-scroll-container tfoot td {
+    position: sticky;
+    bottom: 0;
+    background-color: #f8f9fa;
+    z-index: 1;
+}
