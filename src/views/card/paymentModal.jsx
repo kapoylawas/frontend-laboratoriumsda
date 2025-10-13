@@ -83,9 +83,9 @@ const PaymentAllModal = ({
                                             </div>
 
                                             <h6 className="mb-3">Semua Item yang akan dibayar:</h6>
-                                            <div className="table-responsive">
+                                            <div className="table-responsive" style={{ maxHeight: '400px', overflowY: 'auto' }}>
                                                 <table className="table table-sm table-bordered">
-                                                    <thead className="bg-light">
+                                                    <thead className="bg-light" style={{ position: 'sticky', top: 0, zIndex: 1 }}>
                                                         <tr>
                                                             <th>No</th>
                                                             <th>Kategori</th>
@@ -117,7 +117,7 @@ const PaymentAllModal = ({
                                                                     ))
                                                             )}
                                                     </tbody>
-                                                    <tfoot className="bg-light">
+                                                    <tfoot className="bg-light" style={{ position: 'sticky', bottom: 0, zIndex: 1 }}>
                                                         <tr>
                                                             <td colSpan="5" className="text-end fw-bold">Total Semua:</td>
                                                             <td className="text-end fw-bold text-primary">
