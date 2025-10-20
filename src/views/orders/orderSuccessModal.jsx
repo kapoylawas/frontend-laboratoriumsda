@@ -338,20 +338,6 @@ export default function OrderSuccessModal({
                             <div className="d-flex flex-column flex-sm-row gap-2">
                                 <button
                                     type="button"
-                                    className="btn btn-outline-secondary btn-sm d-flex align-items-center"
-                                    style={{
-                                        padding: '0.5rem 1rem',
-                                        borderRadius: '8px',
-                                        fontWeight: '500'
-                                    }}
-                                    onClick={onPrint}
-                                >
-                                    <IconPackage size={16} className="me-2" />
-                                    Cetak
-                                </button>
-
-                                <button
-                                    type="button"
                                     className="btn btn-outline-primary btn-sm d-flex align-items-center"
                                     style={{
                                         padding: '0.5rem 1rem',

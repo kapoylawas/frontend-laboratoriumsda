@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import LayoutAdmin from "../../layouts/admin";
 import Cookies from "js-cookie";
 import Api from "../../services/api";
+import { useNavigate } from "react-router-dom";
 import {
     FiShoppingCart,
     FiPackage,
@@ -44,6 +45,11 @@ export default function Cart() {
     });
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [userData, setUserData] = useState(null);
+
+    // Tambahkan state untuk notifikasi dan redirect
+    const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("");
+    const navigate = useNavigate();
 
     const userCookie = Cookies.get("user");
     const parsedData = JSON.parse(userCookie);
@@ -286,7 +292,15 @@ export default function Cart() {
             // Cetak PDF dengan data dari sampels-by-user
             printReceipt(transactionResponse.data.data, unpaidItems, categoryToPay);
 
-            alert(`Pembayaran untuk kategori ${categoryToPay} berhasil!`);
+            // Tampilkan notifikasi sukses
+            setSuccessMessage(`Pembayaran untuk kategori ${categoryToPay} berhasil!`);
+            setShowSuccessNotification(true);
+
+            // Redirect ke halaman history setelah 3 detik
+            setTimeout(() => {
+                navigate("/history");
+            }, 3000);
+
         } catch (error) {
             console.error("There was an error processing payment!", error);
             alert("Gagal memproses pembayaran. Silakan coba lagi.");
@@ -295,7 +309,7 @@ export default function Cart() {
         }
     };
 
-    // Fungsi untuk handle pembayaran semua
+    // MODIFIKASI: Fungsi untuk handle pembayaran semua dengan notifikasi dan redirect
     const handleAllPayment = async () => {
         setIsProcessingPayment(true);
         const token = Cookies.get("token");
@@ -307,6 +321,13 @@ export default function Cart() {
                 const unpaidItems = category.items.filter(item => !item.status);
                 allUnpaidItems.push(...unpaidItems);
             });
+
+            // Jika tidak ada item yang harus dibayar, tidak perlu proses pembayaran
+            if (allUnpaidItems.length === 0) {
+                alert("Tidak ada item yang perlu dibayar.");
+                setIsProcessingPayment(false);
+                return;
+            }
 
             const cartIds = allUnpaidItems.map(item => item.id);
 
@@ -325,21 +346,23 @@ export default function Cart() {
             Api.defaults.headers.common["Authorization"] = token;
             const transactionResponse = await Api.post('/api/transactions', transactionData);
 
-            // Update status semua item yang dibayar
-            for (const item of allUnpaidItems) {
-                await Api.patch(`/api/carts/${item.id}`, { status: true });
-            }
+            // LANGSUNG REDIRECT SETELAH CREATE TRANSACTION SUCCESS
+            // Tidak perlu menunggu update status semua item
 
-            // Refresh data
-            await fetchData();
-
-            // Tutup modal dan buka print
+            // Tutup modal
             closeAllPaymentModal();
 
             // Cetak PDF untuk semua item
             printReceipt(transactionResponse.data.data, allUnpaidItems, "SEMUA KATEGORI");
 
-            alert("Pembayaran untuk semua kategori berhasil!");
+            // TAMPILKAN NOTIFIKASI SUKSES
+            const unpaidCategoriesCount = Object.values(groupedData).filter(cat => cat.hasUnpaidItems).length;
+            setSuccessMessage(`Pembayaran berhasil! ${allUnpaidItems.length} item dari ${unpaidCategoriesCount} kategori telah dibayar.`);
+            setShowSuccessNotification(true);
+
+            // LANGSUNG REDIRECT KE HALAMAN HISTORY
+            navigate("/history");
+
         } catch (error) {
             console.error("There was an error processing payment!", error);
             alert("Gagal memproses pembayaran. Silakan coba lagi.");
@@ -777,6 +800,33 @@ export default function Cart() {
 
     return (
         <LayoutAdmin>
+            {/* Tambahkan Notifikasi Sukses */}
+            {showSuccessNotification && (
+                <div className="notification-container" style={{
+                    position: 'fixed',
+                    top: '20px',
+                    right: '20px',
+                    zIndex: 9999,
+                    minWidth: '300px'
+                }}>
+                    <div className="alert alert-success alert-dismissible fade show" role="alert">
+                        <div className="d-flex align-items-center">
+                            <FiCheckCircle className="me-2" size={20} />
+                            <div>
+                                <h6 className="mb-1">Pembayaran Berhasil!</h6>
+                                <p className="mb-0">{successMessage}</p>
+                                <small className="text-muted">Mengarahkan ke halaman history...</small>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            className="btn-close"
+                            onClick={() => setShowSuccessNotification(false)}
+                        ></button>
+                    </div>
+                </div>
+            )}
+
             <div className="page-header">
                 <div className="container-xl">
                     <div className="row g-2 align-items-center">
@@ -1002,18 +1052,6 @@ export default function Cart() {
                                                                     </small>
                                                                 )}
                                                             </div>
-                                                            {/* {!isCategoryPaid && (
-                                                                <button
-                                                                    className="btn btn-success btn-sm me-2"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        openPaymentModal(categoryName);
-                                                                    }}
-                                                                >
-                                                                    <FiCreditCard className="me-1" />
-                                                                    Bayar Sekarang
-                                                                </button>
-                                                            )} */}
                                                             <FiChevronDown
                                                                 className={`transition-transform ${expandedCategories[categoryName] ? 'rotate-180' : ''
                                                                     }`}

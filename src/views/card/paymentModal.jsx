@@ -219,7 +219,7 @@ const PaymentAllModal = ({
                                             ) : (
                                                 <>
                                                     <FiPrinter className="me-2" />
-                                                    Bayar Semua & Cetak Struk
+                                                    Bayar Semua
                                                 </>
                                             )}
                                         </button>
