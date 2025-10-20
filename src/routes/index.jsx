@@ -16,6 +16,8 @@ import Users from "../views/user/index.jsx";
 import Profile from "../views/profile/index.jsx";
 import Orders from "../views/orders/index.jsx";
 import Cart from "../views/card/index.jsx";
+import History from "../views/history/index.jsx";
+import InvoicePrint from "../views/history/invoicePrint.jsx";
 
 export default function AppRoutes() {
 
@@ -57,6 +59,14 @@ export default function AppRoutes() {
       {/* route "/cart" */}
       <Route path="/cart" element={
         token ? <Cart /> : <Navigate to="/" replace />
+      } />
+
+      <Route path="/history" element={
+        token ? <History /> : <Navigate to="/" replace />
+      } />
+
+      <Route path="/invoice/:id" element={
+        token ? <InvoicePrint /> : <Navigate to="/" replace />
       } />
 
       {/* route "/categories" */}
