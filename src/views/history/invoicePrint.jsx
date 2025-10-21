@@ -8,14 +8,9 @@ import {
     FaPrint,
     FaDownload,
     FaArrowLeft,
-    FaFileInvoiceDollar,
-    FaBuilding,
-    FaUser,
-    FaPhone,
-    FaEnvelope,
-    FaCalendarAlt,
-    FaMoneyBillWave
+    FaFilePdf
 } from 'react-icons/fa';
+import LayoutAdmin from '../../layouts/admin';
 
 export default function InvoicePrint() {
     const [transaction, setTransaction] = useState(null);
@@ -66,53 +61,27 @@ export default function InvoicePrint() {
     };
 
     const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('id-ID', {
+        const options = {
+            weekday: 'long',
             year: 'numeric',
             month: 'long',
             day: 'numeric'
-        });
+        };
+        return new Date(dateString).toLocaleDateString('id-ID', options);
     };
 
-    // Fungsi untuk print biasa dengan preview di tab baru
-    const generatePrintPreview = () => {
-        if (!invoiceRef.current || !transaction) return;
-
-        const printContent = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="utf-8">
-                <title>Invoice ${transaction.invoice}</title>
-                <style>
-                    ${getPrintStyles()}
-                </style>
-            </head>
-            <body>
-                ${generateInvoiceHTML()}
-                <script>
-                    window.onload = function() {
-                        window.print();
-                        setTimeout(() => {
-                            window.close();
-                        }, 1000);
-                    }
-                </script>
-            </body>
-            </html>
-        `;
-
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(printContent);
-        printWindow.document.close();
-    };
-
-    // Fungsi untuk generate PDF yang rapi
+    // Fungsi untuk generate PDF yang rapi dengan spasi yang benar
     const generateInvoicePDF = async () => {
         if (!invoiceRef.current || !transaction) return;
 
         setIsGeneratingPDF(true);
 
         try {
+            // Buat elemen temporary untuk PDF generation
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = generateInvoiceHTML();
+            document.body.appendChild(tempDiv);
+
             const opt = {
                 margin: [10, 10, 10, 10],
                 filename: `invoice-${transaction.invoice}.pdf`,
@@ -121,11 +90,13 @@ export default function InvoicePrint() {
                     quality: 1.0
                 },
                 html2canvas: {
-                    scale: 3,
+                    scale: 3, // Higher scale for better quality
                     useCORS: true,
                     logging: false,
                     letterRendering: true,
-                    backgroundColor: '#ffffff'
+                    backgroundColor: '#ffffff',
+                    width: 794, // A4 width in pixels at 96 DPI
+                    height: 1123 // A4 height in pixels
                 },
                 jsPDF: {
                     unit: 'mm',
@@ -136,8 +107,11 @@ export default function InvoicePrint() {
 
             await html2pdf()
                 .set(opt)
-                .from(invoiceRef.current)
+                .from(tempDiv)
                 .save();
+
+            // Clean up
+            document.body.removeChild(tempDiv);
 
         } catch (error) {
             console.error('Error generating PDF:', error);
@@ -147,395 +121,368 @@ export default function InvoicePrint() {
         }
     };
 
-    const getPrintStyles = () => `
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: #ffffff;
-            padding: 20px;
-        }
-        
-        .invoice-container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-        }
-        
-        .invoice-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #2c5aa0;
-        }
-        
-        .company-info h1 {
-            color: #2c5aa0;
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-        
-        .company-info .subtitle {
-            color: #666;
-            font-size: 14px;
-            font-weight: 500;
-        }
-        
-        .company-address {
-            color: #666;
-            font-size: 12px;
-            line-height: 1.4;
-            margin-top: 8px;
-        }
-        
-        .invoice-title {
-            text-align: right;
-        }
-        
-        .invoice-title h2 {
-            color: #2c5aa0;
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-        
-        .invoice-number {
-            color: #333;
-            font-size: 16px;
-            font-weight: 600;
-            background: #f8f9fa;
-            padding: 8px 15px;
-            border-radius: 4px;
-            display: inline-block;
-        }
-        
-        .info-section {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 6px;
-        }
-        
-        .info-section h3 {
-            color: #2c5aa0;
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 15px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #ddd;
-        }
-        
-        .client-details, .invoice-details {
-            font-size: 13px;
-        }
-        
-        .client-item, .detail-item {
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-        }
-        
-        .items-section {
-            margin-bottom: 25px;
-        }
-        
-        .items-section h3 {
-            color: #2c5aa0;
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 15px;
-        }
-        
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 6px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .items-table th {
-            background: #2c5aa0;
-            color: white;
-            padding: 12px 15px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 13px;
-        }
-        
-        .items-table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #e0e0e0;
-            font-size: 13px;
-        }
-        
-        .items-table tr:last-child td {
-            border-bottom: none;
-        }
-        
-        .items-table tr:nth-child(even) {
-            background: #f8f9fa;
-        }
-        
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
-        
-        .status-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-            display: inline-block;
-        }
-        
-        .status-paid {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .status-pending {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .summary-section {
-            margin-bottom: 25px;
-        }
-        
-        .total-summary {
-            max-width: 300px;
-            margin-left: auto;
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 6px;
-        }
-        
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        
-        .grand-total {
-            font-size: 16px;
-            font-weight: 700;
-            color: #2c5aa0;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 2px solid #2c5aa0;
-        }
-        
-        .invoice-footer {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 25px;
-            padding-top: 20px;
-            border-top: 1px solid #e0e0e0;
-        }
-        
-        .payment-info h4, .notes-section h4 {
-            color: #2c5aa0;
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-        
-        .payment-info p, .notes-section ul {
-            font-size: 12px;
-            color: #666;
-        }
-        
-        .notes-section ul {
-            padding-left: 20px;
-        }
-        
-        .notes-section li {
-            margin-bottom: 5px;
-        }
-        
-        .signature-section {
-            text-align: center;
-        }
-        
-        .signature-line {
-            width: 200px;
-            height: 1px;
-            background: #333;
-            margin: 40px auto 10px;
-        }
-        
-        .watermark {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            font-size: 10px;
-            color: #ccc;
-            opacity: 0.7;
-        }
-        
-        @media print {
-            body {
-                margin: 0;
-                padding: 0;
-            }
-            .invoice-container {
-                box-shadow: none;
-                border: none;
-                padding: 15px;
-            }
-        }
-    `;
-
     const generateInvoiceHTML = () => {
         if (!transaction) return '';
 
+        const subtotal = transaction.transaction_details.reduce((sum, detail) => sum + detail.price, 0);
+
         return `
-            <div class="invoice-container">
-                <div class="invoice-header">
-                    <div class="company-info">
-                        <h1>LABORATORIUM ANALIS</h1>
-                        <div class="subtitle">Laboratorium Terpercaya</div>
-                        <div class="company-address">
-                            Jl. Contoh Alamat No. 123<br />
-                            Jakarta Selatan, 12345<br />
-                            Telp: (021) 123-4567<br />
-                            Email: info@laboratorium.com
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>Invoice ${transaction.invoice}</title>
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+                    
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+                    
+                    body {
+                        font-family: 'Inter', sans-serif;
+                        line-height: 1.4;
+                        color: #000000;
+                        background: #ffffff;
+                        padding: 15mm;
+                        font-size: 11pt;
+                    }
+                    
+                    .invoice-container {
+                        width: 100%;
+                        max-width: 170mm;
+                        margin: 0 auto;
+                        background: white;
+                    }
+                    
+                    .header-section {
+                        text-align: center;
+                        margin-bottom: 8mm;
+                        padding-bottom: 4mm;
+                        border-bottom: 1px solid #000;
+                    }
+                    
+                    .clinic-name {
+                        color: #000;
+                        font-size: 14pt;
+                        font-weight: 700;
+                        margin-bottom: 2mm;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    }
+                    
+                    .clinic-address {
+                        color: #000;
+                        font-size: 9pt;
+                        font-weight: 400;
+                        margin-bottom: 1mm;
+                        line-height: 1.3;
+                    }
+                    
+                    .clinic-address span {
+                        display: inline-block;
+                        margin: 0 2px;
+                    }
+                    
+                    .invoice-title {
+                        margin-top: 4mm;
+                    }
+                    
+                    .invoice-title h1 {
+                        color: #000;
+                        font-size: 16pt;
+                        font-weight: 700;
+                        margin-bottom: 2mm;
+                        text-transform: uppercase;
+                    }
+                    
+                    .info-sections {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 6mm;
+                        gap: 10mm;
+                    }
+                    
+                    .invoice-info, .client-info {
+                        flex: 1;
+                    }
+                    
+                    .section-title {
+                        color: #000;
+                        font-size: 10pt;
+                        font-weight: 600;
+                        margin-bottom: 2mm;
+                        text-transform: uppercase;
+                        border-bottom: 1px solid #000;
+                        padding-bottom: 1mm;
+                    }
+                    
+                    .detail-item {
+                        font-size: 9pt;
+                        margin-bottom: 1mm;
+                        line-height: 1.3;
+                    }
+                    
+                    .detail-item strong {
+                        font-weight: 600;
+                    }
+                    
+                    .client-name {
+                        font-weight: 600;
+                        margin-bottom: 1mm;
+                        font-size: 10pt;
+                    }
+                    
+                    .items-section {
+                        margin-bottom: 6mm;
+                    }
+                    
+                    .items-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-size: 9pt;
+                    }
+                    
+                    .items-table th {
+                        background: #f5f5f5;
+                        color: #000;
+                        padding: 2mm 1mm;
+                        text-align: left;
+                        font-weight: 600;
+                        border: 1px solid #000;
+                        text-transform: uppercase;
+                    }
+                    
+                    .items-table td {
+                        padding: 2mm 1mm;
+                        border: 1px solid #000;
+                        vertical-align: top;
+                    }
+                    
+                    .text-center { 
+                        text-align: center; 
+                    }
+                    
+                    .text-right { 
+                        text-align: right; 
+                    }
+                    
+                    .total-section {
+                        margin-bottom: 6mm;
+                    }
+                    
+                    .total-table {
+                        width: 60mm;
+                        margin-left: auto;
+                        border-collapse: collapse;
+                        font-size: 9pt;
+                    }
+                    
+                    .total-table td {
+                        padding: 1.5mm 2mm;
+                        border: 1px solid #000;
+                    }
+                    
+                    .total-label {
+                        font-weight: 600;
+                        background: #f5f5f5;
+                    }
+                    
+                    .footer-section {
+                        margin-top: 6mm;
+                        padding-top: 4mm;
+                        border-top: 1px solid #000;
+                    }
+                    
+                    .terbilang-section {
+                        margin-bottom: 4mm;
+                    }
+                    
+                    .terbilang-text {
+                        font-size: 9pt;
+                        font-weight: 600;
+                        color: #000;
+                        line-height: 1.3;
+                    }
+                    
+                    .payment-info h4 {
+                        color: #000;
+                        font-size: 10pt;
+                        font-weight: 600;
+                        margin-bottom: 2mm;
+                        text-transform: uppercase;
+                    }
+                    
+                    .payment-info p {
+                        font-size: 9pt;
+                        color: #000;
+                        line-height: 1.4;
+                    }
+                    
+                    .spacer {
+                        height: 2mm;
+                    }
+                    
+                    @media print {
+                        body {
+                            margin: 0;
+                            padding: 15mm;
+                            background: white !important;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="invoice-container">
+                    <!-- Header Section -->
+                    <div class="header-section">
+                        <div class="clinic-name">Laboratorium Kesehatan Daerah Kabupaten Sidoarjo</div>
+                        <div class="clinic-address">
+                            <span>Jalan.</span> <span>A. Yani</span> <span>Gedangan</span> <span>Nomer.</span> <span>330</span> <span>Kab.Sidoarjo</span>
+                        </div>
+                        <div class="clinic-address">
+                            <span>Kecamatan Gedangan</span> <span>Telp.</span> <span>0859</span> <span>4634</span> <span>5774</span>
+                        </div>
+                        <div class="clinic-address">
+                            <span>Kabupaten</span> <span>Sidoarjo</span>
+                        </div>
+                        <div class="invoice-title">
+                            <h1>INVOICE</h1>
                         </div>
                     </div>
-                    <div class="invoice-title">
-                        <h2>INVOICE</h2>
-                        <div class="invoice-number">${transaction.invoice}</div>
-                    </div>
-                </div>
 
-                <div class="info-section">
-                    <div class="client-info">
-                        <h3>Kepada:</h3>
-                        <div class="client-details">
-                            <div class="client-item">
-                                <strong>${userData?.name || 'Nama Pelanggan'}</strong>
+                    <!-- Info Sections -->
+                    <div class="info-sections">
+                        <div class="invoice-info">
+                            <div class="section-title">INVOICE</div>
+                            <div class="detail-item">
+                                <strong>Tanggal:</strong> ${formatDate(transaction.created_at)}
                             </div>
-                            <div class="client-item">
-                                ${userData?.phone || 'Telepon tidak tersedia'}
-                            </div>
-                            <div class="client-item">
-                                ${userData?.email || 'Email tidak tersedia'}
+                            <div class="detail-item">
+                                <strong>Invoice:</strong> ${transaction.invoice}
                             </div>
                         </div>
-                    </div>
-                    <div class="invoice-info">
-                        <h3>Detail Invoice:</h3>
-                        <div class="invoice-details">
-                            <div class="detail-item">
-                                Tanggal: ${formatDate(transaction.created_at)}
-                            </div>
-                            <div class="detail-item">
-                                No. Invoice: ${transaction.invoice}
-                            </div>
-                            <div class="detail-item">
-                                Status: ${transaction.transaction_details[0]?.status_bayar ? 'LUNAS' : 'BELUM BAYAR'}
-                            </div>
+                        <div class="client-info">
+                            <div class="section-title">KEPADA</div>
+                            <div class="client-name">${userData?.name || 'ariefsanggautama'}</div>
+                            <div class="detail-item">${formatAddress(userData?.alamat)}</div>
                         </div>
                     </div>
-                </div>
 
-                <div class="items-section">
-                    <h3>Detail Pemeriksaan:</h3>
-                    <table class="items-table">
-                        <thead>
-                            <tr>
-                                <th width="5%">#</th>
-                                <th width="55%">Parameter Pemeriksaan</th>
-                                <th width="20%">Harga</th>
-                                <th width="20%">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${transaction.transaction_details.map((detail, index) => `
+                    <div class="spacer"></div>
+
+                    <!-- Items Table -->
+                    <div class="items-section">
+                        <table class="items-table">
+                            <thead>
                                 <tr>
-                                    <td class="text-center">${index + 1}</td>
-                                    <td>${detail.sampel?.parameter || 'Parameter tidak tersedia'}</td>
-                                    <td class="text-right">${formatCurrency(detail.price)}</td>
-                                    <td class="text-center">
-                                        <span class="status-badge ${detail.status_bayar ? 'status-paid' : 'status-pending'}">
-                                            ${detail.status_bayar ? 'LUNAS' : 'BELUM BAYAR'}
-                                        </span>
-                                    </td>
+                                    <th width="8%">NO.</th>
+                                    <th width="47%">JENIS PEMERIKSAAN</th>
+                                    <th width="15%">JUMLAH</th>
+                                    <th width="15%">HARGA / ITEM</th>
+                                    <th width="15%">TOTAL</th>
                                 </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody>
+                                ${transaction.transaction_details.map((detail, index) => `
+                                    <tr>
+                                        <td class="text-center">${index + 1}.</td>
+                                        <td>${detail.sampel?.parameter || `Jenis Pemeriksaan ${index + 1}`}</td>
+                                        <td class="text-center">1 (satu)</td>
+                                        <td class="text-right">${formatCurrency(detail.price)}</td>
+                                        <td class="text-right">${formatCurrency(detail.price)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
 
-                <div class="summary-section">
-                    <div class="total-summary">
-                        <div class="summary-row">
-                            <span>Subtotal:</span>
-                            <span>${formatCurrency(transaction.grand_total)}</span>
+                    <!-- Total Section -->
+                    <div class="total-section">
+                        <table class="total-table">
+                            <tr>
+                                <td class="total-label" width="60%">Total</td>
+                                <td class="text-right" width="40%">${formatCurrency(subtotal)}</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- Footer Section -->
+                    <div class="footer-section">
+                        <div class="terbilang-section">
+                            <p class="terbilang-text"><strong>Terbilang:</strong> ${convertToWords(subtotal)}</p>
                         </div>
-                        <div class="summary-row">
-                            <span>Pajak (0%):</span>
-                            <span>${formatCurrency(0)}</span>
-                        </div>
-                        <div class="summary-row grand-total">
-                            <span>Total:</span>
-                            <span>${formatCurrency(transaction.grand_total)}</span>
+                        <div class="payment-info">
+                            <h4>KETERANGAN:</h4>
+                            <p>
+                                Lakukan pembayaran ke nomor rekening:<br />
+                                BCA 4760219661<br />
+                                Labpesda
+                            </p>
                         </div>
                     </div>
                 </div>
-
-                <div class="invoice-footer">
-                    <div class="payment-info">
-                        <h4>Informasi Pembayaran:</h4>
-                        <p>
-                            Transfer ke: BANK ABC<br />
-                            No. Rekening: 1234-5678-9012<br />
-                            Atas Nama: Laboratorium Analis
-                        </p>
-                    </div>
-                    <div class="signature-section">
-                        <div class="signature">
-                            <div class="signature-line"></div>
-                            <p>Hormat Kami,<br />Laboratorium Analis</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="notes-section">
-                    <h4>Catatan:</h4>
-                    <ul>
-                        <li>Invoice ini sah dan dapat digunakan sebagai bukti pembayaran</li>
-                        <li>Pembayaran diharapkan lunas dalam waktu 7 hari</li>
-                        <li>Untuk pertanyaan lebih lanjut, hubungi customer service kami</li>
-                    </ul>
-                </div>
-
-                <div class="watermark">
-                    Generated on ${new Date().toLocaleDateString('id-ID')}
-                </div>
-            </div>
+            </body>
+            </html>
         `;
+    };
+
+    // Fungsi untuk memformat alamat dengan spasi
+    const formatAddress = (address) => {
+        return address
+            .replace(/([a-z])([A-Z])/g, '$1 $2')
+            .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+            .replace(/([0-9])([A-Za-z])/g, '$1 $2')
+            .replace(/([A-Za-z])([0-9])/g, '$1 $2');
+    };
+
+    // Fungsi untuk memformat kota dengan spasi
+    const formatCity = (city) => {
+        return city
+            .replace(/([a-z])([A-Z])/g, '$1 $2')
+            .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2');
+    };
+
+    // Fungsi untuk mengkonversi angka ke terbilang (dalam bahasa Indonesia)
+    const convertToWords = (number) => {
+        if (number === 0) return 'nol rupiah';
+
+        const units = ['', 'ribu', 'juta', 'miliar', 'triliun'];
+        const numbers = [
+            '', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan',
+            'sepuluh', 'sebelas', 'dua belas', 'tiga belas', 'empat belas', 'lima belas',
+            'enam belas', 'tujuh belas', 'delapan belas', 'sembilan belas'
+        ];
+
+        const convert = (num) => {
+            if (num < 20) {
+                return numbers[num];
+            } else if (num < 100) {
+                return numbers[Math.floor(num / 10)] + ' puluh' + (num % 10 !== 0 ? ' ' + numbers[num % 10] : '');
+            } else if (num < 200) {
+                return 'seratus' + (num % 100 !== 0 ? ' ' + convert(num % 100) : '');
+            } else if (num < 1000) {
+                return numbers[Math.floor(num / 100)] + ' ratus' + (num % 100 !== 0 ? ' ' + convert(num % 100) : '');
+            }
+
+            for (let i = 0; i < units.length; i++) {
+                const divisor = Math.pow(1000, i + 1);
+                if (num < divisor) {
+                    const currentUnit = Math.floor(num / (divisor / 1000));
+                    if (currentUnit === 1 && i === 1) {
+                        return 'seribu' + (num % 1000 !== 0 ? ' ' + convert(num % 1000) : '');
+                    } else {
+                        return convert(currentUnit) + ' ' + units[i] + (num % (divisor / 1000) !== 0 ? ' ' + convert(num % (divisor / 1000)) : '');
+                    }
+                }
+            }
+            return '';
+        };
+
+        const words = convert(number).trim();
+        return words + ' rupiah';
     };
 
     if (isLoading) {
@@ -562,178 +509,137 @@ export default function InvoicePrint() {
         );
     }
 
-    return (
-        <div className="invoice-print-container">
-            {/* Action Bar - Tidak akan tercetak */}
-            <div className="action-bar no-print">
-                <div className="action-buttons">
-                    <button onClick={() => navigate(-1)} className="btn btn-outline">
-                        <FaArrowLeft className="btn-icon" />
-                        Kembali
-                    </button>
-                    <button onClick={generatePrintPreview} className="btn btn-primary">
-                        <FaPrint className="btn-icon" />
-                        Print Preview
-                    </button>
-                    <button
-                        onClick={generateInvoicePDF}
-                        className="btn btn-success"
-                        disabled={isGeneratingPDF}
-                    >
-                        {isGeneratingPDF ? (
-                            <FaSpinner className="btn-icon spinning" />
-                        ) : (
-                            <FaDownload className="btn-icon" />
-                        )}
-                        {isGeneratingPDF ? 'Membuat PDF...' : 'Download PDF'}
-                    </button>
-                </div>
-            </div>
+    // Calculate totals for display
+    const subtotal = transaction.transaction_details.reduce((sum, detail) => sum + detail.price, 0);
 
-            {/* Invoice Content untuk tampilan di browser */}
-            <div className="invoice-content" id="invoice-content" ref={invoiceRef}>
-                <div className="invoice-container-preview">
-                    <div className="invoice-header">
-                        <div className="company-info">
-                            <div className="company-logo">
-                                <FaBuilding />
+    return (
+        <LayoutAdmin>
+            <div className="invoice-print-container">
+                {/* Action Bar - Tidak akan tercetak */}
+                <div className="action-bar no-print">
+                    <div className="action-header">
+                        <h2 className="page-title">
+                            <FaFilePdf className="title-icon" />
+                            Invoice #{transaction.invoice}
+                        </h2>
+                        <p className="page-subtitle">Preview dan download invoice transaksi</p>
+                    </div>
+                    <div className="action-buttons">
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="btn btn-back"
+                        >
+                            <FaArrowLeft className="btn-icon" />
+                            Kembali ke Daftar
+                        </button>
+                        <div className="button-divider"></div>
+                        <button
+                            onClick={generateInvoicePDF}
+                            className="btn btn-download"
+                            disabled={isGeneratingPDF}
+                        >
+                            {isGeneratingPDF ? (
+                                <FaSpinner className="btn-icon spinning" />
+                            ) : (
+                                <FaDownload className="btn-icon" />
+                            )}
+                            {isGeneratingPDF ? 'Sedang Membuat PDF...' : 'Download PDF Invoice'}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Invoice Content untuk tampilan di browser */}
+                <div className="invoice-content" id="invoice-content" ref={invoiceRef}>
+                    <div className="invoice-container-preview">
+                        {/* Header Section */}
+                        <div className="header-section">
+                            <div className="clinic-name">Laboratorium Kesehatan Daerah Kabupaten Sidoarjo</div>
+                            <div className="clinic-address">Jalan A. Yani Gedangan Nomer 330.</div>
+                            <div className="clinic-address">Kecamatan Gedangan Telp. 0859 4634 5774</div>
+                            <div className="clinic-address">Kabupaten Sidoarjo</div>
+                            <div className="invoice-title">
+                                <h1>INVOICE</h1>
                             </div>
-                            <div>
-                                <h1 className="company-name">LABORATORIUM ANALIS</h1>
-                                <p className="company-subtitle">Laboratorium Terpercaya</p>
-                                <p className="company-address">
-                                    Jl. Contoh Alamat No. 123<br />
-                                    Jakarta Selatan, 12345<br />
-                                    Telp: (021) 123-4567<br />
-                                    Email: info@laboratorium.com
+                        </div>
+
+                        {/* Info Sections */}
+                        <div className="info-sections">
+                            <div className="invoice-info">
+                                <h3 className="section-title">INVOICE</h3>
+                                <div className="detail-item">
+                                    <strong>Tanggal:</strong> {formatDate(transaction.created_at)}
+                                </div>
+                                <div className="detail-item">
+                                    <strong>Invoice:</strong> {transaction.invoice}
+                                </div>
+                            </div>
+                            <div className="client-info">
+                                <h3 className="section-title">KEPADA</h3>
+                                <div className="client-name">
+                                    <strong>{userData?.name || 'ariefsanggautama'}</strong>
+                                </div>
+                                <div className="detail-item">
+                                    {userData?.alamat}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Items Table */}
+                        <div className="items-section">
+                            <table className="items-table">
+                                <thead>
+                                    <tr>
+                                        <th width="8%">NO.</th>
+                                        <th width="47%">JENIS PEMERIKSAAN</th>
+                                        <th width="15%">JUMLAH</th>
+                                        <th width="15%">HARGA / ITEM</th>
+                                        <th width="15%">TOTAL</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {transaction.transaction_details.map((detail, index) => (
+                                        <tr key={detail.id}>
+                                            <td className="text-center">{index + 1}.</td>
+                                            <td>{detail.sampel?.parameter || `Jenis Pemeriksaan ${index + 1}`}</td>
+                                            <td className="text-center">1 (satu)</td>
+                                            <td className="text-right">{formatCurrency(detail.price)}</td>
+                                            <td className="text-right">{formatCurrency(detail.price)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Total Section */}
+                        <div className="total-section">
+                            <table className="total-table">
+                                <tbody>
+                                    <tr>
+                                        <td className="total-label" width="60%">Total</td>
+                                        <td className="text-right" width="40%">{formatCurrency(subtotal)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Footer Section */}
+                        <div className="footer-section">
+                            <div className="terbilang-section">
+                                <p className="terbilang-text"><strong>Terbilang:</strong> {convertToWords(subtotal)}</p>
+                            </div>
+                            <div className="payment-info">
+                                <h4>KETERANGAN:</h4>
+                                <p>
+                                    Lakukan pembayaran ke nomor rekening:<br />
+                                    BCA 4760219661<br />
+                                    Labpesda
                                 </p>
                             </div>
                         </div>
-                        <div className="invoice-title">
-                            <div className="title-icon">
-                                <FaFileInvoiceDollar />
-                            </div>
-                            <h2>INVOICE</h2>
-                            <div className="invoice-number">{transaction.invoice}</div>
-                        </div>
-                    </div>
-
-                    <div className="info-section">
-                        <div className="client-info">
-                            <h3>Kepada:</h3>
-                            <div className="client-details">
-                                <div className="client-item">
-                                    <FaUser className="client-icon" />
-                                    <strong>{userData?.name || 'Nama Pelanggan'}</strong>
-                                </div>
-                                <div className="client-item">
-                                    <FaPhone className="client-icon" />
-                                    {userData?.phone || 'Telepon tidak tersedia'}
-                                </div>
-                                <div className="client-item">
-                                    <FaEnvelope className="client-icon" />
-                                    {userData?.email || 'Email tidak tersedia'}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="invoice-info">
-                            <h3>Detail Invoice:</h3>
-                            <div className="invoice-details">
-                                <div className="detail-item">
-                                    <FaCalendarAlt className="detail-icon" />
-                                    <span>Tanggal: {formatDate(transaction.created_at)}</span>
-                                </div>
-                                <div className="detail-item">
-                                    <FaFileInvoiceDollar className="detail-icon" />
-                                    <span>No. Invoice: {transaction.invoice}</span>
-                                </div>
-                                <div className="detail-item">
-                                    <FaMoneyBillWave className="detail-icon" />
-                                    <span>Status: {transaction.transaction_details[0]?.status_bayar ? 'LUNAS' : 'BELUM BAYAR'}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="items-section">
-                        <h3>Detail Pemeriksaan:</h3>
-                        <table className="items-table">
-                            <thead>
-                                <tr>
-                                    <th width="5%">#</th>
-                                    <th width="55%">Parameter Pemeriksaan</th>
-                                    <th width="20%">Harga</th>
-                                    <th width="20%">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {transaction.transaction_details.map((detail, index) => (
-                                    <tr key={detail.id}>
-                                        <td className="text-center">{index + 1}</td>
-                                        <td>{detail.sampel?.parameter || 'Parameter tidak tersedia'}</td>
-                                        <td className="text-right">{formatCurrency(detail.price)}</td>
-                                        <td className="text-center">
-                                            <span className={`status-badge ${detail.status_bayar ? 'status-paid' : 'status-pending'}`}>
-                                                {detail.status_bayar ? 'LUNAS' : 'BELUM BAYAR'}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div className="summary-section">
-                        <div className="total-summary">
-                            <div className="summary-row">
-                                <span>Subtotal:</span>
-                                <span>{formatCurrency(transaction.grand_total)}</span>
-                            </div>
-                            <div className="summary-row">
-                                <span>Pajak (0%):</span>
-                                <span>{formatCurrency(0)}</span>
-                            </div>
-                            <div className="summary-row grand-total">
-                                <span>Total:</span>
-                                <span>{formatCurrency(transaction.grand_total)}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="invoice-footer">
-                        <div className="payment-info">
-                            <h4>Informasi Pembayaran:</h4>
-                            <p>
-                                Transfer ke: BANK ABC<br />
-                                No. Rekening: 1234-5678-9012<br />
-                                Atas Nama: Laboratorium Analis
-                            </p>
-                        </div>
-                        <div className="signature-section">
-                            <div className="signature">
-                                <div className="signature-line"></div>
-                                <p>Hormat Kami,<br />Laboratorium Analis</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="notes-section">
-                        <h4>Catatan:</h4>
-                        <ul>
-                            <li>Invoice ini sah dan dapat digunakan sebagai bukti pembayaran</li>
-                            <li>Pembayaran diharapkan lunas dalam waktu 7 hari</li>
-                            <li>Untuk pertanyaan lebih lanjut, hubungi customer service kami</li>
-                        </ul>
                     </div>
                 </div>
-            </div>
-            <style>{`
-                /* invoicePrint.css */
 
-                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-                /* Base Styles */
-
+                <style jsx>{`
                 .invoice-print-container {
                     min-height: 100vh;
                     background: #f8f9fa;
@@ -741,258 +647,241 @@ export default function InvoicePrint() {
                     font-family: 'Inter', sans-serif;
                 }
 
-
-                /* Action Bar */
-
                 .action-bar {
                     background: white;
-                    padding: 1.5rem 2rem;
-                    border-radius: 12px;
-                    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+                    padding: 2rem;
+                    border-radius: 16px;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
                     margin-bottom: 2rem;
                     display: flex;
-                    justify-content: center;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    gap: 2rem;
+                    border: 1px solid #e9ecef;
+                }
+
+                .action-header {
+                    flex: 1;
+                }
+
+                .page-title {
+                    color: #2c3e50;
+                    font-size: 1.5rem;
+                    font-weight: 700;
+                    margin: 0 0 0.5rem 0;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                }
+
+                .title-icon {
+                    color: #e74c3c;
+                    font-size: 1.4rem;
+                }
+
+                .page-subtitle {
+                    color: #6c757d;
+                    font-size: 0.95rem;
+                    margin: 0;
+                    font-weight: 400;
                 }
 
                 .action-buttons {
                     display: flex;
+                    align-items: center;
                     gap: 1rem;
-                    flex-wrap: wrap;
-                    justify-content: center;
+                    flex-shrink: 0;
                 }
 
-
-                /* Button Styles */
+                .button-divider {
+                    width: 1px;
+                    height: 30px;
+                    background: #e9ecef;
+                    margin: 0 0.5rem;
+                }
 
                 .btn {
-                    padding: 0.75rem 1.5rem;
-                    border-radius: 8px;
+                    padding: 0.875rem 1.5rem;
+                    border-radius: 12px;
                     font-weight: 600;
                     display: flex;
                     align-items: center;
-                    gap: 0.5rem;
+                    gap: 0.75rem;
                     border: none;
                     cursor: pointer;
                     transition: all 0.3s ease;
                     text-decoration: none;
-                    font-size: 0.9rem;
-                    min-width: 140px;
+                    font-size: 0.95rem;
+                    min-width: 180px;
                     justify-content: center;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                    position: relative;
+                    overflow: hidden;
                 }
 
-                .btn-primary {
-                    background: linear-gradient(135deg, #007bff, #0056b3);
+                .btn::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: -100%;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+                    transition: left 0.5s;
+                }
+
+                .btn:hover::before {
+                    left: 100%;
+                }
+
+                .btn-back {
+                    background: linear-gradient(135deg, #6c757d, #495057);
                     color: white;
+                    border: 2px solid #495057;
                 }
 
-                .btn-success {
+                .btn-back:hover {
+                    background: linear-gradient(135deg, #5a6268, #3d4348);
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+                }
+
+                .btn-download {
                     background: linear-gradient(135deg, #28a745, #1e7e34);
                     color: white;
+                    border: 2px solid #1e7e34;
                 }
 
-                .btn-outline {
-                    background: transparent;
-                    color: #007bff;
-                    border: 2px solid #007bff;
-                }
-
-                .btn:hover {
+                .btn-download:hover:not(:disabled) {
+                    background: linear-gradient(135deg, #218838, #155724);
                     transform: translateY(-2px);
-                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+                    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
                 }
 
                 .btn:disabled {
                     opacity: 0.6;
                     cursor: not-allowed;
                     transform: none;
+                    box-shadow: none;
+                }
+
+                .btn:disabled:hover::before {
+                    left: -100%;
                 }
 
                 .btn-icon {
-                    font-size: 0.9rem;
+                    font-size: 1rem;
+                    flex-shrink: 0;
                 }
-
-
-                /* Invoice Content */
 
                 .invoice-content {
                     background: white;
-                    border-radius: 15px;
-                    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.1);
-                    padding: 3rem;
-                    max-width: 1000px;
+                    border-radius: 12px;
+                    box-shadow: 0 6px 30px rgba(0, 0, 0, 0.1);
+                    padding: 40px;
+                    max-width: 210mm;
                     margin: 0 auto;
+                    font-size: 12pt;
+                    border: 1px solid #e9ecef;
                 }
 
                 .invoice-container-preview {
-                    max-width: 800px;
-                    margin: 0 auto;
+                    max-width: 100%;
                 }
 
+                .header-section {
+                    text-align: center;
+                    margin-bottom: 25px;
+                    padding-bottom: 15px;
+                    border-bottom: 2px solid #000;
+                }
 
-                /* Invoice Header */
+                .clinic-name {
+                    color: #000;
+                    margin: 0 0 10px 0;
+                    font-size: 1.4rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
 
-                .invoice-header {
+                .clinic-address {
+                    color: #000;
+                    font-size: 0.9rem;
+                    margin: 3px 0;
+                    font-weight: 400;
+                    line-height: 1.3;
+                }
+
+                .invoice-title h1 {
+                    color: #000;
+                    margin: 15px 0 5px 0;
+                    font-size: 1.6rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                }
+
+                .info-sections {
                     display: flex;
                     justify-content: space-between;
-                    align-items: flex-start;
-                    margin-bottom: 2.5rem;
-                    padding-bottom: 2rem;
-                    border-bottom: 3px solid #2c5aa0;
+                    margin-bottom: 25px;
+                    gap: 40px;
                 }
 
-                .company-info {
-                    display: flex;
-                    gap: 1.5rem;
-                    align-items: flex-start;
+                .invoice-info, .client-info {
+                    flex: 1;
                 }
 
-                .company-logo {
-                    width: 70px;
-                    height: 70px;
-                    background: linear-gradient(135deg, #2c5aa0, #1e3a8a);
-                    border-radius: 12px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: white;
-                    font-size: 2rem;
-                    box-shadow: 0 4px 15px rgba(44, 90, 160, 0.3);
-                }
-
-                .company-name {
-                    color: #2c5aa0;
-                    margin: 0 0 0.5rem 0;
-                    font-size: 1.8rem;
-                    font-weight: 700;
-                }
-
-                .company-subtitle {
-                    color: #6c757d;
-                    font-size: 1rem;
-                    font-weight: 500;
-                    margin-bottom: 0.5rem;
-                }
-
-                .company-address {
-                    color: #6c757d;
-                    line-height: 1.5;
-                    margin: 0;
-                    font-size: 0.9rem;
-                }
-
-                .invoice-title {
-                    text-align: right;
-                }
-
-                .title-icon {
-                    font-size: 2.5rem;
-                    color: #2c5aa0;
-                    margin-bottom: 0.5rem;
-                }
-
-                .invoice-title h2 {
-                    color: #2c5aa0;
-                    margin: 0.5rem 0;
-                    font-size: 2.2rem;
-                    font-weight: 700;
-                }
-
-                .invoice-number {
-                    background: linear-gradient(135deg, #2c5aa0, #1e3a8a);
-                    color: white;
-                    padding: 0.75rem 1.5rem;
-                    border-radius: 8px;
-                    font-weight: 700;
-                    font-size: 1.1rem;
-                    box-shadow: 0 2px 10px rgba(44, 90, 160, 0.3);
-                }
-
-
-                /* Info Section */
-
-                .info-section {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 2.5rem;
-                    margin-bottom: 2.5rem;
-                    padding: 2rem;
-                    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-                    border-radius: 12px;
-                    border-left: 4px solid #2c5aa0;
-                }
-
-                .client-info h3,
-                .invoice-info h3 {
-                    color: #2c5aa0;
-                    margin-bottom: 1.2rem;
-                    border-bottom: 2px solid #dee2e6;
-                    padding-bottom: 0.75rem;
-                    font-size: 1.2rem;
-                    font-weight: 600;
-                }
-
-                .client-item,
-                .detail-item {
-                    display: flex;
-                    align-items: center;
-                    gap: 0.75rem;
-                    margin-bottom: 0.75rem;
-                    color: #495057;
+                .section-title {
+                    color: #000;
+                    margin-bottom: 10px;
                     font-size: 0.95rem;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    border-bottom: 1px solid #000;
+                    padding-bottom: 5px;
                 }
 
-                .client-icon,
-                .detail-icon {
-                    color: #2c5aa0;
-                    width: 16px;
+                .detail-item {
+                    color: #000;
                     font-size: 0.9rem;
+                    margin-bottom: 5px;
+                    line-height: 1.3;
                 }
 
-
-                /* Items Section */
+                .client-name {
+                    font-weight: 600;
+                    margin-bottom: 5px;
+                    color: #000;
+                    font-size: 1rem;
+                }
 
                 .items-section {
-                    margin-bottom: 2.5rem;
-                }
-
-                .items-section h3 {
-                    color: #2c5aa0;
-                    margin-bottom: 1.2rem;
-                    font-size: 1.3rem;
-                    font-weight: 600;
+                    margin-bottom: 25px;
                 }
 
                 .items-table {
                     width: 100%;
                     border-collapse: collapse;
                     background: white;
-                    border-radius: 10px;
-                    overflow: hidden;
-                    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+                    border: 1px solid #000;
+                    font-size: 0.9rem;
                 }
 
                 .items-table th {
-                    background: linear-gradient(135deg, #2c5aa0, #1e3a8a);
-                    color: white;
-                    padding: 1.2rem 1rem;
+                    background: #f5f5f5;
+                    color: #000;
+                    padding: 10px 8px;
                     text-align: left;
                     font-weight: 600;
-                    font-size: 0.9rem;
+                    border: 1px solid #000;
+                    text-transform: uppercase;
                 }
 
                 .items-table td {
-                    padding: 1rem;
-                    border-bottom: 1px solid #e9ecef;
-                    background: white;
-                    font-size: 0.9rem;
-                }
-
-                .items-table tr:last-child td {
-                    border-bottom: none;
-                }
-
-                .items-table tr:hover td {
-                    background: #f8f9fa;
+                    padding: 10px 8px;
+                    border: 1px solid #000;
+                    vertical-align: top;
                 }
 
                 .text-center {
@@ -1003,125 +892,61 @@ export default function InvoicePrint() {
                     text-align: right;
                 }
 
+                .total-section {
+                    margin-bottom: 25px;
+                }
 
-                /* Status Badges */
+                .total-table {
+                    width: 200px;
+                    margin-left: auto;
+                    border-collapse: collapse;
+                    font-size: 0.9rem;
+                    border: 1px solid #000;
+                }
 
-                .status-badge {
-                    padding: 0.4rem 1rem;
-                    border-radius: 20px;
-                    font-size: 0.8rem;
+                .total-table td {
+                    padding: 8px 12px;
+                    border: 1px solid #000;
+                }
+
+                .total-label {
                     font-weight: 600;
-                    display: inline-block;
-                    min-width: 100px;
+                    background: #f5f5f5;
                 }
 
-                .status-paid {
-                    background: linear-gradient(135deg, #d4edda, #c3e6cb);
-                    color: #155724;
-                    border: 1px solid #c3e6cb;
+                .footer-section {
+                    margin-top: 25px;
+                    padding-top: 15px;
+                    border-top: 2px solid #000;
                 }
 
-                .status-pending {
-                    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
-                    color: #721c24;
-                    border: 1px solid #f5c6cb;
+                .terbilang-section {
+                    margin-bottom: 15px;
                 }
 
-
-                /* Summary Section */
-
-                .summary-section {
-                    display: flex;
-                    justify-content: flex-end;
-                    margin-bottom: 2.5rem;
-                }
-
-                .total-summary {
-                    width: 350px;
-                    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-                    padding: 2rem;
-                    border-radius: 12px;
-                    border-left: 4px solid #2c5aa0;
-                }
-
-                .summary-row {
-                    display: flex;
-                    justify-content: space-between;
-                    margin-bottom: 0.75rem;
-                    padding-bottom: 0.75rem;
-                    border-bottom: 1px solid #dee2e6;
-                    color: #495057;
-                    font-size: 1rem;
-                }
-
-                .grand-total {
-                    font-size: 1.3rem;
-                    font-weight: 700;
-                    color: #2c5aa0;
-                    margin-top: 1rem;
-                    padding-top: 1rem;
-                    border-top: 2px solid #2c5aa0;
-                }
-
-
-                /* Footer */
-
-                .invoice-footer {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 2.5rem;
-                    margin-bottom: 2.5rem;
-                    padding-top: 2.5rem;
-                    border-top: 2px solid #e9ecef;
-                }
-
-                .payment-info h4,
-                .notes-section h4 {
-                    color: #2c5aa0;
-                    margin-bottom: 1.2rem;
-                    font-size: 1.1rem;
+                .terbilang-text {
+                    font-size: 0.9rem;
                     font-weight: 600;
+                    color: #000;
+                    line-height: 1.3;
+                }
+
+                .payment-info h4 {
+                    color: #000;
+                    margin-bottom: 8px;
+                    font-size: 0.95rem;
+                    font-weight: 600;
+                    text-transform: uppercase;
                 }
 
                 .payment-info p {
-                    color: #6c757d;
-                    line-height: 1.6;
+                    color: #000;
+                    line-height: 1.4;
                     font-size: 0.9rem;
-                }
-
-                .signature {
-                    text-align: center;
-                }
-
-                .signature-line {
-                    width: 250px;
-                    height: 2px;
-                    background: #495057;
-                    margin: 3rem auto 0.75rem;
-                }
-
-                .signature p {
-                    color: #6c757d;
-                    font-size: 0.9rem;
-                }
-
-                .notes-section ul {
-                    color: #6c757d;
-                    padding-left: 1.5rem;
                     margin: 0;
-                    font-size: 0.9rem;
                 }
 
-                .notes-section li {
-                    margin-bottom: 0.5rem;
-                    line-height: 1.5;
-                }
-
-
-                /* Loading & Error States */
-
-                .loading-container,
-                .error-container {
+                .loading-container, .error-container {
                     display: flex;
                     flex-direction: column;
                     align-items: center;
@@ -1136,7 +961,7 @@ export default function InvoicePrint() {
 
                 .spinner-icon {
                     font-size: 3.5rem;
-                    color: #2c5aa0;
+                    color: #007bff;
                     animation: spin 1s linear infinite;
                 }
 
@@ -1158,24 +983,14 @@ export default function InvoicePrint() {
                     font-size: 1.1rem;
                 }
 
-
-                /* Animations */
-
                 @keyframes spin {
-                    from {
-                        transform: rotate(0deg);
-                    }
-                    to {
-                        transform: rotate(360deg);
-                    }
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
                 }
 
                 .spinning {
                     animation: spin 1s linear infinite;
                 }
-
-
-                /* Print Styles */
 
                 @media print {
                     .no-print {
@@ -1192,112 +1007,81 @@ export default function InvoicePrint() {
                         margin: 0;
                         border-radius: 0;
                     }
-                    .invoice-container-preview {
-                        max-width: 100%;
-                    }
-                    body {
-                        background: white !important;
-                        font-size: 12pt;
-                        -webkit-print-color-adjust: exact;
-                        print-color-adjust: exact;
-                    }
-                    .invoice-header,
-                    .info-section,
-                    .items-section,
-                    .summary-section,
-                    .invoice-footer {
-                        break-inside: avoid;
-                    }
-                    .items-table {
-                        font-size: 10pt;
-                    }
-                    /* Ensure gradients and colors print correctly */
-                    .company-logo,
-                    .invoice-number,
-                    .items-table th,
-                    .status-badge {
-                        -webkit-print-color-adjust: exact;
-                        print-color-adjust: exact;
-                    }
                 }
 
-
-                /* Responsive Design */
-
                 @media (max-width: 1024px) {
-                    .invoice-content {
-                        padding: 2rem;
+                    .action-bar {
+                        flex-direction: column;
+                        align-items: stretch;
+                        gap: 1.5rem;
                     }
-                    .info-section,
-                    .invoice-footer {
-                        grid-template-columns: 1fr;
-                        gap: 2rem;
+                    
+                    .action-buttons {
+                        justify-content: center;
                     }
                 }
 
                 @media (max-width: 768px) {
                     .invoice-print-container {
-                        padding: 10px;
+                        padding: 15px;
                     }
-                    .invoice-content {
-                        padding: 1.5rem;
-                        border-radius: 8px;
-                    }
-                    .invoice-header {
-                        flex-direction: column;
-                        gap: 1.5rem;
-                        text-align: center;
-                    }
-                    .company-info {
-                        flex-direction: column;
-                        text-align: center;
-                        gap: 1rem;
-                    }
-                    .invoice-title {
-                        text-align: center;
-                    }
+                    
                     .action-bar {
-                        padding: 1rem;
+                        padding: 1.5rem;
                     }
+                    
                     .action-buttons {
                         flex-direction: column;
                         width: 100%;
                     }
+                    
+                    .button-divider {
+                        display: none;
+                    }
+                    
                     .btn {
                         width: 100%;
+                        min-width: auto;
                     }
-                    .total-summary {
-                        width: 100%;
+                    
+                    .invoice-content {
+                        padding: 20px;
                     }
-                    .items-table {
-                        font-size: 0.8rem;
+                    
+                    .info-sections {
+                        flex-direction: column;
+                        gap: 20px;
                     }
-                    .items-table th,
-                    .items-table td {
-                        padding: 0.75rem 0.5rem;
+                    
+                    .page-title {
+                        font-size: 1.3rem;
                     }
                 }
 
                 @media (max-width: 480px) {
-                    .invoice-content {
+                    .invoice-print-container {
+                        padding: 10px;
+                    }
+                    
+                    .action-bar {
                         padding: 1rem;
                     }
-                    .company-name {
-                        font-size: 1.4rem;
+                    
+                    .invoice-content {
+                        padding: 15px;
                     }
-                    .invoice-title h2 {
-                        font-size: 1.6rem;
+                    
+                    .page-title {
+                        font-size: 1.2rem;
                     }
-                    .info-section {
-                        padding: 1.5rem;
+                    
+                    .btn {
+                        padding: 0.75rem 1rem;
+                        font-size: 0.9rem;
                     }
-                    .client-item,
-                    .detail-item {
-                        font-size: 0.85rem;
-                    }
-                }   
+                }
             `}</style>
-        </div>
-
+            </div>
+        </LayoutAdmin>
     );
 }

@@ -585,10 +585,6 @@ export default function Cart() {
                             <span class="info-label">Pelanggan:</span>
                             <span>${userData?.name || 'Guest'}</span>
                         </div>
-                        <div class="info-row">
-                            <span class="info-label">ID User:</span>
-                            <span>${userData?.id || 'N/A'}</span>
-                        </div>
                     </div>
                     
                     <table class="items-table">
@@ -602,7 +598,7 @@ export default function Cart() {
                         <tbody>
                             ${items.map(item => `
                                 <tr>
-                                    <td class="item-name">${item.sampel.name}</td>
+                                    <td class="item-name">${item.sampel.parameter}</td>
                                     <td class="item-qty">${item.qty}</td>
                                     <td class="item-price">${formatCurrency(item.price * item.qty)}</td>
                                 </tr>
@@ -953,8 +949,8 @@ export default function Cart() {
                                 <div className="flex-fill">
                                     <h5 className="alert-title">Pembayaran Tertunda</h5>
                                     <div className="text-muted">
-                                        Anda memiliki <strong>{Object.values(groupedData).reduce((sum, cat) => sum + cat.unpaidCount, 0)} sampel</strong>
-                                        yang belum dibayar dengan total <strong>{formatCurrency(unpaidTotal)}</strong>.
+                                        Anda memiliki <strong>{Object.values(groupedData).reduce((sum, cat) => sum + cat.unpaidCount, 0)} sampel</strong> yang
+                                        belum dibayar dengan total <strong>{formatCurrency(unpaidTotal)}</strong>.
                                         Silakan lakukan pembayaran untuk melanjutkan proses.
                                     </div>
                                 </div>
@@ -1219,6 +1215,7 @@ export default function Cart() {
                                             <small className="text-muted">
                                                 <strong>Detail Sampel:</strong><br />
                                                 • Kategori: {itemToDelete.sampel.category.name}<br />
+                                                • Name Paremeter: {itemToDelete.sampel.parameter}<br />
                                                 • Quantity: {itemToDelete.qty}<br />
                                                 • Harga: {formatCurrency(itemToDelete.price)}<br />
                                                 • Total: <strong>{formatCurrency(itemToDelete.price * itemToDelete.qty)}</strong>
