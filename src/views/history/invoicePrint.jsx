@@ -367,8 +367,7 @@ export default function InvoicePrint() {
                         <div class="client-info">
                             <div class="section-title">KEPADA</div>
                             <div class="client-name">${userData?.name || 'ariefsanggautama'}</div>
-                            <div class="detail-item">${formatAddress(userData?.address || 'Taman Puri Bintaro PB 33 No.37B Bintaro Sektor 9')}</div>
-                            <div class="detail-item">${formatCity(userData?.city || 'Tangerang Selatan Banten')}</div>
+                            <div class="detail-item">${formatAddress(userData?.alamat)}</div>
                         </div>
                     </div>
 
@@ -420,7 +419,7 @@ export default function InvoicePrint() {
                             <p>
                                 Lakukan pembayaran ke nomor rekening:<br />
                                 BCA 4760219661<br />
-                                a.n. Christopher Roswell
+                                Labpesda
                             </p>
                         </div>
                     </div>
@@ -580,10 +579,7 @@ export default function InvoicePrint() {
                                     <strong>{userData?.name || 'ariefsanggautama'}</strong>
                                 </div>
                                 <div className="detail-item">
-                                    {userData?.address || 'Taman Puri Bintaro PB 33 No.37B Bintaro Sektor 9'}
-                                </div>
-                                <div className="detail-item">
-                                    {userData?.city || 'Tangerang Selatan Banten'}
+                                    {userData?.alamat}
                                 </div>
                             </div>
                         </div>
@@ -636,7 +632,7 @@ export default function InvoicePrint() {
                                 <p>
                                     Lakukan pembayaran ke nomor rekening:<br />
                                     BCA 4760219661<br />
-                                    a.n. Christopher Roswell
+                                    Labpesda
                                 </p>
                             </div>
                         </div>
