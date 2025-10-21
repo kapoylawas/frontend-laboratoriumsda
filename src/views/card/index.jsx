@@ -949,8 +949,8 @@ export default function Cart() {
                                 <div className="flex-fill">
                                     <h5 className="alert-title">Pembayaran Tertunda</h5>
                                     <div className="text-muted">
-                                        Anda memiliki <strong>{Object.values(groupedData).reduce((sum, cat) => sum + cat.unpaidCount, 0)} sampel</strong>
-                                        yang belum dibayar dengan total <strong>{formatCurrency(unpaidTotal)}</strong>.
+                                        Anda memiliki <strong>{Object.values(groupedData).reduce((sum, cat) => sum + cat.unpaidCount, 0)} sampel</strong> yang
+                                        belum dibayar dengan total <strong>{formatCurrency(unpaidTotal)}</strong>.
                                         Silakan lakukan pembayaran untuk melanjutkan proses.
                                     </div>
                                 </div>
