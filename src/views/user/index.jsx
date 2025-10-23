@@ -18,7 +18,7 @@ import {
     IconLicense,
     IconPower,
     IconCircleCheck,
-    IconCircleX // Icon untuk notifikasi error
+    IconCircleX
 } from "@tabler/icons-react";
 import UserEdit from "./edit";
 import DeleteButton from "../../components/DeleteButton";
@@ -29,7 +29,7 @@ export default function Users() {
     const [isLoading, setIsLoading] = useState(true);
     const [pagination, setPagination] = useState({
         currentPage: 1,
-        perPage: 0,
+        totalPages: 0,
         total: 0
     });
     const [keywords, setKeywords] = useState("");
@@ -70,7 +70,7 @@ export default function Users() {
                 setUsers(response.data.data);
                 setPagination({
                     currentPage: response.data.pagination.currentPage,
-                    perPage: response.data.pagination.perPage,
+                    totalPages: response.data.pagination.totalPages,
                     total: response.data.pagination.total
                 });
             } catch (error) {
@@ -439,10 +439,7 @@ export default function Users() {
                                                                     Tampilkan Semua Pengguna
                                                                 </button>
                                                             ) : (
-                                                                <button className="btn btn-primary">
-                                                                    <IconUserPlus size={18} className="me-1" />
-                                                                    Tambah Pengguna Pertama
-                                                                </button>
+                                                                <UserCreate fetchData={fetchData} />
                                                             )}
                                                         </div>
                                                     </td>
@@ -451,17 +448,18 @@ export default function Users() {
                                         </tbody>
                                     </table>
 
-                                    {users.length > 0 && (
+                                    {users.length > 0 && pagination.totalPages > 1 && (
                                         <div className="card-footer d-flex align-items-center">
                                             <PaginationComponent
                                                 currentPage={pagination.currentPage}
-                                                perPage={pagination.perPage}
+                                                perPage={5} // tambahkan ini, karena limit di backend adalah 5
                                                 total={pagination.total}
                                                 onChange={(pageNumber) => fetchData(pageNumber, keywords)}
                                                 position="center"
                                             />
                                             <small className="text-muted ms-auto">
                                                 Menampilkan {users.length} dari {pagination.total} pengguna
+                                                (Halaman {pagination.currentPage} dari {pagination.totalPages})
                                             </small>
                                         </div>
                                     )}
@@ -541,39 +539,6 @@ export default function Users() {
                     </div>
                 </>
             )}
-
-            <style jsx>{`
-                .cursor-pointer {
-                    cursor: pointer;
-                    transition: all 0.2s ease;
-                }
-                .cursor-pointer:hover {
-                    background-color: #3b82f6 !important;
-                    color: white !important;
-                    transform: translateY(-1px);
-                }
-                .custom-tooltip {
-                    max-width: 300px;
-                }
-                .tooltip-content {
-                    font-size: 14px;
-                    line-height: 1.4;
-                }
-                .modal-content {
-                    border-radius: 12px;
-                    overflow: hidden;
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-                    border: none;
-                }
-                .modal-status {
-                    height: 6px;
-                    background-position: center;
-                    background-size: cover;
-                }
-                .modal.show {
-                    backdrop-filter: blur(4px);
-                }
-            `}</style>
         </LayoutAdmin>
     )
 }
