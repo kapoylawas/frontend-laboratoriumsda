@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Cookies from "js-cookie";
 import Api from "../../services/api";
 import LayoutAdmin from '../../layouts/admin';
+import Hashids from 'hashids';
 
 // Import icon (gunakan react-icons)
 import {
@@ -19,6 +20,9 @@ import {
     FaInfoCircle
 } from 'react-icons/fa';
 
+// Inisialisasi Hashids
+const hashids = new Hashids('invoice-sidoarjo-lab-secret-key', 10);
+
 export default function History() {
     const [data, setData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -29,6 +33,17 @@ export default function History() {
     const userCookie = Cookies.get("user");
     const parsedData = JSON.parse(userCookie);
     const idUser = parsedData.id;
+
+    // Fungsi untuk encode ID
+    const encodeId = (id) => {
+        return hashids.encode(id);
+    };
+
+    // Fungsi untuk decode ID (jika diperlukan di component ini)
+    const decodeId = (hash) => {
+        const decoded = hashids.decode(hash);
+        return decoded.length > 0 ? decoded[0] : null;
+    };
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -103,8 +118,9 @@ export default function History() {
     };
 
     const handlePrint = (transaction) => {
-        // Navigate to print page instead of window.print()
-        navigate(`/invoice/${transaction.id}`);
+        // Encode ID sebelum navigasi
+        const encodedId = encodeId(transaction.id);
+        navigate(`/invoice/${encodedId}`);
     };
 
     const handleViewDetails = (transaction) => {
@@ -114,6 +130,17 @@ export default function History() {
     const calculateTotalItems = (transaction) => {
         return transaction.transaction_details.length;
     };
+
+    // Test encoding (untuk debugging)
+    // useEffect(() => {
+    //     if (data.length > 0) {
+    //         console.log('Contoh encoded ID:', {
+    //             original: data[0].id,
+    //             encoded: encodeId(data[0].id),
+    //             decoded: decodeId(encodeId(data[0].id))
+    //         });
+    //     }
+    // }, [data]);
 
     if (isLoading) {
         return (
@@ -300,6 +327,7 @@ export default function History() {
                 </div>
             </div>
             <style>{`
+                /* CSS styles tetap sama seperti sebelumnya */
                 .history-container {
                     min-height: 100vh;
                     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
@@ -714,9 +742,7 @@ export default function History() {
                     }
                 }
 
-
                 /* Responsive Design */
-
                 @media (max-width: 768px) {
                     .header-content {
                         flex-direction: column;
@@ -752,6 +778,5 @@ export default function History() {
                 }
             `}</style>
         </LayoutAdmin>
-
     );
 }

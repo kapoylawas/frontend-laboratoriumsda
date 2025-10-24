@@ -11,38 +11,66 @@ import {
     FaFilePdf
 } from 'react-icons/fa';
 import LayoutAdmin from '../../layouts/admin';
+import { decodeId } from '../../utils/hashids'; // Import fungsi decode
 
 export default function InvoicePrint() {
     const [transaction, setTransaction] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [userData, setUserData] = useState(null);
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+    const [error, setError] = useState(null);
     const { id } = useParams();
     const navigate = useNavigate();
     const invoiceRef = useRef();
 
     const fetchTransaction = async () => {
-        if (!id) return;
+        if (!id) {
+            setError('ID tidak valid');
+            setIsLoading(false);
+            return;
+        }
 
         setIsLoading(true);
+        setError(null);
         const token = Cookies.get("token");
 
         if (token) {
             Api.defaults.headers.common["Authorization"] = token;
             try {
-                const response = await Api.get(`/api/transaction-by-id/${id}`);
-                setTransaction(response.data.data);
+                // Decode ID yang di-encode dari URL
+                const decodedId = decodeId(id);
 
-                // Get user data from cookie
-                const userCookie = Cookies.get("user");
-                if (userCookie) {
-                    setUserData(JSON.parse(userCookie));
+                if (!decodedId) {
+                    setError('ID transaksi tidak valid');
+                    setIsLoading(false);
+                    return;
+                }
+
+                // console.log('Encoded ID:', id);
+                // console.log('Decoded ID:', decodedId);
+
+                const response = await Api.get(`/api/transaction-by-id/${decodedId}`);
+
+                if (response.data.data) {
+                    setTransaction(response.data.data);
+
+                    // Get user data from cookie
+                    const userCookie = Cookies.get("user");
+                    if (userCookie) {
+                        setUserData(JSON.parse(userCookie));
+                    }
+                } else {
+                    setError('Transaksi tidak ditemukan');
                 }
             } catch (error) {
                 console.error("Error fetching transaction:", error);
+                setError('Terjadi kesalahan saat mengambil data transaksi');
             } finally {
                 setIsLoading(false);
             }
+        } else {
+            setError('Token tidak tersedia');
+            setIsLoading(false);
         }
     };
 
@@ -90,13 +118,13 @@ export default function InvoicePrint() {
                     quality: 1.0
                 },
                 html2canvas: {
-                    scale: 3, // Higher scale for better quality
+                    scale: 3,
                     useCORS: true,
                     logging: false,
                     letterRendering: true,
                     backgroundColor: '#ffffff',
-                    width: 794, // A4 width in pixels at 96 DPI
-                    height: 1123 // A4 height in pixels
+                    width: 794,
+                    height: 1123
                 },
                 jsPDF: {
                     unit: 'mm',
@@ -431,18 +459,12 @@ export default function InvoicePrint() {
 
     // Fungsi untuk memformat alamat dengan spasi
     const formatAddress = (address) => {
+        if (!address) return '';
         return address
             .replace(/([a-z])([A-Z])/g, '$1 $2')
             .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
             .replace(/([0-9])([A-Za-z])/g, '$1 $2')
             .replace(/([A-Za-z])([0-9])/g, '$1 $2');
-    };
-
-    // Fungsi untuk memformat kota dengan spasi
-    const formatCity = (city) => {
-        return city
-            .replace(/([a-z])([A-Z])/g, '$1 $2')
-            .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2');
     };
 
     // Fungsi untuk mengkonversi angka ke terbilang (dalam bahasa Indonesia)
@@ -487,25 +509,35 @@ export default function InvoicePrint() {
 
     if (isLoading) {
         return (
-            <div className="loading-container">
-                <div className="loading-spinner">
-                    <FaSpinner className="spinner-icon" />
+            <LayoutAdmin>
+                <div className="loading-container">
+                    <div className="loading-spinner">
+                        <FaSpinner className="spinner-icon" />
+                    </div>
+                    <p className="loading-text">Memuat data invoice...</p>
                 </div>
-                <p className="loading-text">Memuat data invoice...</p>
-            </div>
+            </LayoutAdmin>
         );
     }
 
-    if (!transaction) {
+    if (error || !transaction) {
         return (
-            <div className="error-container">
-                <h2>Data tidak ditemukan</h2>
-                <p>Transaksi tidak ditemukan atau telah dihapus</p>
-                <button onClick={() => navigate(-1)} className="btn btn-primary">
-                    <FaArrowLeft className="btn-icon" />
-                    Kembali
-                </button>
-            </div>
+            <LayoutAdmin>
+                <div className="error-container">
+                    <div className="error-content">
+                        <h2>Data tidak ditemukan</h2>
+                        <p>{error || 'Transaksi tidak ditemukan atau telah dihapus'}</p>
+                        <div className="error-details">
+                            <p><strong>Encoded ID:</strong> {id}</p>
+                            <p><strong>Decoded ID:</strong> {id ? decodeId(id) : 'Tidak valid'}</p>
+                        </div>
+                        <button onClick={() => navigate(-1)} className="btn btn-primary">
+                            <FaArrowLeft className="btn-icon" />
+                            Kembali ke Riwayat
+                        </button>
+                    </div>
+                </div>
+            </LayoutAdmin>
         );
     }
 
@@ -953,6 +985,7 @@ export default function InvoicePrint() {
                     justify-content: center;
                     min-height: 50vh;
                     text-align: center;
+                    padding: 2rem;
                 }
 
                 .loading-spinner {
@@ -971,16 +1004,38 @@ export default function InvoicePrint() {
                     font-weight: 500;
                 }
 
-                .error-container h2 {
+                .error-content {
+                    background: white;
+                    padding: 3rem;
+                    border-radius: 16px;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                    max-width: 500px;
+                    width: 100%;
+                }
+
+                .error-content h2 {
                     color: #dc3545;
                     margin-bottom: 1rem;
                     font-size: 1.8rem;
                 }
 
-                .error-container p {
+                .error-content p {
                     color: #6c757d;
                     margin-bottom: 2rem;
                     font-size: 1.1rem;
+                }
+
+                .error-details {
+                    background: #f8f9fa;
+                    padding: 1rem;
+                    border-radius: 8px;
+                    margin-bottom: 2rem;
+                    text-align: left;
+                }
+
+                .error-details p {
+                    margin-bottom: 0.5rem;
+                    font-size: 0.9rem;
                 }
 
                 @keyframes spin {
