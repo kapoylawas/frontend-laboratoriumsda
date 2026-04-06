@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore as useThemeStore } from '../stores/theme';
 import { useStore as useUserStore } from '../stores/user';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { isAdmin, canAccessHasil, canAccessOperationalMenus } from '../constants/roles';
 import "./Header.css";
 
 export default function Header() {
@@ -12,6 +13,11 @@ export default function Header() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMobileView, setIsMobileView] = useState(false);
     const [isMasterDataOpen, setIsMasterDataOpen] = useState(false);
+
+    // Check user roles using helper functions
+    const userIsAdmin = isAdmin(user);
+    const userCanAccessHasil = canAccessHasil(user);
+    const userCanAccessOperationalMenus = canAccessOperationalMenus(user);
 
     const logoutHandler = () => {
         logout();
@@ -230,49 +236,59 @@ export default function Header() {
                                     </Link>
                                 </li>
 
-                                <li className={`mobile-nav-item ${isActivePath('/orders') ? 'active' : ''}`}>
-                                    <Link className="mobile-nav-link" to="/orders" onClick={closeMobileMenu}>
-                                        <div className="nav-icon">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                                <path d="M15 19l-6 -2l-6 2v-10a6 6 0 1 1 12 0v10" />
-                                                <path d="M9 8h6" />
-                                                <path d="M9 12h6" />
-                                            </svg>
-                                        </div>
-                                        <span className="nav-label">ORDER</span>
-                                    </Link>
-                                </li>
+                                {/* Orders Menu - Admin Only */}
+                                {userCanAccessOperationalMenus && (
+                                    <li className={`mobile-nav-item ${isActivePath('/orders') ? 'active' : ''}`}>
+                                        <Link className="mobile-nav-link" to="/orders" onClick={closeMobileMenu}>
+                                            <div className="nav-icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                    <path d="M15 19l-6 -2l-6 2v-10a6 6 0 1 1 12 0v10" />
+                                                    <path d="M9 8h6" />
+                                                    <path d="M9 12h6" />
+                                                </svg>
+                                            </div>
+                                            <span className="nav-label">ORDER</span>
+                                        </Link>
+                                    </li>
+                                )}
 
-                                <li className={`mobile-nav-item ${isActivePath('/cart') ? 'active' : ''}`}>
-                                    <Link className="mobile-nav-link" to="/cart" onClick={closeMobileMenu}>
-                                        <div className="nav-icon">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                                <path d="M6 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
-                                                <path d="M17 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
-                                                <path d="M17 17h-11v-14h-2" />
-                                                <path d="M6 5l14 1l-1 7h-13" />
-                                            </svg>
-                                        </div>
-                                        <span className="nav-label">CART</span>
-                                    </Link>
-                                </li>
+                                {/* Cart Menu - Admin Only */}
+                                {userCanAccessOperationalMenus && (
+                                    <li className={`mobile-nav-item ${isActivePath('/cart') ? 'active' : ''}`}>
+                                        <Link className="mobile-nav-link" to="/cart" onClick={closeMobileMenu}>
+                                            <div className="nav-icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                    <path d="M6 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                                                    <path d="M17 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                                                    <path d="M17 17h-11v-14h-2" />
+                                                    <path d="M6 5l14 1l-1 7h-13" />
+                                                </svg>
+                                            </div>
+                                            <span className="nav-label">CART</span>
+                                        </Link>
+                                    </li>
+                                )}
 
-                                <li className={`mobile-nav-item ${isActivePath('/history') ? 'active' : ''}`}>
-                                    <Link className="mobile-nav-link" to="/history" onClick={closeMobileMenu}>
-                                        <div className="nav-icon">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                                <path d="M12 8l0 4l2 2" />
-                                                <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" />
-                                            </svg>
-                                        </div>
-                                        <span className="nav-label">HISTORY</span>
-                                    </Link>
-                                </li>
+                                {/* History Menu - Admin Only */}
+                                {userCanAccessOperationalMenus && (
+                                    <li className={`mobile-nav-item ${isActivePath('/history') ? 'active' : ''}`}>
+                                        <Link className="mobile-nav-link" to="/history" onClick={closeMobileMenu}>
+                                            <div className="nav-icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                    <path d="M12 8l0 4l2 2" />
+                                                    <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" />
+                                                </svg>
+                                            </div>
+                                            <span className="nav-label">HISTORY</span>
+                                        </Link>
+                                    </li>
+                                )}
 
-                                {user?.role_id === 2 && (
+                                {/* Hasil Menu - Accessible by Admin & Analisis */}
+                                {userCanAccessHasil && (
                                     <li className={`mobile-nav-item ${isActivePath('/hasil') ? 'active' : ''}`}>
                                         <Link className="mobile-nav-link" to="/hasil" onClick={closeMobileMenu}>
                                             <div className="nav-icon">
@@ -290,8 +306,8 @@ export default function Header() {
                                     </li>
                                 )}
 
-                                {/* Master Data for Admin - Mobile */}
-                                {user?.role_id === 2 && (
+                                {/* Master Data for Admin Only - Mobile */}
+                                {userIsAdmin && (
                                     <li className={`mobile-nav-item mobile-nav-dropdown ${isMasterDataOpen ? 'open' : ''} ${isActivePath('/categories') || isActivePath('/sampels') || isActivePath('/users') ? 'active' : ''}`}>
                                         <div
                                             className="mobile-nav-link dropdown-toggle"
@@ -399,51 +415,59 @@ export default function Header() {
                                         </Link>
                                     </li>
 
-                                    <li className={`nav-item ${isActivePath('/orders') ? 'active' : ''}`}>
-                                        <Link className="nav-link cashier-nav-link" to="/orders">
-                                            <div className="nav-icon">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                                    <path d="M15 19l-6 -2l-6 2v-10a6 6 0 1 1 12 0v10" />
-                                                    <path d="M9 8h6" />
-                                                    <path d="M9 12h6" />
-                                                </svg>
-                                            </div>
-                                            <span className="nav-label">ORDER</span>
-                                        </Link>
-                                    </li>
+                                    {/* Orders Menu - Admin Only */}
+                                    {userCanAccessOperationalMenus && (
+                                        <li className={`nav-item ${isActivePath('/orders') ? 'active' : ''}`}>
+                                            <Link className="nav-link cashier-nav-link" to="/orders">
+                                                <div className="nav-icon">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                        <path d="M15 19l-6 -2l-6 2v-10a6 6 0 1 1 12 0v10" />
+                                                        <path d="M9 8h6" />
+                                                        <path d="M9 12h6" />
+                                                    </svg>
+                                                </div>
+                                                <span className="nav-label">ORDER</span>
+                                            </Link>
+                                        </li>
+                                    )}
 
+                                    {/* Cart Menu - Admin Only */}
+                                    {userCanAccessOperationalMenus && (
+                                        <li className={`nav-item ${isActivePath('/cart') ? 'active' : ''}`}>
+                                            <Link className="nav-link cashier-nav-link" to="/cart">
+                                                <div className="nav-icon">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                        <path d="M6 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                                                        <path d="M17 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                                                        <path d="M17 17h-11v-14h-2" />
+                                                        <path d="M6 5l14 1l-1 7h-13" />
+                                                    </svg>
+                                                </div>
+                                                <span className="nav-label">CART</span>
+                                            </Link>
+                                        </li>
+                                    )}
 
+                                    {/* History Menu - Admin Only */}
+                                    {userCanAccessOperationalMenus && (
+                                        <li className={`nav-item ${isActivePath('/history') ? 'active' : ''}`}>
+                                            <Link className="nav-link cashier-nav-link" to="/history">
+                                                <div className="nav-icon">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                        <path d="M12 8l0 4l2 2" />
+                                                        <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" />
+                                                    </svg>
+                                                </div>
+                                                <span className="nav-label">HISTORY</span>
+                                            </Link>
+                                        </li>
+                                    )}
 
-                                    <li className={`nav-item ${isActivePath('/cart') ? 'active' : ''}`}>
-                                        <Link className="nav-link cashier-nav-link" to="/cart">
-                                            <div className="nav-icon">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                                    <path d="M6 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
-                                                    <path d="M17 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
-                                                    <path d="M17 17h-11v-14h-2" />
-                                                    <path d="M6 5l14 1l-1 7h-13" />
-                                                </svg>
-                                            </div>
-                                            <span className="nav-label">CART</span>
-                                        </Link>
-                                    </li>
-
-                                    <li className={`nav-item ${isActivePath('/history') ? 'active' : ''}`}>
-                                        <Link className="nav-link cashier-nav-link" to="/history">
-                                            <div className="nav-icon">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                                    <path d="M12 8l0 4l2 2" />
-                                                    <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" />
-                                                </svg>
-                                            </div>
-                                            <span className="nav-label">HISTORY</span>
-                                        </Link>
-                                    </li>
-
-                                    {user?.role_id === 2 && (
+                                    {/* Hasil Menu - Accessible by Admin & Analisis */}
+                                    {userCanAccessHasil && (
                                         <li className={`nav-item ${isActivePath('/hasil') ? 'active' : ''}`}>
                                             <Link className="nav-link cashier-nav-link" to="/hasil">
                                                 <div className="nav-icon">
@@ -461,8 +485,8 @@ export default function Header() {
                                         </li>
                                     )}
 
-                                    {/* Master Data Dropdown - Desktop */}
-                                    {user?.role_id === 2 && (
+                                    {/* Master Data Dropdown - Admin Only */}
+                                    {userIsAdmin && (
                                         <li className={`nav-item dropdown ${isActivePath('/categories') || isActivePath('/sampels') || isActivePath('/users') ? 'active' : ''}`}>
                                             <button className="nav-link cashier-nav-link dropdown-toggle" data-bs-toggle="dropdown">
                                                 <div className="nav-icon">

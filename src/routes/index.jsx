@@ -1,8 +1,10 @@
 //import react router dom
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 
-//import store
-import { useStore } from '../stores/user.js';
+//import components
+import ProtectedRoute from '../components/ProtectedRoute.jsx';
+import AdminRoute from '../components/AdminRoute.jsx';
+import HasilRoute from '../components/HasilRoute.jsx';
 
 //import view login
 import Login from "../views/auth/login.jsx";
@@ -21,103 +23,77 @@ import InvoicePrint from "../views/history/invoicePrint.jsx";
 import Hasil from "../views/hasil/index.jsx";
 
 export default function AppRoutes() {
-
-  //destruct state "token" from store
-  const { token, user } = useStore();
-
   return (
     <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/aktifasi/:token" element={<Aktifasi />} />
+      <Route path="/forbidden" element={<Forbidden />} />
 
-      <Route path="/" element={
-        token ? <Navigate to="/dashboard" replace /> : <Login />
-      } />
-
-      {/* route "/register" */}
-      <Route path="/register" element={
-        <Register />
-      } />
-
-      {/* route "/aktifasi" */}
-      <Route path="/aktifasi/:token" element={
-        <Aktifasi />
-      } />
-
-      {/* route "/dashboard" */}
+      {/* Protected Routes - Require Authentication */}
       <Route path="/dashboard" element={
-        token ? <Dashboard /> : <Navigate to="/" replace />
+        <ProtectedRoute>
+          <Dashboard />
+        </ProtectedRoute>
       } />
 
-      {/* route "/profile" */}
       <Route path="/profile" element={
-        token ? <Profile /> : <Navigate to="/" replace />
+        <ProtectedRoute>
+          <Profile />
+        </ProtectedRoute>
       } />
 
-      {/* route "/orders" */}
+      {/* Operational Routes - Admin Only (Orders, Cart, History) */}
       <Route path="/orders" element={
-        token ? <Orders /> : <Navigate to="/" replace />
+        <AdminRoute>
+          <Orders />
+        </AdminRoute>
       } />
 
-      {/* route "/cart" */}
       <Route path="/cart" element={
-        token ? <Cart /> : <Navigate to="/" replace />
+        <AdminRoute>
+          <Cart />
+        </AdminRoute>
       } />
 
-      {/* route "/history" */}
       <Route path="/history" element={
-        token ? <History /> : <Navigate to="/" replace />
-      } />
-
-      {/* route "/hasil" */}
-      <Route path="/hasil" element={
-        token ? <Hasil /> : <Navigate to="/" replace />
+        <AdminRoute>
+          <History />
+        </AdminRoute>
       } />
 
       <Route path="/invoice/:id" element={
-        token ? <InvoicePrint /> : <Navigate to="/" replace />
+        <AdminRoute>
+          <InvoicePrint />
+        </AdminRoute>
       } />
 
-      {/* route "/categories" */}
+      {/* Admin Routes - Require Admin Role */}
       <Route path="/categories" element={
-        token ? (
-          user?.role_id === 2 ? (
-            <Categories />
-          ) : (
-            <Forbidden /> // atau <Navigate to="/dashboard" replace />
-          )
-        ) : (
-          <Navigate to="/" replace />
-        )
+        <AdminRoute>
+          <Categories />
+        </AdminRoute>
       } />
 
-      {/* route "/sampels" */}
       <Route path="/sampels" element={
-        token ? (
-          user?.role_id === 2 ? (
-            <Sampels />
-          ) : (
-            <Forbidden /> // atau <Navigate to="/dashboard" replace />
-          )
-        ) : (
-          <Navigate to="/" replace />
-        )
+        <AdminRoute>
+          <Sampels />
+        </AdminRoute>
       } />
 
-      {/* route "/users" */}
       <Route path="/users" element={
-        token ? (
-          user?.role_id === 2 ? (
-            <Users />
-          ) : (
-            <Forbidden /> // atau <Navigate to="/dashboard" replace />
-          )
-        ) : (
-          <Navigate to="/" replace />
-        )
+        <AdminRoute>
+          <Users />
+        </AdminRoute>
       } />
 
-      {/* Tambahkan route untuk halaman forbidden jika diperlukan */}
-      <Route path="/forbidden" element={<Forbidden />} />
-
+      {/* Hasil Route - Accessible by Admin Labkesda & Analisis */}
+      <Route path="/hasil" element={
+        <HasilRoute>
+          <Hasil />
+        </HasilRoute>
+      } />
     </Routes>
   );
 }

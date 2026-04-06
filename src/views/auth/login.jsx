@@ -1,5 +1,3 @@
-//import layout auth
-import LayoutAuth from '../../layouts/auth'
 
 //import hook react
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
