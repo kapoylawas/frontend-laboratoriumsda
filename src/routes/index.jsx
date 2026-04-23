@@ -16,6 +16,9 @@ import Aktifasi from "../views/activite/index.jsx";
 import Sampels from "../views/sampels/index.jsx";
 import Users from "../views/user/index.jsx";
 import Profile from "../views/profile/index.jsx";
+import Pengajuan from "../views/pengajuan/index.jsx";
+import PengajuanCreate from "../views/pengajuan/create.jsx";
+import PengajuanDetail from "../views/pengajuan/detail.jsx";
 import Orders from "../views/orders/index.jsx";
 import Cart from "../views/card/index.jsx";
 import History from "../views/history/index.jsx";
@@ -41,6 +44,23 @@ export default function AppRoutes() {
       <Route path="/profile" element={
         <ProtectedRoute>
           <Profile />
+        </ProtectedRoute>
+      } />
+
+      {/* Penawaran (Quotation) Routes - Accessible by authenticated users */}
+      <Route path="/penawaran" element={
+        <ProtectedRoute>
+          <Pengajuan />
+        </ProtectedRoute>
+      } />
+      <Route path="/penawaran/create" element={
+        <ProtectedRoute>
+          <PengajuanCreate />
+        </ProtectedRoute>
+      } />
+      <Route path="/penawaran/:id" element={
+        <ProtectedRoute>
+          <PengajuanDetail />
         </ProtectedRoute>
       } />
 
