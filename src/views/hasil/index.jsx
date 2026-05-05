@@ -5,30 +5,15 @@ import Cookies from "js-cookie";
 import Api from "../../services/api";
 import Swal from "sweetalert2";
 
-// Import icons yang benar dari react-icons
-import {
-  BiCheckCircle,
-  BiHourglass,
-  BiSearch,
-  BiRefresh,
-  BiPencil,
-  BiTrash,
-  BiCheck,
-  BiX,
-  BiFolderOpen,
-  BiUserCircle,
-} from "react-icons/bi";
-
 export default function HasilIndex() {
   const [hasils, setHasils] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [filterDate, setFilterDate] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({
     hasil: "",
     metode: "",
-    price: "",
-    qty: "",
     status: false,
   });
   const [pagination, setPagination] = useState({
@@ -37,22 +22,27 @@ export default function HasilIndex() {
     total: 0,
     totalPages: 1,
   });
+  const [expandedCategories, setExpandedCategories] = useState({});
 
-  const fetchData = async (pageNumber, keywords = "") => {
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(value || 0);
+  };
+
+  const fetchData = async (pageNumber, keywords = "", date = "") => {
     setIsLoading(true);
     const page = pageNumber ? pageNumber : pagination.currentPage;
     const token = Cookies.get("token");
 
     if (token) {
       Api.defaults.headers.common["Authorization"] = token;
-
       try {
-        const response = await Api.get(
-          `/api/hasils?page=${page}&search=${keywords}`,
-        );
-
-        console.log("API Response:", response.data);
-
+        const params = [`page=${page}`, `search=${keywords}`];
+        if (date) params.push(`date=${date}`);
+        const response = await Api.get(`/api/hasils?${params.join("&")}`);
         setHasils(response.data.data);
 
         if (response.data.pagination) {
@@ -64,21 +54,17 @@ export default function HasilIndex() {
           });
         }
       } catch (error) {
-        console.error("There was an error fetching the data!", error);
-
+        console.error("Error fetching data:", error);
         Swal.fire({
           icon: "error",
-          title: "Oops...",
-          text: "Gagal mengambil data!",
-          footer: error.message,
+          title: "Gagal",
+          text: "Gagal mengambil data hasil!",
         });
       } finally {
         setIsLoading(false);
       }
     } else {
-      console.error("Token is not available!");
       setIsLoading(false);
-
       Swal.fire({
         icon: "warning",
         title: "Tidak Ada Token",
@@ -94,94 +80,79 @@ export default function HasilIndex() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    fetchData(1, search);
+    fetchData(1, search, filterDate);
   };
 
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(value);
+  const handleDateChange = (e) => {
+    const newDate = e.target.value;
+    setFilterDate(newDate);
+    fetchData(1, search, newDate);
   };
 
-  const getStatusBadge = (status) => {
-    return status ? (
-      <span className="badge-selesai">
-        <BiCheckCircle className="me-1" /> Selesai
-      </span>
-    ) : (
-      <span className="badge-proses">
-        <BiHourglass className="me-1" /> Proses
-      </span>
-    );
+  const handleClearFilters = () => {
+    setSearch("");
+    setFilterDate("");
+    fetchData(1, "", "");
   };
 
-  // Handle edit button click
+  // Group hasils by category
+  const getGroupedByCategory = () => {
+    const grouped = {};
+    hasils.forEach((hasil) => {
+      const catName = hasil.sampel?.category?.name || "Tanpa Kategori";
+      if (!grouped[catName]) grouped[catName] = [];
+      grouped[catName].push(hasil);
+    });
+    return grouped;
+  };
+
+  const toggleCategory = (catName) => {
+    setExpandedCategories((prev) => ({
+      ...prev,
+      [catName]: !prev[catName],
+    }));
+  };
+
+  const getRowNumber = (globalIndex) => {
+    if (!pagination || !pagination.currentPage || !pagination.perPage) {
+      return globalIndex + 1;
+    }
+    return (pagination.currentPage - 1) * pagination.perPage + globalIndex + 1;
+  };
+
   const handleEdit = (hasil) => {
-    console.log("Editing item:", hasil); // Debugging
-
     setEditingId(hasil.id);
     setEditForm({
       hasil: hasil.hasil || "",
       metode: hasil.metode || "",
-      price: hasil.price?.toString() || "0",
-      qty: hasil.qty?.toString() || "1",
       status: hasil.status || false,
     });
   };
 
-  // Handle cancel edit
   const handleCancelEdit = () => {
     setEditingId(null);
-    setEditForm({
-      hasil: "",
-      metode: "",
-      price: "",
-      qty: "",
-      status: false,
-    });
+    setEditForm({ hasil: "", metode: "", status: false });
   };
 
-  // Handle input change
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-
-    console.log("Input changed:", name, type === "checkbox" ? checked : value); // Debugging
-
     setEditForm((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
   };
 
-  // Handle save/update dengan SweetAlert
   const handleSave = async (id) => {
     try {
-      // Validasi data sebelum save
       if (!editForm.hasil.trim()) {
-        Swal.fire({
-          icon: "warning",
-          title: "Peringatan",
-          text: "Hasil harus diisi!",
-          timer: 2000,
-          showConfirmButton: true,
-        });
+        Swal.fire({ icon: "warning", title: "Peringatan", text: "Hasil harus diisi!" });
         return;
       }
-
       if (!editForm.metode.trim()) {
-        Swal.fire({
-          icon: "warning",
-          title: "Peringatan",
-          text: "Metode harus diisi!",
-          timer: 2000,
-          showConfirmButton: true,
-        });
+        Swal.fire({ icon: "warning", title: "Peringatan", text: "Metode harus diisi!" });
         return;
       }
 
-      // Konfirmasi sebelum update
       const confirmResult = await Swal.fire({
         title: "Konfirmasi Update",
         text: "Apakah Anda yakin ingin mengupdate data ini?",
@@ -192,941 +163,474 @@ export default function HasilIndex() {
         confirmButtonText: "Ya, Update!",
         cancelButtonText: "Batal",
       });
+      if (!confirmResult.isConfirmed) return;
 
-      if (!confirmResult.isConfirmed) {
-        return;
-      }
-
-      // Tampilkan loading
       Swal.fire({
         title: "Mengupdate data...",
-        text: "Mohon tunggu sebentar",
         allowOutsideClick: false,
-        didOpen: () => {
-          Swal.showLoading();
-        },
+        didOpen: () => Swal.showLoading(),
       });
 
       const token = Cookies.get("token");
       if (!token) {
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: "Token tidak ditemukan! Silahkan login ulang.",
-        });
+        Swal.fire({ icon: "error", title: "Error", text: "Token tidak ditemukan!" });
         return;
       }
 
-      // Set token
       Api.defaults.headers.common["Authorization"] = token;
-
-      // Siapkan data untuk dikirim - Mengirim hasil, metode, dan status
       const updateData = {
         hasil: editForm.hasil.trim(),
         metode: editForm.metode.trim(),
-        status: editForm.status, // Kirim status (boolean)
+        status: editForm.status,
       };
 
-      console.log("Sending update data to /api/hasils/" + id + ":", updateData);
+      await Api.put(`/api/hasils/${id}`, updateData);
 
-      // Kirim request PUT
-      const response = await Api.put(`/api/hasils/${id}`, updateData);
-
-      console.log("Update response:", response.data);
-
-      // Tampilkan notifikasi sukses di top center
       await Swal.fire({
         icon: "success",
         title: "Berhasil!",
-        text: response.data.message || "Data berhasil diupdate!",
+        text: "Data berhasil diupdate!",
         showConfirmButton: false,
         timer: 1500,
         position: "top",
         toast: true,
       });
 
-      // Refresh data
-      await fetchData(pagination.currentPage, search);
-
-      // Reset edit mode
+      await fetchData(pagination.currentPage, search, filterDate);
       setEditingId(null);
-      setEditForm({
-        hasil: "",
-        metode: "",
-        price: "",
-        qty: "",
-        status: false,
-      });
+      setEditForm({ hasil: "", metode: "", status: false });
     } catch (error) {
-      console.error("Error updating data:", error);
-
-      // Tampilkan pesan error
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Gagal mengupdate data!";
-
-      Swal.fire({
-        icon: "error",
-        title: "Gagal Update",
-        text: errorMessage,
-        confirmButtonColor: "#dc3545",
-      });
+      const errorMessage = error.response?.data?.message || error.message || "Gagal mengupdate data!";
+      Swal.fire({ icon: "error", title: "Gagal Update", text: errorMessage });
     }
   };
 
-  // Handle delete dengan SweetAlert
   const handleDelete = async (id) => {
+    const confirmResult = await Swal.fire({
+      title: "Konfirmasi Hapus",
+      text: "Apakah Anda yakin ingin menghapus data ini?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc3545",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Ya, Hapus!",
+      cancelButtonText: "Batal",
+    });
+    if (!confirmResult.isConfirmed) return;
+
+    Swal.fire({
+      title: "Menghapus data...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
+    const token = Cookies.get("token");
+    if (!token) {
+      Swal.fire({ icon: "error", title: "Error", text: "Token tidak ditemukan!" });
+      return;
+    }
+
+    Api.defaults.headers.common["Authorization"] = token;
     try {
-      // Konfirmasi sebelum delete
-      const confirmResult = await Swal.fire({
-        title: "Konfirmasi Hapus",
-        text: "Apakah Anda yakin ingin menghapus data ini? Data yang dihapus tidak dapat dikembalikan!",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#dc3545",
-        cancelButtonColor: "#6c757d",
-        confirmButtonText: "Ya, Hapus!",
-        cancelButtonText: "Batal",
-      });
-
-      if (!confirmResult.isConfirmed) {
-        return;
-      }
-
-      // Tampilkan loading
-      Swal.fire({
-        title: "Menghapus data...",
-        text: "Mohon tunggu sebentar",
-        allowOutsideClick: false,
-        didOpen: () => {
-          Swal.showLoading();
-        },
-      });
-
-      const token = Cookies.get("token");
-      if (!token) {
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: "Token tidak ditemukan! Silahkan login ulang.",
-        });
-        return;
-      }
-
-      Api.defaults.headers.common["Authorization"] = token;
-
-      const response = await Api.delete(`/api/hasils/${id}`);
-
-      console.log("Delete response:", response.data);
-
-      // Tampilkan notifikasi sukses
+      await Api.delete(`/api/hasils/${id}`);
       await Swal.fire({
         icon: "success",
         title: "Berhasil!",
-        text: response.data.message || "Data berhasil dihapus!",
+        text: "Data berhasil dihapus!",
         showConfirmButton: false,
         timer: 1500,
         position: "top",
         toast: true,
       });
-
-      // Refresh data
-      await fetchData(pagination.currentPage, search);
+      await fetchData(pagination.currentPage, search, filterDate);
     } catch (error) {
-      console.error("Error deleting data:", error);
-
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Gagal menghapus data!";
-
-      Swal.fire({
-        icon: "error",
-        title: "Gagal Hapus",
-        text: errorMessage,
-        confirmButtonColor: "#dc3545",
-      });
+      const errorMessage = error.response?.data?.message || error.message || "Gagal menghapus data!";
+      Swal.fire({ icon: "error", title: "Gagal Hapus", text: errorMessage });
     }
   };
 
-  // Handle refresh dengan SweetAlert
-  const handleRefresh = () => {
-    Swal.fire({
-      title: "Memuat ulang data...",
-      text: "Mohon tunggu sebentar",
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-        fetchData(1, "");
-        Swal.close();
-      },
-    });
-  };
-
-  // Hitung nomor urut dengan aman
-  const getRowNumber = (index) => {
-    if (!pagination || !pagination.currentPage || !pagination.perPage) {
-      return index + 1;
+  const getStatusBadge = (status) => {
+    if (status) {
+      return (
+        <span className="badge bg-success">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "4px", verticalAlign: "text-bottom" }}>
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" />
+          </svg>
+          Selesai
+        </span>
+      );
     }
-    return (pagination.currentPage - 1) * pagination.perPage + index + 1;
-  };
-
-  // Hitung range tampil data
-  const getDisplayRange = () => {
-    if (!pagination || pagination.total === 0) {
-      return { start: 0, end: 0 };
-    }
-
-    const start = (pagination.currentPage - 1) * pagination.perPage + 1;
-    const end = Math.min(
-      pagination.currentPage * pagination.perPage,
-      pagination.total,
+    return (
+      <span className="badge bg-warning text-dark">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "4px", verticalAlign: "text-bottom" }}>
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6.5 7h11" /><path d="M6.5 17h11" /><path d="M6 20v-2a6 6 0 1 1 12 0v2a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1z" />
+        </svg>
+        Proses
+      </span>
     );
+  };
 
+  const getCategoryColor = (catName) => {
+    const colors = {
+      "Kimia": "primary",
+      "Mikrobiologi": "success",
+      "Fisika": "info",
+      "Biologi": "warning",
+      "Tanpa Kategori": "secondary",
+    };
+    return colors[catName] || "primary";
+  };
+
+  const displayRange = () => {
+    if (!pagination || pagination.total === 0) return { start: 0, end: 0 };
+    const start = (pagination.currentPage - 1) * pagination.perPage + 1;
+    const end = Math.min(pagination.currentPage * pagination.perPage, pagination.total);
     return { start, end };
   };
 
-  const displayRange = getDisplayRange();
+  const range = displayRange();
 
   return (
     <LayoutAdmin>
-      <div className="container-custom">
-        {/* Search Bar */}
-        <div className="search-section">
-          <div>
-            <button className="btn-refresh" onClick={handleRefresh}>
-              <BiRefresh className="me-2" /> Refresh
-            </button>
-          </div>
-          <div className="search-wrapper">
-            <form onSubmit={handleSearch}>
-              <div className="search-input-group">
-                <span className="search-icon">
-                  <BiSearch />
-                </span>
-                <input
-                  type="text"
-                  className="search-input"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search..."
-                />
+      <div className="page-wrapper">
+        <div className="page-header d-print-none">
+          <div className="container-xl">
+            <div className="row g-2 align-items-center">
+              <div className="col">
+                <h2 className="page-title">Hasil Pemeriksaan</h2>
+                <div className="text-muted mt-1">Kelola hasil pemeriksaan laboratorium</div>
               </div>
-            </form>
+              <div className="col-auto ms-auto d-print-none">
+                <div className="d-flex gap-2">
+                  <button className="btn btn-outline-secondary" onClick={handleClearFilters}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2" /><path d="M4 5v4h4" /><path d="M4 13a8.1 8.1 0 0 0 15.5 2" /><path d="M20 19v-4h-4" /></svg>
+                    Reset Filter
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Table */}
-        <div className="table-container">
-          {isLoading ? (
-            <div className="loading-wrapper">
-              <div className="spinner"></div>
-              <p className="mt-3">Memuat data...</p>
-            </div>
-          ) : (
-            <>
-              <div className="table-responsive">
-                <table className="table-custom">
-                  <thead>
-                    <tr>
-                      <th className="text-center">No</th>
-                      <th>Hasil</th>
-                      <th>Metode</th>
-                      <th>Parameter</th>
-                      <th className="text-center">Qty</th>
-                      <th className="text-end">Harga</th>
-                      <th className="text-end">Total</th>
-                      <th className="text-center">Status</th>
-                      <th>User</th>
-                      <th className="text-center">Tanggal</th>
-                      <th className="text-center">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {hasils.length > 0 ? (
-                      hasils.map((hasil, index) => (
-                        <tr key={hasil.id}>
-                          <td className="text-center fw-bold">
-                            {getRowNumber(index)}
-                          </td>
-
-                          {/* Hasil Column */}
-                          <td>
-                            {editingId === hasil.id ? (
-                              <input
-                                type="text"
-                                className="edit-input"
-                                name="hasil"
-                                value={editForm.hasil}
-                                onChange={handleInputChange}
-                                placeholder="Masukkan hasil"
-                                autoFocus
-                              />
-                            ) : (
-                              <span className="hasil-text">
-                                {hasil.hasil || "-"}
-                              </span>
-                            )}
-                          </td>
-
-                          {/* Metode Column */}
-                          <td>
-                            {editingId === hasil.id ? (
-                              <input
-                                type="text"
-                                className="edit-input"
-                                name="metode"
-                                value={editForm.metode}
-                                onChange={handleInputChange}
-                                placeholder="Masukkan metode"
-                              />
-                            ) : (
-                              hasil.metode || "-"
-                            )}
-                          </td>
-
-                          {/* Parameter Column - TIDAK BISA DIEDIT */}
-                          <td>
-                            <span className="parameter-badge">
-                              {hasil.sampel?.parameter || "-"}
-                            </span>
-                          </td>
-
-                          {/* Qty Column - TIDAK BISA DIEDIT (READONLY) */}
-                          <td className="text-center">
-                            {editingId === hasil.id ? (
-                              <input
-                                type="number"
-                                className="edit-input text-center"
-                                value={hasil.qty || 0}
-                                readOnly
-                                disabled
-                                style={{
-                                  backgroundColor: "#f5f5f5",
-                                  cursor: "not-allowed",
-                                }}
-                              />
-                            ) : (
-                              <span className="qty-text">{hasil.qty || 0}</span>
-                            )}
-                          </td>
-
-                          {/* Price Column - TIDAK BISA DIEDIT (READONLY) */}
-                          <td className="text-end">
-                            {editingId === hasil.id ? (
-                              <input
-                                type="text"
-                                className="edit-input text-end"
-                                value={formatCurrency(hasil.price || 0)}
-                                readOnly
-                                disabled
-                                style={{
-                                  backgroundColor: "#f5f5f5",
-                                  cursor: "not-allowed",
-                                }}
-                              />
-                            ) : (
-                              formatCurrency(hasil.price || 0)
-                            )}
-                          </td>
-
-                          {/* Total Column - OTOMATIS */}
-                          <td className="text-end total-price">
-                            {formatCurrency(
-                              (hasil.price || 0) * (hasil.qty || 0),
-                            )}
-                          </td>
-
-                          {/* Status Column - BISA DIEDIT SEKARANG */}
-                          <td className="text-center">
-                            {editingId === hasil.id ? (
-                              <div className="switch-wrapper">
-                                <label className="switch-label-status">
-                                  <input
-                                    className="switch-input"
-                                    type="checkbox"
-                                    name="status"
-                                    checked={editForm.status}
-                                    onChange={handleInputChange}
-                                  />
-                                  <span
-                                    className={`switch-status-text ${editForm.status ? "text-selesai" : "text-proses"}`}
-                                  >
-                                    {editForm.status ? "Selesai" : "Proses"}
-                                  </span>
-                                </label>
-                              </div>
-                            ) : (
-                              getStatusBadge(hasil.status)
-                            )}
-                          </td>
-
-                          {/* User Column */}
-                          <td>
-                            <div className="user-info">
-                              <BiUserCircle />
-                              {hasil.user?.name || "-"}
-                            </div>
-                          </td>
-
-                          {/* Date Column */}
-                          <td className="text-center">
-                            <span className="date-text">
-                              {hasil.created_at
-                                ? new Date(hasil.created_at).toLocaleDateString(
-                                    "id-ID",
-                                  )
-                                : "-"}
-                            </span>
-                          </td>
-
-                          {/* Action Buttons */}
-                          <td className="text-center">
-                            {editingId === hasil.id ? (
-                              <div className="action-buttons">
-                                <button
-                                  className="btn-save"
-                                  onClick={() => handleSave(hasil.id)}
-                                  title="Simpan"
-                                >
-                                  <BiCheck />
-                                </button>
-                                <button
-                                  className="btn-cancel"
-                                  onClick={handleCancelEdit}
-                                  title="Batal"
-                                >
-                                  <BiX />
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="action-buttons">
-                                <button
-                                  className="btn-edit"
-                                  onClick={() => handleEdit(hasil)}
-                                  title="Edit Hasil, Metode & Status"
-                                >
-                                  <BiPencil />
-                                </button>
-                                <button
-                                  className="btn-delete"
-                                  title="Hapus"
-                                  onClick={() => handleDelete(hasil.id)}
-                                >
-                                  <BiTrash />
-                                </button>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      // Empty State
-                      <tr>
-                        <td colSpan="11" className="empty-state">
-                          <BiFolderOpen />
-                          <h5>Tidak ada data</h5>
-                          <p>Belum ada data hasil yang tersedia.</p>
-                        </td>
-                      </tr>
+        <div className="page-body">
+          <div className="container-xl">
+            {/* Search Card */}
+            <div className="card mb-3">
+              <div className="card-body">
+                <form onSubmit={handleSearch}>
+                  <div className="row g-2 align-items-center">
+                    <div className="col-md">
+                      <div className="input-icon">
+                        <span className="input-icon-addon">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>
+                        </span>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
+                          placeholder="Cari hasil pemeriksaan..."
+                        />
+                      </div>
+                    </div>
+                    <div className="col-auto">
+                      <div className="input-icon">
+                        <span className="input-icon-addon">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 5h6" /><path d="M4 11h6" /><path d="M4 17h6" /><path d="M14 5l6 0" /><path d="M14 11l6 0" /><path d="M14 17l6 0" /></svg>
+                        </span>
+                        <input
+                          type="date"
+                          className="form-control"
+                          value={filterDate}
+                          onChange={handleDateChange}
+                          style={{ minWidth: "180px" }}
+                        />
+                      </div>
+                    </div>
+                    <div className="col-auto">
+                      <button type="submit" className="btn btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="icon me-1" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>
+                        Cari
+                      </button>
+                    </div>
+                    {filterDate && (
+                      <div className="col-auto">
+                        <button type="button" className="btn btn-outline-warning" onClick={() => { setFilterDate(""); fetchData(1, search, ""); }}>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="icon me-1" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12" /><path d="M6 6l12 12" /></svg>
+                          Hapus Tanggal
+                        </button>
+                      </div>
                     )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination Info */}
-              {pagination.total > 0 && (
-                <div className="pagination-wrapper">
-                  <div className="pagination-info">
-                    Menampilkan {displayRange.start} - {displayRange.end} dari{" "}
-                    {pagination.total} hasil
                   </div>
-                  <PaginationComponent
-                    currentPage={pagination.currentPage}
-                    perPage={pagination.perPage}
-                    total={pagination.total}
-                    onChange={(pageNumber) => fetchData(pageNumber, search)}
-                  />
+                </form>
+              </div>
+            </div>
+
+            {isLoading ? (
+              <div className="card">
+                <div className="card-body text-center py-5">
+                  <div className="spinner-border text-primary" style={{ width: "3rem", height: "3rem" }}></div>
+                  <p className="mt-3 text-muted">Memuat data hasil...</p>
                 </div>
-              )}
-            </>
-          )}
+              </div>
+            ) : hasils.length === 0 ? (
+              <div className="card">
+                <div className="card-body text-center py-5">
+                  <div style={{ opacity: 0.4 }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" className="mb-3">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M9 3h6v11l-3 3l-3 -3v-11z" />
+                      <path d="M7 21h10" />
+                      <path d="M9 14h6v3h-6z" />
+                    </svg>
+                    <p className="text-muted mb-0">Belum ada data hasil</p>
+                    <small className="text-muted">Hasil akan muncul setelah pemohonan disetujui</small>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Grouped by Category */}
+                {Object.entries(getGroupedByCategory()).map(([catName, items]) => {
+                  const color = getCategoryColor(catName);
+                  const isExpanded = expandedCategories[catName] !== false;
+                  const completedCount = items.filter((i) => i.status).length;
+                  const totalCount = items.length;
+
+                  return (
+                    <div className="card mb-3" key={catName}>
+                      <div
+                        className="card-header cursor-pointer"
+                        onClick={() => toggleCategory(catName)}
+                        style={{ cursor: "pointer" }}
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <div className="d-flex align-items-center gap-2">
+                            <span className={`badge bg-${color} me-2`} style={{ fontSize: "0.85rem", padding: "6px 12px" }}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "4px", verticalAlign: "text-bottom" }}>
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M9 3h6v11l-3 3l-3 -3v-11z" />
+                                <path d="M7 21h10" />
+                                <path d="M9 14h6v3h-6z" />
+                              </svg>
+                              {catName}
+                            </span>
+                            <span className="text-muted small">{totalCount} parameter</span>
+                          </div>
+                          <div className="d-flex align-items-center gap-3">
+                            <div className="progress" style={{ width: "120px", height: "6px" }}>
+                              <div
+                                className="progress-bar bg-success"
+                                style={{ width: totalCount > 0 ? `${(completedCount / totalCount) * 100}%` : "0%" }}
+                              ></div>
+                            </div>
+                            <span className="text-muted small">
+                              {completedCount}/{totalCount} selesai
+                            </span>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="20"
+                              height="20"
+                              viewBox="0 0 24 24"
+                              strokeWidth="2"
+                              stroke="currentColor"
+                              fill="none"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              style={{ transition: "transform 0.2s", transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
+                            >
+                              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                              <path d="M6 9l6 6l6 -6" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="table-responsive">
+                          <table className="table table-vcenter card-table">
+                            <thead>
+                              <tr>
+                                <th style={{ width: "50px" }}>No</th>
+                                <th>Parameter</th>
+                                <th>Hasil</th>
+                                <th>Metode</th>
+                                <th className="text-center">Qty</th>
+                                <th className="text-end">Harga</th>
+                                <th className="text-center">Status</th>
+                                <th>Pemohon</th>
+                                <th className="text-center">Tanggal</th>
+                                <th className="text-center" style={{ width: "120px" }}>Aksi</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {items.map((hasil) => {
+                                const globalIndex = hasils.indexOf(hasil);
+                                return (
+                                  <tr key={hasil.id}>
+                                    <td className="text-muted">{getRowNumber(globalIndex)}</td>
+                                    <td>
+                                      <span className="badge bg-primary-lt">{hasil.sampel?.parameter || "-"}</span>
+                                    </td>
+                                    <td>
+                                      {editingId === hasil.id ? (
+                                        <input
+                                          type="text"
+                                          className="form-control form-control-sm"
+                                          name="hasil"
+                                          value={editForm.hasil}
+                                          onChange={handleInputChange}
+                                          placeholder="Masukkan hasil"
+                                          autoFocus
+                                        />
+                                      ) : (
+                                        <span className={hasil.hasil && hasil.hasil !== "-" ? "fw-semibold" : "text-muted fst-italic"}>
+                                          {hasil.hasil || "-"}
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td>
+                                      {editingId === hasil.id ? (
+                                        <input
+                                          type="text"
+                                          className="form-control form-control-sm"
+                                          name="metode"
+                                          value={editForm.metode}
+                                          onChange={handleInputChange}
+                                          placeholder="Masukkan metode"
+                                        />
+                                      ) : hasil.metode && hasil.metode !== "-" ? (
+                                        <span className="badge bg-info-lt">{hasil.metode}</span>
+                                      ) : (
+                                        <span className="text-muted fst-italic">-</span>
+                                      )}
+                                    </td>
+                                    <td className="text-center">
+                                      <span className="badge bg-primary">{hasil.qty || 0}</span>
+                                    </td>
+                                    <td className="text-end fw-semibold">{formatCurrency(hasil.price || 0)}</td>
+                                    <td className="text-center">
+                                      {editingId === hasil.id ? (
+                                        <label className="form-check form-switch d-inline-block">
+                                          <input
+                                            className="form-check-input"
+                                            type="checkbox"
+                                            name="status"
+                                            checked={editForm.status}
+                                            onChange={handleInputChange}
+                                          />
+                                          <span className={`ms-2 small fw-semibold ${editForm.status ? "text-success" : "text-warning"}`}>
+                                            {editForm.status ? "Selesai" : "Proses"}
+                                          </span>
+                                        </label>
+                                      ) : (
+                                        getStatusBadge(hasil.status)
+                                      )}
+                                    </td>
+                                    <td>
+                                      <div className="d-flex align-items-center">
+                                        <div className="avatar avatar-sm me-2" style={{ backgroundColor: "var(--tblr-success)", color: "white", borderRadius: "50%", width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "600" }}>
+                                          {hasil.user?.name ? hasil.user.name.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase() : "U"}
+                                        </div>
+                                        <span className="small">{hasil.user?.name || "-"}</span>
+                                      </div>
+                                    </td>
+                                    <td className="text-center">
+                                      <span className="text-muted small">
+                                        {hasil.created_at
+                                          ? new Date(hasil.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
+                                          : "-"}
+                                      </span>
+                                      {hasil.created_at && (
+                                        <br />
+                                      )}
+                                      {hasil.created_at && (
+                                        <span className="text-muted" style={{ fontSize: "0.75rem" }}>
+                                          {new Date(hasil.created_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="text-center">
+                                      {editingId === hasil.id ? (
+                                        <div className="btn-group">
+                                          <button className="btn btn-sm btn-success" onClick={() => handleSave(hasil.id)} title="Simpan">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>
+                                          </button>
+                                          <button className="btn btn-sm btn-secondary" onClick={handleCancelEdit} title="Batal">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12" /><path d="M6 6l12 12" /></svg>
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <div className="btn-group">
+                                          <button className="btn btn-sm btn-outline-primary" onClick={() => handleEdit(hasil)} title="Edit">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.097 2.097 0 0 0 -2.955 -2.955l-8.56 8.56l-1.37 3.89l3.89 -1.37l8.56 -8.56z" /><path d="M16 4l4 4" /></svg>
+                                          </button>
+                                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(hasil.id)} title="Hapus">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+                                          </button>
+                                        </div>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                            <tfoot>
+                              <tr>
+                                <td colSpan="5" className="text-end fw-bold text-muted">
+                                  Subtotal {catName}
+                                </td>
+                                <td className="text-end">
+                                  <span className="fw-bold text-primary">
+                                    {formatCurrency(items.reduce((sum, i) => sum + (i.price || 0) * (i.qty || 0), 0))}
+                                  </span>
+                                </td>
+                                <td colSpan="3"></td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Grand Total Card */}
+                <div className="card mb-3">
+                  <div className="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                      <span className="text-muted me-2">Grand Total:</span>
+                      <span className="fs-3 fw-bold text-primary">
+                        {formatCurrency(hasils.reduce((sum, i) => sum + (i.price || 0) * (i.qty || 0), 0))}
+                      </span>
+                    </div>
+                    <span className="badge bg-secondary">
+                      {hasils.reduce((sum, i) => sum + (i.qty || 0), 0)} total qty
+                    </span>
+                  </div>
+                </div>
+
+                {/* Pagination */}
+                {pagination.total > 0 && (
+                  <div className="card">
+                    <div className="card-footer d-flex justify-content-between align-items-center">
+                      <span className="text-muted small">
+                        Menampilkan {range.start} - {range.end} dari {pagination.total} hasil
+                      </span>
+                      <PaginationComponent
+                        currentPage={pagination.currentPage}
+                        perPage={pagination.perPage}
+                        total={pagination.total}
+                        onChange={(pageNumber) => fetchData(pageNumber, search, filterDate)}
+                      />
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
-
-      <style jsx>{`
-        .container-custom {
-          max-width: 1400px;
-          margin: 0 auto;
-          padding: 2rem 1rem;
-        }
-
-        /* Header Styles */
-        .header-section {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          margin-bottom: 1.5rem;
-          padding-bottom: 0.75rem;
-          border-bottom: 2px solid #e9ecef;
-        }
-
-        .logo-wrapper {
-          background: linear-gradient(135deg, #0d6efd, #0b5ed7);
-          border-radius: 12px;
-          padding: 0.75rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 4px 6px rgba(13, 110, 253, 0.25);
-        }
-
-        .logo-wrapper i {
-          font-size: 1.5rem;
-          color: white;
-        }
-
-        .title {
-          font-weight: 700;
-          color: #0d6efd;
-          margin: 0;
-          font-size: 1.8rem;
-          letter-spacing: -0.5px;
-        }
-
-        .subtitle {
-          color: #6c757d;
-          margin: 0;
-          font-size: 0.9rem;
-        }
-
-        /* Navigation Tabs */
-        .nav-tabs-custom {
-          display: flex;
-          gap: 0.5rem;
-          margin-bottom: 2rem;
-          padding: 0;
-          list-style: none;
-          flex-wrap: wrap;
-        }
-
-        .nav-tabs-custom li {
-          margin: 0;
-        }
-
-        .nav-tabs-custom .nav-link {
-          display: block;
-          padding: 0.6rem 1.2rem;
-          color: #495057;
-          text-decoration: none;
-          border-radius: 8px;
-          font-weight: 500;
-          transition: all 0.2s;
-          background: transparent;
-        }
-
-        .nav-tabs-custom .nav-link:hover {
-          background: #f8f9fa;
-          color: #0d6efd;
-        }
-
-        .nav-tabs-custom .nav-link.active {
-          background: #0d6efd;
-          color: white;
-          box-shadow: 0 4px 10px rgba(13, 110, 253, 0.3);
-        }
-
-        /* Page Title */
-        .page-title {
-          margin-bottom: 2rem;
-        }
-
-        .page-title h3 {
-          font-weight: 700;
-          color: #212529;
-          margin-bottom: 0.25rem;
-          font-size: 1.75rem;
-        }
-
-        .page-title p {
-          color: #6c757d;
-          margin: 0;
-        }
-
-        /* Search Section */
-        .search-section {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 1.5rem;
-        }
-
-        .btn-refresh {
-          padding: 0.6rem 1.2rem;
-          background: white;
-          border: 1px solid #dee2e6;
-          border-radius: 8px;
-          color: #495057;
-          font-weight: 500;
-          transition: all 0.2s;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-        }
-
-        .btn-refresh:hover {
-          background: #f8f9fa;
-          border-color: #0d6efd;
-          color: #0d6efd;
-        }
-
-        .search-wrapper {
-          width: 300px;
-        }
-
-        .search-input-group {
-          display: flex;
-          align-items: center;
-          background: white;
-          border: 1px solid #dee2e6;
-          border-radius: 8px;
-          transition: all 0.2s;
-        }
-
-        .search-input-group:focus-within {
-          border-color: #0d6efd;
-          box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
-        }
-
-        .search-icon {
-          padding: 0.6rem 0 0.6rem 1rem;
-          color: #adb5bd;
-          display: flex;
-          align-items: center;
-        }
-
-        .search-input {
-          flex: 1;
-          padding: 0.6rem 1rem 0.6rem 0.5rem;
-          border: none;
-          outline: none;
-          background: transparent;
-        }
-
-        /* Table Container */
-        .table-container {
-          background: white;
-          border-radius: 16px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-          overflow: hidden;
-        }
-
-        .table-custom {
-          width: 100%;
-          border-collapse: collapse;
-        }
-
-        .table-custom th {
-          background: #f8f9fa;
-          padding: 1rem 0.75rem;
-          font-weight: 600;
-          color: #495057;
-          border-bottom: 2px solid #dee2e6;
-          white-space: nowrap;
-        }
-
-        .table-custom td {
-          padding: 1rem 0.75rem;
-          border-bottom: 1px solid #e9ecef;
-          color: #212529;
-        }
-
-        .table-custom tbody tr:hover {
-          background: #f8f9fa;
-        }
-
-        /* Badge Styles */
-        .badge-selesai {
-          display: inline-flex;
-          align-items: center;
-          padding: 0.4rem 1rem;
-          background: #d1e7dd;
-          color: #0f5132;
-          border-radius: 30px;
-          font-size: 0.85rem;
-          font-weight: 500;
-        }
-
-        .badge-proses {
-          display: inline-flex;
-          align-items: center;
-          padding: 0.4rem 1rem;
-          background: #fff3cd;
-          color: #856404;
-          border-radius: 30px;
-          font-size: 0.85rem;
-          font-weight: 500;
-        }
-
-        .parameter-badge {
-          display: inline-block;
-          padding: 0.3rem 1rem;
-          background: #e7f1ff;
-          color: #0d6efd;
-          border-radius: 30px;
-          font-size: 0.85rem;
-          font-weight: 500;
-        }
-
-        /* Text Styles */
-        .hasil-text {
-          font-weight: 500;
-          color: #212529;
-        }
-
-        .qty-text {
-          font-weight: 600;
-          color: #0d6efd;
-        }
-
-        .total-price {
-          font-weight: 700;
-          color: #0d6efd;
-        }
-
-        .date-text {
-          color: #6c757d;
-          font-size: 0.9rem;
-        }
-
-        /* User Info */
-        .user-info {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          color: #495057;
-        }
-
-        .user-info svg {
-          color: #adb5bd;
-          font-size: 1.1rem;
-        }
-
-        /* Edit Input */
-        .edit-input {
-          width: 100%;
-          padding: 0.4rem 0.75rem;
-          border: 1px solid #dee2e6;
-          border-radius: 6px;
-          outline: none;
-          transition: all 0.2s;
-          font-size: 0.9rem;
-        }
-
-        .edit-input:focus {
-          border-color: #0d6efd;
-          box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
-        }
-
-        /* Switch Toggle untuk Status */
-        .switch-wrapper {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .switch-label-status {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          cursor: pointer;
-        }
-
-        .switch-input {
-          width: 40px;
-          height: 20px;
-          cursor: pointer;
-        }
-
-        .switch-status-text {
-          font-size: 0.85rem;
-          font-weight: 600;
-          padding: 0.2rem 0.5rem;
-          border-radius: 4px;
-        }
-
-        .text-selesai {
-          color: #198754;
-          background: #d1e7dd;
-          padding: 0.2rem 0.5rem;
-          border-radius: 4px;
-        }
-
-        .text-proses {
-          color: #856404;
-          background: #fff3cd;
-          padding: 0.2rem 0.5rem;
-          border-radius: 4px;
-        }
-
-        /* Action Buttons */
-        .action-buttons {
-          display: flex;
-          gap: 0.4rem;
-          justify-content: center;
-        }
-
-        .btn-edit,
-        .btn-delete,
-        .btn-save,
-        .btn-cancel {
-          width: 36px;
-          height: 36px;
-          border: none;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .btn-edit {
-          background: #e7f1ff;
-          color: #0d6efd;
-        }
-
-        .btn-edit:hover {
-          background: #0d6efd;
-          color: white;
-        }
-
-        .btn-delete {
-          background: #f8d7da;
-          color: #dc3545;
-        }
-
-        .btn-delete:hover {
-          background: #dc3545;
-          color: white;
-        }
-
-        .btn-save {
-          background: #d1e7dd;
-          color: #198754;
-        }
-
-        .btn-save:hover {
-          background: #198754;
-          color: white;
-        }
-
-        .btn-cancel {
-          background: #e9ecef;
-          color: #6c757d;
-        }
-
-        .btn-cancel:hover {
-          background: #6c757d;
-          color: white;
-        }
-
-        /* Loading Spinner */
-        .loading-wrapper {
-          padding: 4rem;
-          text-align: center;
-        }
-
-        .spinner {
-          display: inline-block;
-          width: 40px;
-          height: 40px;
-          border: 3px solid #e9ecef;
-          border-top-color: #0d6efd;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        /* Empty State */
-        .empty-state {
-          text-align: center;
-          padding: 4rem !important;
-          color: #6c757d;
-        }
-
-        .empty-state svg {
-          font-size: 3rem;
-          color: #dee2e6;
-          margin-bottom: 1rem;
-        }
-
-        .empty-state h5 {
-          color: #495057;
-          margin-bottom: 0.5rem;
-        }
-
-        .empty-state p {
-          color: #adb5bd;
-          margin: 0;
-        }
-
-        /* Pagination */
-        .pagination-wrapper {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1rem 1.5rem;
-          background: #f8f9fa;
-          border-top: 1px solid #e9ecef;
-        }
-
-        .pagination-info {
-          color: #6c757d;
-          font-size: 0.9rem;
-        }
-
-        /* Utility */
-        .me-1 {
-          margin-right: 0.25rem;
-        }
-
-        .me-2 {
-          margin-right: 0.5rem;
-        }
-
-        .mt-3 {
-          margin-top: 1rem;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-          .search-section {
-            flex-direction: column;
-            gap: 1rem;
-          }
-
-          .search-wrapper {
-            width: 100%;
-          }
-
-          .pagination-wrapper {
-            flex-direction: column;
-            gap: 1rem;
-            text-align: center;
-          }
-
-          .nav-tabs-custom {
-            justify-content: center;
-          }
-        }
-      `}</style>
     </LayoutAdmin>
   );
 }

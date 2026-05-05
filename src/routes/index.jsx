@@ -24,6 +24,7 @@ import Cart from "../views/card/index.jsx";
 import History from "../views/history/index.jsx";
 import InvoicePrint from "../views/history/invoicePrint.jsx";
 import Hasil from "../views/hasil/index.jsx";
+import Penjadwalan from "../views/penjadwalan/index.jsx";
 
 export default function AppRoutes() {
   return (
@@ -113,6 +114,13 @@ export default function AppRoutes() {
         <HasilRoute>
           <Hasil />
         </HasilRoute>
+      } />
+
+      {/* Penjadwalan Route - Accessible by authenticated users */}
+      <Route path="/penjadwalan" element={
+        <ProtectedRoute>
+          <Penjadwalan />
+        </ProtectedRoute>
       } />
     </Routes>
   );

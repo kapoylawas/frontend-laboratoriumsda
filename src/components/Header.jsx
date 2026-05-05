@@ -323,6 +323,24 @@ export default function Header() {
                                     </li>
                                 )}
 
+                                {/* Penjadwalan Menu - All authenticated users */}
+                                <li className={`mobile-nav-item ${isActivePath('/penjadwalan') ? 'active' : ''}`}>
+                                    <Link className="mobile-nav-link" to="/penjadwalan" onClick={closeMobileMenu}>
+                                        <div className="nav-icon">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                <path d="M4 5h6" />
+                                                <path d="M4 11h6" />
+                                                <path d="M4 17h6" />
+                                                <path d="M14 5l6 0" />
+                                                <path d="M14 11l6 0" />
+                                                <path d="M14 17l6 0" />
+                                            </svg>
+                                        </div>
+                                        <span className="nav-label">JADWAL</span>
+                                    </Link>
+                                </li>
+
                                 {/* Master Data for Admin Only - Mobile */}
                                 {userIsAdmin && (
                                     <li className={`mobile-nav-item mobile-nav-dropdown ${isMasterDataOpen ? 'open' : ''} ${isActivePath('/categories') || isActivePath('/sampels') || isActivePath('/users') ? 'active' : ''}`}>
@@ -518,6 +536,24 @@ export default function Header() {
                                             </Link>
                                         </li>
                                     )}
+
+                                    {/* Penjadwalan Menu - All authenticated users */}
+                                    <li className={`nav-item ${isActivePath('/penjadwalan') ? 'active' : ''}`}>
+                                        <Link className="nav-link cashier-nav-link" to="/penjadwalan">
+                                            <div className="nav-icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                    <path d="M4 5h6" />
+                                                    <path d="M4 11h6" />
+                                                    <path d="M4 17h6" />
+                                                    <path d="M14 5l6 0" />
+                                                    <path d="M14 11l6 0" />
+                                                    <path d="M14 17l6 0" />
+                                                </svg>
+                                            </div>
+                                            <span className="nav-label">JADWAL</span>
+                                        </Link>
+                                    </li>
 
                                     {/* Master Data Dropdown - Admin Only */}
                                     {userIsAdmin && (
