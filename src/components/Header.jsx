@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useStore as useThemeStore } from '../stores/theme';
 import { useStore as useUserStore } from '../stores/user';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { isAdmin, canAccessHasil, canAccessOperationalMenus } from '../constants/roles';
+import { isAdmin, canAccessHasil, canAccessOperationalMenus, canAccessPenjadwalan } from '../constants/roles';
 import "./Header.css";
 
 export default function Header() {
@@ -18,6 +18,7 @@ export default function Header() {
     const userIsAdmin = isAdmin(user);
     const userCanAccessHasil = canAccessHasil(user);
     const userCanAccessOperationalMenus = canAccessOperationalMenus(user);
+    const userCanAccessPenjadwalan = canAccessPenjadwalan(user);
 
     const logoutHandler = () => {
         logout();
@@ -323,23 +324,25 @@ export default function Header() {
                                     </li>
                                 )}
 
-                                {/* Penjadwalan Menu - All authenticated users */}
-                                <li className={`mobile-nav-item ${isActivePath('/penjadwalan') ? 'active' : ''}`}>
-                                    <Link className="mobile-nav-link" to="/penjadwalan" onClick={closeMobileMenu}>
-                                        <div className="nav-icon">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                                <path d="M4 5h6" />
-                                                <path d="M4 11h6" />
-                                                <path d="M4 17h6" />
-                                                <path d="M14 5l6 0" />
-                                                <path d="M14 11l6 0" />
-                                                <path d="M14 17l6 0" />
-                                            </svg>
-                                        </div>
-                                        <span className="nav-label">JADWAL</span>
-                                    </Link>
-                                </li>
+                                {/* Penjadwalan Menu - Admin Only */}
+                                {userCanAccessPenjadwalan && (
+                                    <li className={`mobile-nav-item ${isActivePath('/penjadwalan') ? 'active' : ''}`}>
+                                        <Link className="mobile-nav-link" to="/penjadwalan" onClick={closeMobileMenu}>
+                                            <div className="nav-icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                    <path d="M4 5h6" />
+                                                    <path d="M4 11h6" />
+                                                    <path d="M4 17h6" />
+                                                    <path d="M14 5l6 0" />
+                                                    <path d="M14 11l6 0" />
+                                                    <path d="M14 17l6 0" />
+                                                </svg>
+                                            </div>
+                                            <span className="nav-label">JADWAL</span>
+                                        </Link>
+                                    </li>
+                                )}
 
                                 {/* Master Data for Admin Only - Mobile */}
                                 {userIsAdmin && (
@@ -537,23 +540,25 @@ export default function Header() {
                                         </li>
                                     )}
 
-                                    {/* Penjadwalan Menu - All authenticated users */}
-                                    <li className={`nav-item ${isActivePath('/penjadwalan') ? 'active' : ''}`}>
-                                        <Link className="nav-link cashier-nav-link" to="/penjadwalan">
-                                            <div className="nav-icon">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                                    <path d="M4 5h6" />
-                                                    <path d="M4 11h6" />
-                                                    <path d="M4 17h6" />
-                                                    <path d="M14 5l6 0" />
-                                                    <path d="M14 11l6 0" />
-                                                    <path d="M14 17l6 0" />
-                                                </svg>
-                                            </div>
-                                            <span className="nav-label">JADWAL</span>
-                                        </Link>
-                                    </li>
+                                    {/* Penjadwalan Menu - Admin Only */}
+                                    {userCanAccessPenjadwalan && (
+                                        <li className={`nav-item ${isActivePath('/penjadwalan') ? 'active' : ''}`}>
+                                            <Link className="nav-link cashier-nav-link" to="/penjadwalan">
+                                                <div className="nav-icon">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                        <path d="M4 5h6" />
+                                                        <path d="M4 11h6" />
+                                                        <path d="M4 17h6" />
+                                                        <path d="M14 5l6 0" />
+                                                        <path d="M14 11l6 0" />
+                                                        <path d="M14 17l6 0" />
+                                                    </svg>
+                                                </div>
+                                                <span className="nav-label">JADWAL</span>
+                                            </Link>
+                                        </li>
+                                    )}
 
                                     {/* Master Data Dropdown - Admin Only */}
                                     {userIsAdmin && (
@@ -590,6 +595,13 @@ export default function Header() {
                                                         <path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" />
                                                     </svg>
                                                     User
+                                                </Link>
+                                                <div className="dropdown-divider"></div>
+                                                <Link className="dropdown-item" to="/semua-penawaran">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                                                    </svg>
+                                                    Semua Penawaran
                                                 </Link>
                                             </div>
                                         </li>

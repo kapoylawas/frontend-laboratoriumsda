@@ -6,6 +6,11 @@
  */
 
 export const ROLES = {
+  PEMOHON: {
+    id: 1,
+    name: 'Pemohon',
+    description: 'User pemohon yang mengajukan permintaan pengujian'
+  },
   ADMIN_LABKESDA: {
     id: 2,
     name: 'Admin Labkesda',
@@ -46,6 +51,15 @@ export const hasRoleName = (user, roleName) => {
 };
 
 /**
+ * Helper function to check if user is pemohon
+ * @param {Object} user - User object from store
+ * @returns {Boolean}
+ */
+export const isPemohon = (user) => {
+  return hasRoleId(user, ROLES.PEMOHON.id);
+};
+
+/**
  * Helper function to check if user is admin
  * @param {Object} user - User object from store
  * @returns {Boolean}
@@ -74,13 +88,23 @@ export const canAccessHasil = (user) => {
 };
 
 /**
+ * Helper function to check if user can access Penjadwalan menu
+ * (Admin Labkesda only)
+ * @param {Object} user - User object from store
+ * @returns {Boolean}
+ */
+export const canAccessPenjadwalan = (user) => {
+  return isAdmin(user);
+};
+
+/**
  * Helper function to check if user can access operational menus
- * (Orders, Cart, History) - Only Admin Labkesda
+ * (Orders, Cart, History) - Admin Labkesda and Pemohon
  * @param {Object} user - User object from store
  * @returns {Boolean}
  */
 export const canAccessOperationalMenus = (user) => {
-  return isAdmin(user);
+  return isAdmin(user) || isPemohon(user);
 };
 
 /**

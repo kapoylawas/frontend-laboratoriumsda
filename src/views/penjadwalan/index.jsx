@@ -791,7 +791,10 @@ export default function Penjadwalan() {
                             ) : detailDataList.length > 0 ? (() => {
                                 const first = detailDataList[0];
                                 const tx = first.transaction_detail?.transaction;
-                                const user = tx?.user;
+                                // Get pemohon from transaction user, fallback to logged-in user
+                                const txUser = tx?.user;
+                                const loggedInUser = Cookies.get('user') ? JSON.parse(Cookies.get('user')) : {};
+                                const user = txUser || loggedInUser;
                                 // Group sampel by category
                                 const catGrouped = {};
                                 detailDataList.forEach((d) => {

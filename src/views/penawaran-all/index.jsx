@@ -5,13 +5,8 @@ import Api from '../../services/api';
 import Pagination from '../../components/Pagination';
 import LayoutAdmin from "../../layouts/admin";
 import Swal from 'sweetalert2';
-import { useStore as useUserStore } from '../../stores/user';
-import { isAdmin } from '../../constants/roles';
 
-
-export default function Pengajuan() {
-    const { user } = useUserStore();
-    const userIsAdmin = isAdmin(user);
+export default function SemuaPenawaran() {
     const [data, setData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [pagination, setPagination] = useState({});
@@ -28,7 +23,7 @@ export default function Pengajuan() {
         if (token) {
             Api.defaults.headers.common['Authorization'] = token;
             try {
-                const response = await Api.get(`/api/pemohonan?page=${pageNumber}&search=${search}`);
+                const response = await Api.get(`/api/pemohonan/all?page=${pageNumber}&search=${search}`);
                 setData(response.data.data || []);
                 if (response.data.pagination) {
                     setPagination({
@@ -59,6 +54,40 @@ export default function Pengajuan() {
 
     const toggleRow = (id) => {
         setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
+    };
+
+    const handleApprove = async (id) => {
+        const confirmResult = await Swal.fire({
+            title: 'Setujui Pemohonan?',
+            html: `
+                <div class="text-start">
+                    <p>Pemohonan yang disetujui akan membuat:</p>
+                    <ul class="text-start">
+                        <li><strong>Order</strong> untuk setiap item sampel</li>
+                        <li><strong>Hasil pemeriksaan</strong> yang perlu diisi nanti</li>
+                    </ul>
+                    <p class="text-muted small">Tindakan ini tidak dapat dibatalkan.</p>
+                </div>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#2fb344',
+            confirmButtonText: 'Ya, Setujui!',
+            cancelButtonText: 'Batal'
+        });
+        if (!confirmResult.isConfirmed) return;
+
+        const token = Cookies.get('token');
+        if (token) {
+            Api.defaults.headers.common['Authorization'] = token;
+            try {
+                await Api.put(`/api/pemohonan/admin/${id}/approve`);
+                Swal.fire('Berhasil!', 'Pemohonan telah disetujui.', 'success');
+                fetchData(pagination.current_page || 1, keywords);
+            } catch (error) {
+                Swal.fire('Gagal!', error.response?.data?.message || 'Terjadi kesalahan.', 'error');
+            }
+        }
     };
 
     const handleCancel = async (id) => {
@@ -95,71 +124,11 @@ export default function Pengajuan() {
                 if (alasan && alasan.trim()) {
                     payload.alasan = alasan.trim();
                 }
-                await Api.put(`/api/pemohonan/${id}/cancel`, payload);
+                await Api.put(`/api/pemohonan/admin/${id}/cancel`, payload);
                 Swal.fire('Berhasil!', 'Pemohonan telah dibatalkan.', 'success');
                 fetchData(pagination.current_page || 1, keywords);
             } catch (error) {
                 Swal.fire('Gagal!', error.response?.data?.message || 'Terjadi kesalahan.', 'error');
-            }
-        }
-    };
-
-    const handleCancelExpired = async () => {
-        const confirmResult = await Swal.fire({
-            title: 'Batalkan Pemohonan Expired?',
-            html: `
-                <div class="text-start">
-                    <p>Ini akan membatalkan semua surat penawaran yang sudah <strong>melewati tanggal expired</strong> dan masih berstatus PENDING.</p>
-                    <p class="text-muted small">Tindakan ini tidak dapat dibatalkan.</p>
-                </div>
-            `,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#d63939',
-            confirmButtonText: 'Ya, Batalkan Expired',
-            cancelButtonText: 'Batal'
-        });
-        if (!confirmResult.isConfirmed) return;
-
-        const token = Cookies.get('token');
-        if (token) {
-            Api.defaults.headers.common['Authorization'] = token;
-            try {
-                const response = await Api.post('/api/pemohonan/cancel-expired');
-                const result = response.data.data;
-                const cancelledCount = result.cancelled_count || 0;
-                const pemohonanIds = result.pemohonan_ids || [];
-
-                if (cancelledCount === 0) {
-                    await Swal.fire({
-                        icon: 'info',
-                        title: 'Tidak Ada Expired',
-                        text: 'Tidak ada pemohonan yang perlu dibatalkan.',
-                        confirmButtonText: 'OK'
-                    });
-                } else {
-                    await Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        html: `
-                            <div class="text-center">
-                                <div class="mb-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" stroke-width="2" stroke="#2fb344" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>
-                                </div>
-                                <p class="fs-5 fw-bold mb-1">${cancelledCount} pemohonan dibatalkan</p>
-                                <p class="text-muted">Semua surat penawaran yang expired telah dibatalkan.</p>
-                                <div class="mt-3 p-2 rounded" style="background: rgba(214,57,57,0.1)">
-                                    <small class="text-muted">ID Dibatalkan:</small><br>
-                                    <strong>#${pemohonanIds.join(', #')}</strong>
-                                </div>
-                            </div>
-                        `,
-                        confirmButtonText: 'OK'
-                    });
-                }
-                fetchData(pagination.current_page || 1, keywords);
-            } catch (error) {
-                Swal.fire({ icon: 'error', title: 'Gagal', text: error.response?.data?.message || 'Gagal membatalkan pemohonan expired.' });
             }
         }
     };
@@ -228,28 +197,13 @@ export default function Pengajuan() {
 
     return (
         <LayoutAdmin>
-
         <div className="page-wrapper">
             <div className="page-header d-print-none">
                 <div className="container-xl">
                     <div className="row g-2 align-items-center">
                         <div className="col">
-                            <h2 className="page-title">Pemohonan</h2>
-                            <div className="text-muted mt-1">Kelola surat penawaran dan pemesanan</div>
-                        </div>
-                        <div className="col-auto ms-auto d-print-none">
-                            <div className="d-flex gap-2">
-                                {userIsAdmin && (
-                                    <button className="btn btn-outline-danger" onClick={handleCancelExpired} title="Batalkan semua pemohonan yang expired">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20.926 13.151a9 9 0 1 0 -7.836 7.784" /><path d="M12 7v5l2 2" /><path d="M22 22l-5 -5" /><path d="M17 22l5 -5" /></svg>
-                                        Cancel Expired
-                                    </button>
-                                )}
-                                <Link to="/penawaran/create" className="btn btn-primary">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
-                                    Buat Pemohonan
-                                </Link>
-                            </div>
+                            <h2 className="page-title">Semua Penawaran</h2>
+                            <div className="text-muted mt-1">Daftar semua penawaran dari seluruh pemohon</div>
                         </div>
                     </div>
                 </div>
@@ -259,9 +213,9 @@ export default function Pengajuan() {
                 <div className="container-xl">
                     <div className="card">
                         <div className="card-header">
-                            <div className="row g-2 align-items-center">
+                            <div className="row g-2 align-items-center w-100">
                                 <div className="col">
-                                    <h3 className="card-title">Daftar Pemohonan</h3>
+                                    <h3 className="card-title">Daftar Semua Pemohonan</h3>
                                 </div>
                                 <div className="col-auto">
                                     <form onSubmit={handleSearch}>
@@ -287,6 +241,7 @@ export default function Pengajuan() {
                                     <tr>
                                         <th>No</th>
                                         <th>Jenis</th>
+                                        <th>Pemohon</th>
                                         <th>Item</th>
                                         <th>Total</th>
                                         <th>Status</th>
@@ -297,7 +252,7 @@ export default function Pengajuan() {
                                 <tbody>
                                     {isLoading ? (
                                         <tr>
-                                            <td colSpan="7" className="text-center py-5">
+                                            <td colSpan="8" className="text-center py-5">
                                                 <div className="spinner-border text-primary mb-2" role="status" style={{ width: '2rem', height: '2rem' }}></div>
                                                 <p className="text-muted mb-0">Memuat data pemohonan...</p>
                                             </td>
@@ -314,6 +269,10 @@ export default function Pengajuan() {
                                                     <tr key={item.id} style={{ cursor: 'pointer' }} onClick={() => toggleRow(item.id)}>
                                                         <td className="text-muted fw-semibold">{rowNumber}</td>
                                                         <td>{getJenisBadge(item.jenis)}</td>
+                                                        <td>
+                                                            <div className="fw-semibold">{item.user?.name || '-'}</div>
+                                                            <small className="text-muted">{item.user?.email || '-'}</small>
+                                                        </td>
                                                         <td>
                                                             <div>
                                                                 <span className="badge bg-primary me-1">{item.items?.length || 0} item</span>
@@ -334,20 +293,25 @@ export default function Pengajuan() {
                                                         </td>
                                                         <td>
                                                             <div className="btn-group" onClick={(e) => e.stopPropagation()}>
-                                                                <Link to={`/penawaran/${item.id}`} className="btn btn-sm btn-outline-primary" title="Detail">
+                                                                <Link to={`/semua-penawaran/${item.id}`} className="btn btn-sm btn-outline-primary" title="Detail">
                                                                     <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" /></svg>
                                                                 </Link>
-                                                                {item.status === 'PENDING' && userIsAdmin && (
-                                                                    <button className="btn btn-sm btn-outline-danger" onClick={() => handleCancel(item.id)} title="Batalkan">
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M5.7 5.7l12.6 12.6" /></svg>
-                                                                    </button>
+                                                                {item.status === 'PENDING' && (
+                                                                    <>
+                                                                        <button className="btn btn-sm btn-success" onClick={() => handleApprove(item.id)} title="Setujui">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>
+                                                                        </button>
+                                                                        <button className="btn btn-sm btn-outline-danger" onClick={() => handleCancel(item.id)} title="Batalkan">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M5.7 5.7l12.6 12.6" /></svg>
+                                                                        </button>
+                                                                    </>
                                                                 )}
                                                             </div>
                                                         </td>
                                                     </tr>
                                                     {isExpanded && item.items && item.items.length > 0 && (
                                                         <tr key={`${item.id}-detail`}>
-                                                            <td colSpan="7" style={{ padding: 0 }}>
+                                                            <td colSpan="8" style={{ padding: 0 }}>
                                                                 <div style={{ backgroundColor: 'var(--tblr-card-bg, #f8f9fa)', padding: '12px 20px' }}>
                                                                     <div className="row g-2">
                                                                         {item.items.map((subItem, subIdx) => (
@@ -389,7 +353,7 @@ export default function Pengajuan() {
                                         })
                                     ) : (
                                         <tr>
-                                            <td colSpan="7" className="text-center py-5">
+                                            <td colSpan="8" className="text-center py-5">
                                                 <div style={{ opacity: 0.4 }}>
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" className="mb-3">
                                                         <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -400,7 +364,7 @@ export default function Pengajuan() {
                                                         <path d="M15 15v-2" />
                                                     </svg>
                                                     <p className="text-muted mb-0">Belum ada data pemohonan</p>
-                                                    <small className="text-muted">Buat pemohonan baru untuk memulai</small>
+                                                    <small className="text-muted">Tidak ada data penawaran dari pemohon manapun</small>
                                                 </div>
                                             </td>
                                         </tr>

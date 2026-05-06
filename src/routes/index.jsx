@@ -4,6 +4,7 @@ import { Routes, Route } from "react-router-dom";
 //import components
 import ProtectedRoute from '../components/ProtectedRoute.jsx';
 import AdminRoute from '../components/AdminRoute.jsx';
+import OperationalRoute from '../components/OperationalRoute.jsx';
 import HasilRoute from '../components/HasilRoute.jsx';
 
 //import view login
@@ -25,6 +26,8 @@ import History from "../views/history/index.jsx";
 import InvoicePrint from "../views/history/invoicePrint.jsx";
 import Hasil from "../views/hasil/index.jsx";
 import Penjadwalan from "../views/penjadwalan/index.jsx";
+import SemuaPenawaran from "../views/penawaran-all/index.jsx";
+import SemuaPenawaranDetail from "../views/penawaran-all/detail.jsx";
 
 export default function AppRoutes() {
   return (
@@ -65,29 +68,29 @@ export default function AppRoutes() {
         </ProtectedRoute>
       } />
 
-      {/* Operational Routes - Admin Only (Orders, Cart, History) */}
+      {/* Operational Routes - Admin & Pemohon (Orders, Cart, History) */}
       <Route path="/orders" element={
-        <AdminRoute>
+        <OperationalRoute>
           <Orders />
-        </AdminRoute>
+        </OperationalRoute>
       } />
 
       <Route path="/cart" element={
-        <AdminRoute>
+        <OperationalRoute>
           <Cart />
-        </AdminRoute>
+        </OperationalRoute>
       } />
 
       <Route path="/history" element={
-        <AdminRoute>
+        <OperationalRoute>
           <History />
-        </AdminRoute>
+        </OperationalRoute>
       } />
 
       <Route path="/invoice/:id" element={
-        <AdminRoute>
+        <OperationalRoute>
           <InvoicePrint />
-        </AdminRoute>
+        </OperationalRoute>
       } />
 
       {/* Admin Routes - Require Admin Role */}
@@ -116,11 +119,23 @@ export default function AppRoutes() {
         </HasilRoute>
       } />
 
-      {/* Penjadwalan Route - Accessible by authenticated users */}
+      {/* Penjadwalan Route - Admin Only */}
       <Route path="/penjadwalan" element={
-        <ProtectedRoute>
+        <AdminRoute>
           <Penjadwalan />
-        </ProtectedRoute>
+        </AdminRoute>
+      } />
+
+      {/* Semua Penawaran Route - Admin Only */}
+      <Route path="/semua-penawaran" element={
+        <AdminRoute>
+          <SemuaPenawaran />
+        </AdminRoute>
+      } />
+      <Route path="/semua-penawaran/:id" element={
+        <AdminRoute>
+          <SemuaPenawaranDetail />
+        </AdminRoute>
       } />
     </Routes>
   );
