@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useStore as useThemeStore } from '../stores/theme';
 import { useStore as useUserStore } from '../stores/user';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { isAdmin, canAccessHasil, canAccessOperationalMenus, canAccessPenjadwalan } from '../constants/roles';
+import { isAdmin, canAccessHasil, canAccessOperationalMenus, canAccessPenjadwalan, canAccessJadwalPengambilan } from '../constants/roles';
 import "./Header.css";
 
 export default function Header() {
@@ -19,6 +19,7 @@ export default function Header() {
     const userCanAccessHasil = canAccessHasil(user);
     const userCanAccessOperationalMenus = canAccessOperationalMenus(user);
     const userCanAccessPenjadwalan = canAccessPenjadwalan(user);
+    const userCanAccessJadwalPengambilan = canAccessJadwalPengambilan(user);
 
     const logoutHandler = () => {
         logout();
@@ -344,7 +345,27 @@ export default function Header() {
                                     </li>
                                 )}
 
-                                {/* Master Data for Admin Only - Mobile */}
+                                {/* Jadwal Pengambilan Hasil Menu - Pemohon Only */}
+                                {userCanAccessJadwalPengambilan && (
+                                    <li className={`mobile-nav-item ${isActivePath('/jadwal-pengambilan') ? 'active' : ''}`}>
+                                        <Link className="mobile-nav-link" to="/jadwal-pengambilan" onClick={closeMobileMenu}>
+                                            <div className="nav-icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                    <rect x="4" y="5" width="16" height="16" rx="2" />
+                                                    <line x1="16" y1="3" x2="16" y2="7" />
+                                                    <line x1="8" y1="3" x2="8" y2="7" />
+                                                    <line x1="4" y1="11" x2="20" y2="11" />
+                                                    <line x1="11" y1="15" x2="12" y2="15" />
+                                                    <line x1="12" y1="15" x2="12" y2="18" />
+                                                </svg>
+                                            </div>
+                                            <span className="nav-label">JADWAL PENGAMBILAN HASIL</span>
+                                        </Link>
+                                    </li>
+                                )}
+
+
                                 {userIsAdmin && (
                                     <li className={`mobile-nav-item mobile-nav-dropdown ${isMasterDataOpen ? 'open' : ''} ${isActivePath('/categories') || isActivePath('/sampels') || isActivePath('/users') ? 'active' : ''}`}>
                                         <div
@@ -556,6 +577,26 @@ export default function Header() {
                                                     </svg>
                                                 </div>
                                                 <span className="nav-label">JADWAL</span>
+                                            </Link>
+                                        </li>
+                                    )}
+
+                                    {/* Jadwal Pengambilan Hasil Menu - Pemohon Only */}
+                                    {userCanAccessJadwalPengambilan && (
+                                        <li className={`nav-item ${isActivePath('/jadwal-pengambilan') ? 'active' : ''}`}>
+                                            <Link className="nav-link cashier-nav-link" to="/jadwal-pengambilan">
+                                                <div className="nav-icon">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                        <rect x="4" y="5" width="16" height="16" rx="2" />
+                                                        <line x1="16" y1="3" x2="16" y2="7" />
+                                                        <line x1="8" y1="3" x2="8" y2="7" />
+                                                        <line x1="4" y1="11" x2="20" y2="11" />
+                                                        <line x1="11" y1="15" x2="12" y2="15" />
+                                                        <line x1="12" y1="15" x2="12" y2="18" />
+                                                    </svg>
+                                                </div>
+                                                <span className="nav-label">JADWAL PENGAMBILAN HASIL</span>
                                             </Link>
                                         </li>
                                     )}

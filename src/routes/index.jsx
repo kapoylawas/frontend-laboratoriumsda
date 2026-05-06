@@ -6,6 +6,7 @@ import ProtectedRoute from '../components/ProtectedRoute.jsx';
 import AdminRoute from '../components/AdminRoute.jsx';
 import OperationalRoute from '../components/OperationalRoute.jsx';
 import HasilRoute from '../components/HasilRoute.jsx';
+import JadwalPengambilanRoute from '../components/JadwalPengambilanRoute.jsx';
 
 //import view login
 import Login from "../views/auth/login.jsx";
@@ -28,6 +29,8 @@ import Hasil from "../views/hasil/index.jsx";
 import Penjadwalan from "../views/penjadwalan/index.jsx";
 import SemuaPenawaran from "../views/penawaran-all/index.jsx";
 import SemuaPenawaranDetail from "../views/penawaran-all/detail.jsx";
+import JadwalPengambilanHasil from "../views/jadwal-pengambilan/index.jsx";
+import JadwalPengambilanDetail from "../views/jadwal-pengambilan/detail.jsx";
 
 export default function AppRoutes() {
   return (
@@ -136,6 +139,18 @@ export default function AppRoutes() {
         <AdminRoute>
           <SemuaPenawaranDetail />
         </AdminRoute>
+      } />
+
+      {/* Jadwal Pengambilan Hasil Route - Pemohon Only */}
+      <Route path="/jadwal-pengambilan" element={
+        <JadwalPengambilanRoute>
+          <JadwalPengambilanHasil />
+        </JadwalPengambilanRoute>
+      } />
+      <Route path="/jadwal-pengambilan/:id" element={
+        <JadwalPengambilanRoute>
+          <JadwalPengambilanDetail />
+        </JadwalPengambilanRoute>
       } />
     </Routes>
   );

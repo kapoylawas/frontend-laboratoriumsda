@@ -98,6 +98,16 @@ export const canAccessPenjadwalan = (user) => {
 };
 
 /**
+ * Helper function to check if user can access Jadwal Pengambilan Hasil menu
+ * (Pemohon only)
+ * @param {Object} user - User object from store
+ * @returns {Boolean}
+ */
+export const canAccessJadwalPengambilan = (user) => {
+  return isPemohon(user);
+};
+
+/**
  * Helper function to check if user can access operational menus
  * (Orders, Cart, History) - Admin Labkesda and Pemohon
  * @param {Object} user - User object from store
