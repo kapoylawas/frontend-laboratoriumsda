@@ -6,6 +6,7 @@ import Swal from 'sweetalert2';
 import LayoutAdmin from '../../layouts/admin';
 import { useStore as useUserStore } from '../../stores/user';
 import { isAdmin } from '../../constants/roles';
+import SuratPenawaran from './suratPenawaran';
 
 export default function PengajuanDetail() {
     const { id } = useParams();
@@ -15,6 +16,7 @@ export default function PengajuanDetail() {
     const [data, setData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [approveResult, setApproveResult] = useState(null);
+    const [showSurat, setShowSurat] = useState(false);
 
     const formatCurrency = (value) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value || 0);
@@ -245,7 +247,11 @@ export default function PengajuanDetail() {
                                     {getJenisBadge(data.jenis)} {' '} {getStatusBadge(data.status)}
                                 </div>
                             </div>
-                            <div className="col-auto">
+                            <div className="col-auto d-flex gap-2">
+                                <button className="btn btn-info" onClick={() => setShowSurat(true)}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon me-1" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><path d="M9 9l1 0" /><path d="M9 13l6 0" /><path d="M9 17l6 0" /></svg>
+                                    Preview Surat
+                                </button>
                                 <button className="btn btn-secondary" onClick={() => navigate('/penawaran')}>
                                     <svg xmlns="http://www.w3.org/2000/svg" className="icon me-1" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 12l14 0" /><path d="M5 12l6 6" /><path d="M5 12l6 -6" /></svg>
                                     Kembali
@@ -592,6 +598,10 @@ export default function PengajuanDetail() {
                     </div>
                 </div>
             </div>
+
+            {showSurat && (
+                <SuratPenawaran data={data} onClose={() => setShowSurat(false)} />
+            )}
         </LayoutAdmin>
     );
 }
