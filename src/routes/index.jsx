@@ -32,6 +32,12 @@ import SemuaPenawaranDetail from "../views/penawaran-all/detail.jsx";
 import JadwalPengambilanHasil from "../views/jadwal-pengambilan/index.jsx";
 import JadwalPengambilanDetail from "../views/jadwal-pengambilan/detail.jsx";
 
+// Import Berita Acara views
+import BeritaAcara from "../views/berita-acara/index.jsx";
+import BeritaAcaraCreate from "../views/berita-acara/create.jsx";
+import BeritaAcaraEdit from "../views/berita-acara/edit.jsx";
+import BeritaAcaraDetail from "../views/berita-acara/detail.jsx";
+
 export default function AppRoutes() {
   return (
     <Routes>
@@ -151,6 +157,28 @@ export default function AppRoutes() {
         <JadwalPengambilanRoute>
           <JadwalPengambilanDetail />
         </JadwalPengambilanRoute>
+      } />
+
+      {/* Berita Acara Routes */}
+      <Route path="/berita-acara" element={
+        <ProtectedRoute>
+          <BeritaAcara />
+        </ProtectedRoute>
+      } />
+      <Route path="/berita-acara/create" element={
+        <ProtectedRoute>
+          <BeritaAcaraCreate />
+        </ProtectedRoute>
+      } />
+      <Route path="/berita-acara/:id" element={
+        <ProtectedRoute>
+          <BeritaAcaraDetail />
+        </ProtectedRoute>
+      } />
+      <Route path="/berita-acara/:id/edit" element={
+        <ProtectedRoute>
+          <BeritaAcaraEdit />
+        </ProtectedRoute>
       } />
     </Routes>
   );

@@ -12,6 +12,10 @@ export default function BeritaAcara() {
     const [pagination, setPagination] = useState({});
     const [keywords, setKeywords] = useState('');
 
+    const userCookie = Cookies.get('user');
+    const loggedInUser = userCookie ? JSON.parse(userCookie) : {};
+    const isStaffOrAdmin = loggedInUser.role_id === 2 || loggedInUser.role_id === 3;
+
     const fetchData = async (pageNumber = 1, search = '') => {
         setIsLoading(true);
         const token = Cookies.get('token');
@@ -58,14 +62,16 @@ export default function BeritaAcara() {
                                 <h2 className="page-title">Berita Acara</h2>
                                 <div className="text-muted mt-1">Laporan pengambilan sampel</div>
                             </div>
-                            <div className="col-auto ms-auto d-print-none">
-                                <div className="d-flex">
-                                    <Link to="/berita-acara/create" className="btn btn-primary">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
-                                        Buat Berita Acara
-                                    </Link>
+                            {isStaffOrAdmin && (
+                                <div className="col-auto ms-auto d-print-none">
+                                    <div className="d-flex">
+                                        <Link to="/berita-acara/create" className="btn btn-primary">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+                                            Buat Berita Acara
+                                        </Link>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -131,9 +137,11 @@ export default function BeritaAcara() {
                                                             <Link to={`/berita-acara/${item.id}`} className="btn btn-sm btn-outline-primary" title="Detail">
                                                                 <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" /></svg>
                                                             </Link>
-                                                            <Link to={`/berita-acara/${item.id}/edit`} className="btn btn-sm btn-outline-secondary" title="Edit">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.097 2.097 0 0 0 -2.954 -2.954l-8.657 8.657a2 2 0 0 0 -.548 1.02l-.432 2.159l2.159 -.432a2 2 0 0 0 1.02 -.548z" /><path d="M15.536 7.464l2 2" /></svg>
-                                                            </Link>
+                                                            {isStaffOrAdmin && item.status === 'DRAFT' && (
+                                                                <Link to={`/berita-acara/${item.id}/edit`} className="btn btn-sm btn-outline-secondary" title="Edit">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.097 2.097 0 0 0 -2.954 -2.954l-8.657 8.657a2 2 0 0 0 -.548 1.02l-.432 2.159l2.159 -.432a2 2 0 0 0 1.02 -.548z" /><path d="M15.536 7.464l2 2" /></svg>
+                                                                </Link>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>

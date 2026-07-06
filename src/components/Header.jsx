@@ -365,6 +365,22 @@ export default function Header() {
                                     </li>
                                 )}
 
+                                {/* Berita Acara Menu - Admin & Pemohon */}
+                                {userCanAccessOperationalMenus && (
+                                    <li className={`mobile-nav-item ${isActivePath('/berita-acara') ? 'active' : ''}`}>
+                                        <Link className="mobile-nav-link" to="/berita-acara" onClick={closeMobileMenu}>
+                                            <div className="nav-icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                                                    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+                                                </svg>
+                                            </div>
+                                            <span className="nav-label">BERITA ACARA</span>
+                                        </Link>
+                                    </li>
+                                )}
+
 
                                 {userIsAdmin && (
                                     <li className={`mobile-nav-item mobile-nav-dropdown ${isMasterDataOpen ? 'open' : ''} ${isActivePath('/categories') || isActivePath('/sampels') || isActivePath('/users') ? 'active' : ''}`}>
@@ -597,6 +613,22 @@ export default function Header() {
                                                     </svg>
                                                 </div>
                                                 <span className="nav-label">JADWAL PENGAMBILAN HASIL</span>
+                                            </Link>
+                                        </li>
+                                    )}
+
+                                    {/* Berita Acara Menu - Admin & Pemohon */}
+                                    {userCanAccessOperationalMenus && (
+                                        <li className={`nav-item ${isActivePath('/berita-acara') ? 'active' : ''}`}>
+                                            <Link className="nav-link cashier-nav-link" to="/berita-acara">
+                                                <div className="nav-icon">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                        <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                                                        <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+                                                    </svg>
+                                                </div>
+                                                <span className="nav-label">BERITA ACARA</span>
                                             </Link>
                                         </li>
                                     )}
