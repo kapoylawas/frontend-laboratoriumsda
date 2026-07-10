@@ -105,15 +105,38 @@ export default function BeritaAcaraDetail() {
 
     const handleDownloadPDF = () => {
         const element = document.querySelector('.ba-paper');
+        if (!element) return;
+
+        // Temporarily remove border and box shadow to prevent border lines in the PDF
+        const originalBorder = element.style.border;
+        const originalShadow = element.style.boxShadow;
+        
+        element.style.border = 'none';
+        element.style.boxShadow = 'none';
+
         const options = {
-            margin: [10, 10, 10, 10], // top, left, bottom, right
+            margin: 0, // Set margin to 0 so 210mm paper width fits A4 width exactly
             filename: `Berita-Acara-${data.no_berita_acara.replace(/\//g, '-')}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 2, useCORS: true },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['css', 'legacy'] }
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } // Avoid breaking inside rows/images
         };
-        html2pdf().set(options).from(element).save();
+
+        html2pdf()
+            .set(options)
+            .from(element)
+            .save()
+            .then(() => {
+                // Restore original styles
+                element.style.border = originalBorder;
+                element.style.boxShadow = originalShadow;
+            })
+            .catch((err) => {
+                console.error('PDF generation error:', err);
+                element.style.border = originalBorder;
+                element.style.boxShadow = originalShadow;
+            });
     };
 
     return (
@@ -481,6 +504,7 @@ export default function BeritaAcaraDetail() {
                 
                 /* Paper Styling */
                 .ba-paper {
+                    box-sizing: border-box;
                     background: white;
                     color: black;
                     padding: 50px 60px;
@@ -532,13 +556,22 @@ export default function BeritaAcaraDetail() {
 
                 .table-ba-form {
                     width: 100%;
-                    border-collapse: collapse;
+                    border-collapse: separate;
+                    border-spacing: 0;
+                    border-top: 1px solid #888;
+                    border-left: 1px solid #888;
                 }
 
                 .table-ba-form td {
-                    padding: 6px 4px;
+                    padding: 6px 8px;
                     vertical-align: middle;
-                    border: 1px solid #ddd;
+                    border-right: 1px solid #888;
+                    border-bottom: 1px solid #888;
+                }
+
+                .table-ba-form tr {
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
                 }
 
                 /* Checkboxes simulation */
@@ -556,9 +589,10 @@ export default function BeritaAcaraDetail() {
 
                 .chk-item {
                     display: flex;
-                    align-items: center;
+                    align-items: flex-start;
                     gap: 8px;
                     font-size: 12.5px;
+                    line-height: 1.3;
                 }
 
                 .chk-item .box {
@@ -569,6 +603,7 @@ export default function BeritaAcaraDetail() {
                     border-radius: 2px;
                     position: relative;
                     flex-shrink: 0;
+                    margin-top: 2px;
                 }
 
                 .chk-item .box.checked::after {
@@ -677,8 +712,15 @@ export default function BeritaAcaraDetail() {
                         min-height: auto !important;
                         margin: 0 !important;
                     }
+                    .table-ba-form {
+                        border-top: 1px solid black !important;
+                        border-left: 1px solid black !important;
+                    }
                     .table-ba-form td {
-                        border: 1px solid black !important;
+                        border-right: 1px solid black !important;
+                        border-bottom: 1px solid black !important;
+                        border-top: none !important;
+                        border-left: none !important;
                     }
                 }
             `}</style>

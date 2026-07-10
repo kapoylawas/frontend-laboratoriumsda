@@ -371,6 +371,65 @@ export default function Cart() {
         }
     };
 
+    // Fungsi untuk checkout pemohon (tanpa cash, menghasilkan invoice tagihan pending)
+    const handleCheckoutPemohon = async () => {
+        setIsProcessingPayment(true);
+        const token = Cookies.get("token");
+
+        try {
+            // Kumpulkan semua item yang belum dibayar dari semua kategori
+            const allUnpaidItems = [];
+            Object.values(groupedData).forEach(category => {
+                const unpaidItems = category.items.filter(item => !item.status);
+                allUnpaidItems.push(...unpaidItems);
+            });
+
+            if (allUnpaidItems.length === 0) {
+                alert("Tidak ada item yang perlu checkout.");
+                setIsProcessingPayment(false);
+                return;
+            }
+
+            const cartIds = allUnpaidItems.map(item => item.id);
+
+            // Hitung total semua item yang belum dibayar
+            const allUnpaidTotal = Object.values(groupedData).reduce((total, category) => {
+                return total + category.unpaidTotal;
+            }, 0);
+
+            // Data untuk transaction (cash 0, karena belum bayar)
+            const transactionData = {
+                cash: 0,
+                grand_total: allUnpaidTotal,
+                discount: 0,
+                user_id: iduser,
+                cart_ids: cartIds,
+                change: 0,
+                category_name: "SEMUA KATEGORI"
+            };
+
+            // Insert transaction ke API
+            Api.defaults.headers.common["Authorization"] = token;
+            await Api.post('/api/transactions', transactionData);
+
+            // TAMPILKAN NOTIFIKASI SUKSES
+            const unpaidCategoriesCount = Object.values(groupedData).filter(cat => cat.hasUnpaidItems).length;
+            setSuccessMessage(`Invoice tagihan berhasil dibuat! ${allUnpaidItems.length} item dari ${unpaidCategoriesCount} kategori sedang menunggu rincian pembayaran dari admin.`);
+            setShowSuccessNotification(true);
+
+            // Redirect ke halaman history setelah 2 detik
+            setTimeout(() => {
+                navigate("/history");
+            }, 2000);
+
+        } catch (error) {
+            console.error("There was an error processing checkout!", error);
+            alert("Gagal memproses checkout. Silakan coba lagi.");
+        } finally {
+            setIsProcessingPayment(false);
+        }
+    };
+
     // Fungsi untuk mencetak PDF
     const printReceipt = (transaction, items, categoryName) => {
         const printWindow = window.open('', '_blank');
@@ -968,13 +1027,33 @@ export default function Cart() {
                             </h3>
                             {hasUnpaidItems && (
                                 <div className="card-actions">
-                                    <button
-                                        className="btn btn-success btn-sm"
-                                        onClick={openAllPaymentModal}
-                                    >
-                                        <FiCreditCard className="me-1" />
-                                        Bayar Semua
-                                    </button>
+                                    {parsedData.role_id === 2 ? (
+                                        <button
+                                            className="btn btn-success btn-sm"
+                                            onClick={openAllPaymentModal}
+                                        >
+                                            <FiCreditCard className="me-1" />
+                                            Bayar Semua
+                                        </button>
+                                    ) : (
+                                        <button
+                                            className="btn btn-primary btn-sm"
+                                            onClick={handleCheckoutPemohon}
+                                            disabled={isProcessingPayment}
+                                        >
+                                            {isProcessingPayment ? (
+                                                <>
+                                                    <FiLoader className="spinner me-1" />
+                                                    Memproses...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <FiShoppingCart className="me-1" />
+                                                    Buat Invoice Tagihan
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
                                     <span className="badge bg-warning ms-2">
                                         <FiClock className="me-1" />
                                         {Object.values(groupedData).reduce((sum, cat) => sum + cat.unpaidCount, 0)} Menunggu Pembayaran

@@ -29,6 +29,80 @@ export default function Penjadwalan() {
     const [detailDataList, setDetailDataList] = useState([]);
     const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
+    // Admin Payment states & handlers
+    const [showPaymentInfoModal, setShowPaymentInfoModal] = useState(false);
+    const [adminPaymentTx, setAdminPaymentTx] = useState(null);
+    const [adminNoFa, setAdminNoFa] = useState('');
+    const [adminQrisFile, setAdminQrisFile] = useState(null);
+    const [isAdminSubmitting, setIsAdminSubmitting] = useState(false);
+
+    const openPaymentInfoModal = (transaction) => {
+        setAdminPaymentTx(transaction);
+        setAdminNoFa(transaction.no_fa || '');
+        setAdminQrisFile(null);
+        setShowPaymentInfoModal(true);
+    };
+
+    const closePaymentInfoModal = () => {
+        setShowPaymentInfoModal(false);
+        setAdminPaymentTx(null);
+        setAdminNoFa('');
+        setAdminQrisFile(null);
+    };
+
+    const handlePaymentInfoSubmit = async (e) => {
+        e.preventDefault();
+        if (!adminNoFa && !adminQrisFile) {
+            Swal.fire({ icon: 'warning', title: 'Input Kosong', text: 'Masukkan Nomor FA atau pilih file QRIS!' });
+            return;
+        }
+
+        setIsAdminSubmitting(true);
+        const token = Cookies.get('token');
+        const formData = new FormData();
+        if (adminNoFa) formData.append('no_fa', adminNoFa);
+        if (adminQrisFile) formData.append('qris', adminQrisFile);
+
+        try {
+            Api.defaults.headers.common['Authorization'] = token;
+            await Api.put(`/api/transactions/${adminPaymentTx.id}/payment-info`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Informasi pembayaran berhasil diperbarui!' });
+            closePaymentInfoModal();
+            fetchTransactions(txPagination.currentPage, search, filterStatus);
+        } catch (error) {
+            console.error('Error saving payment info:', error);
+            Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal memperbarui informasi pembayaran!' });
+        } finally {
+            setIsAdminSubmitting(false);
+        }
+    };
+
+    const handleConfirmLunas = async (transaction) => {
+        const result = await Swal.fire({
+            title: 'Konfirmasi Lunas',
+            text: `Apakah Anda yakin ingin menandai transaksi ${transaction.invoice} sebagai LUNAS?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Lunas',
+            cancelButtonText: 'Batal',
+        });
+
+        if (result.isConfirmed) {
+            const token = Cookies.get('token');
+            try {
+                Api.defaults.headers.common['Authorization'] = token;
+                await Api.put(`/api/transactions/${transaction.id}/confirm-paid`);
+                Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Transaksi dikonfirmasi Lunas!' });
+                fetchTransactions(txPagination.currentPage, search, filterStatus);
+            } catch (error) {
+                console.error('Error confirming payment:', error);
+                Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal mengonfirmasi pembayaran!' });
+            }
+        }
+    };
+
     const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value || 0);
 
     const formatDateTime = (dateStr) => {
@@ -618,7 +692,7 @@ export default function Penjadwalan() {
                                                                                 </tbody>
                                                                                 <tfoot>
                                                                                     <tr>
-                                                                                        <td colSpan="2" className="text-end text-muted small">Subtotal {catName}</td>
+                                                                        <td colSpan="2" className="text-end text-muted small">Subtotal {catName}</td>
                                                                                         <td className="text-end fw-bold text-primary">{formatCurrency(catDetails.reduce((s, d) => s + (d.price || 0), 0))}</td>
                                                                                         <td></td>
                                                                                     </tr>
@@ -633,6 +707,122 @@ export default function Penjadwalan() {
                                                                 <span className="fw-bold">Grand Total</span>
                                                                 <span className="fs-4 fw-bold text-primary">{formatCurrency(transaction.grand_total)}</span>
                                                             </div>
+
+                                                            {/* Admin Payment Management Actions */}
+                                                            {!allPaid && (
+                                                                <div className="payment-admin-panel mt-3 p-3 rounded border text-start" style={{ backgroundColor: '#fdfcfe', borderColor: '#d3c3e5' }}>
+                                                                    <h6 className="fw-bold text-secondary mb-3 d-flex align-items-center" style={{ fontSize: '0.85rem' }}>
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" className="me-2 text-primary" style={{ verticalAlign: 'middle' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 8v-3a1 1 0 0 0 -1 -1h-10a2 2 0 0 0 0 4h12a1 1 0 0 1 1 1v3" /><path d="M20 12v4a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-4" /><path d="M16 12h4v4h-4z" /></svg>
+                                                                        Kelola Pembayaran & Tagihan
+                                                                    </h6>
+                                                                    
+                                                                    <div className="row g-3 align-items-center">
+                                                                        <div className="col-md-6">
+                                                                            <div className="small text-muted" style={{ fontSize: '0.8rem' }}>Status Rincian Pembayaran:</div>
+                                                                            {transaction.no_fa || transaction.qris ? (
+                                                                                <div className="mt-1 d-flex align-items-center gap-2">
+                                                                                    <span className="badge bg-success-lt" style={{ fontSize: '0.8rem' }}>Nomor FA & QRIS Sudah Terpasang</span>
+                                                                                    <button 
+                                                                                        type="button" 
+                                                                                        className="btn btn-xs btn-outline-primary px-2"
+                                                                                        onClick={() => openPaymentInfoModal(transaction)}
+                                                                                    >
+                                                                                        Edit Info
+                                                                                    </button>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="mt-1 d-flex align-items-center gap-2">
+                                                                                    <span className="badge bg-warning-lt text-warning" style={{ fontSize: '0.8rem' }}>Belum diinput oleh Admin</span>
+                                                                                    <button 
+                                                                                        type="button" 
+                                                                                        className="btn btn-sm btn-primary py-1 px-2"
+                                                                                        onClick={() => openPaymentInfoModal(transaction)}
+                                                                                        style={{ fontSize: '0.85rem' }}
+                                                                                    >
+                                                                                        Input FA & QRIS
+                                                                                    </button>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                        
+                                                                        <div className="col-md-6 text-md-end text-start">
+                                                                            {transaction.payment_proof ? (
+                                                                                <div className="d-flex flex-column align-items-md-end align-items-start gap-2">
+                                                                                    <div className="small text-success d-flex align-items-center gap-2 justify-content-end w-100" style={{ fontSize: '0.85rem' }}>
+                                                                                        <span>✔ Bukti Pembayaran Terkirim</span>
+                                                                                        <a 
+                                                                                            href={`${import.meta.env.VITE_APP_BASEURL}/uploads/${transaction.payment_proof}`} 
+                                                                                            target="_blank" 
+                                                                                            rel="noopener noreferrer"
+                                                                                            className="btn btn-sm btn-outline-info py-0 px-2"
+                                                                                            style={{ fontSize: '0.8rem' }}
+                                                                                        >
+                                                                                            Lihat Bukti
+                                                                                        </a>
+                                                                                    </div>
+                                                                                    <button 
+                                                                                        type="button" 
+                                                                                        className="btn btn-success btn-sm text-white"
+                                                                                        onClick={() => handleConfirmLunas(transaction)}
+                                                                                    >
+                                                                                        Konfirmasi Lunas (Setujui)
+                                                                                    </button>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="d-flex flex-column align-items-md-end align-items-start gap-2">
+                                                                                    <span className="text-muted small" style={{ fontSize: '0.8rem' }}>Menunggu upload bukti bayar dari user</span>
+                                                                                    <button 
+                                                                                        type="button" 
+                                                                                        className="btn btn-outline-success btn-sm"
+                                                                                        onClick={() => handleConfirmLunas(transaction)}
+                                                                                    >
+                                                                                        Tandai Lunas Langsung
+                                                                                    </button>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Admin Payment Archive (If Paid) */}
+                                                            {allPaid && (transaction.no_fa || transaction.payment_proof) && (
+                                                                <div className="payment-admin-panel mt-3 p-3 rounded border text-start" style={{ backgroundColor: '#f0fdf4', borderColor: '#b7ebc6' }}>
+                                                                    <h6 className="fw-bold text-success mb-3 d-flex align-items-center" style={{ fontSize: '0.85rem' }}>
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" className="me-2 text-success" style={{ verticalAlign: 'middle' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>
+                                                                        Arsip & Bukti Pembayaran (Lunas)
+                                                                    </h6>
+                                                                    <div className="row g-3 align-items-center">
+                                                                        <div className="col-md-6">
+                                                                            {transaction.no_fa && (
+                                                                                <div>
+                                                                                    <span className="text-muted small d-block" style={{ fontSize: '0.75rem' }}>Nomor FA / Virtual Account:</span>
+                                                                                    <strong className="text-success">{transaction.no_fa}</strong>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="col-md-6 text-md-end text-start">
+                                                                            {transaction.payment_proof ? (
+                                                                                <div className="d-flex align-items-center justify-content-md-end gap-2">
+                                                                                    <span className="text-muted small" style={{ fontSize: '0.8rem' }}>Bukti Transfer:</span>
+                                                                                    <a 
+                                                                                        href={`${import.meta.env.VITE_APP_BASEURL}/uploads/${transaction.payment_proof}`} 
+                                                                                        target="_blank" 
+                                                                                        rel="noopener noreferrer"
+                                                                                        className="btn btn-sm btn-success text-white d-flex align-items-center gap-1"
+                                                                                        style={{ fontSize: '0.8rem' }}
+                                                                                    >
+                                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" /></svg>
+                                                                                        Lihat Bukti
+                                                                                    </a>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <span className="text-muted small" style={{ fontSize: '0.8rem' }}>Dibayar tanpa unggah bukti (Kasir/Manual)</span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
@@ -654,6 +844,65 @@ export default function Penjadwalan() {
                     </div>
                 </div>
             </div>
+
+            {/* ========== INPUT PAYMENT INFO MODAL ========== */}
+            {showPaymentInfoModal && adminPaymentTx && (
+                <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header bg-primary text-white">
+                                <h5 className="modal-title mb-0 text-white">Input Informasi Pembayaran</h5>
+                                <button type="button" className="btn-close btn-close-white" onClick={closePaymentInfoModal}></button>
+                            </div>
+                            <form onSubmit={handlePaymentInfoSubmit}>
+                                <div className="modal-body text-start">
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">Invoice</label>
+                                        <div className="form-control bg-light">{adminPaymentTx.invoice}</div>
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">Nomor FA / Virtual Account</label>
+                                        <input 
+                                            type="text" 
+                                            className="form-control" 
+                                            value={adminNoFa} 
+                                            onChange={(e) => setAdminNoFa(e.target.value)} 
+                                            placeholder="Masukkan nomor VA/FA pembayaran" 
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">Upload Kode QRIS</label>
+                                        <input 
+                                            type="file" 
+                                            className="form-control" 
+                                            accept="image/*"
+                                            onChange={(e) => setAdminQrisFile(e.target.files[0])} 
+                                        />
+                                        <small className="text-muted mt-1 d-block">Pilih gambar kode QRIS pembayaran</small>
+                                        
+                                        {adminPaymentTx.qris && (
+                                            <div className="mt-2 text-start">
+                                                <div className="text-muted small">QRIS saat ini:</div>
+                                                <img 
+                                                    src={`${import.meta.env.VITE_APP_BASEURL}/uploads/${adminPaymentTx.qris}`} 
+                                                    alt="QRIS Current" 
+                                                    style={{ maxWidth: '100px', height: 'auto', border: '1px solid #ddd', padding: '3px', borderRadius: '4px' }} 
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="modal-footer">
+                                    <button type="button" className="btn btn-secondary" onClick={closePaymentInfoModal}>Batal</button>
+                                    <button type="submit" className="btn btn-primary text-white" disabled={isAdminSubmitting}>
+                                        {isAdminSubmitting ? 'Menyimpan...' : 'Simpan Informasi'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ========== CREATE SCHEDULE MODAL ========== */}
             {showCreateModal && selectedTransaction && (

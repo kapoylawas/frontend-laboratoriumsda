@@ -51,6 +51,9 @@ export default function SuratPenawaran({ data, onClose }) {
         if (!suratRef.current) return;
         setIsGenerating(true);
 
+        const originalShadow = suratRef.current.style.boxShadow;
+        suratRef.current.style.boxShadow = 'none';
+
         try {
             const opt = {
                 margin: [5, 8, 5, 8],
@@ -76,6 +79,7 @@ export default function SuratPenawaran({ data, onClose }) {
             console.error('Error generating PDF:', error);
             alert('Gagal menggenerate PDF: ' + error.message);
         } finally {
+            suratRef.current.style.boxShadow = originalShadow;
             setIsGenerating(false);
         }
     };

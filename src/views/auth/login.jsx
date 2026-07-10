@@ -8,6 +8,10 @@ import { Link, useNavigate } from "react-router-dom";
 //import store
 import { useStore } from '../../stores/user';
 
+//import SliderCaptcha component
+import SliderCaptcha from '../../components/SliderCaptcha';
+
+
 export default function Login() {
     const navigate = useNavigate();
     const { login } = useStore();
@@ -24,22 +28,17 @@ export default function Login() {
     const [errors, setErrors] = useState({});
     const [loginFailed, setLoginFailed] = useState('');
 
-    // Slider CAPTCHA state
+        // Slider CAPTCHA state
     const [slider, setSlider] = useState({
-        value: 0,
-        isVerified: false,
-        isDragging: false,
-        error: '',
-        showReset: false
+        isVerified: false
     });
+    const [sliderResetCount, setSliderResetCount] = useState(0);
 
     // Refs
-    const sliderRef = useRef(null);
     const bgCanvasRef = useRef(null);
     const animationFrameRef = useRef();
 
     // Constants
-    const SLIDER_THRESHOLD = 95;
     const AUTO_RESET_TIME = 30000;
 
     // Handlers for form input
@@ -56,59 +55,10 @@ export default function Login() {
         }
     }, [errors]);
 
-    // Slider handlers
-    const handleSliderStart = useCallback((e) => {
-        e.preventDefault();
-        if (!slider.isVerified && !isLoading) {
-            setSlider(prev => ({ ...prev, isDragging: true, showReset: false }));
-        }
-    }, [slider.isVerified, isLoading]);
-
-    const handleSliderMove = useCallback((e) => {
-        if (!slider.isDragging || !sliderRef.current || slider.isVerified) return;
-
-        const rect = sliderRef.current.getBoundingClientRect();
-        const clientX = e.clientX || (e.touches && e.touches[0]?.clientX);
-        if (!clientX) return;
-
-        let x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-        const percentage = (x / rect.width) * 100;
-        
-        setSlider(prev => ({ ...prev, value: percentage }));
-
-        if (percentage >= SLIDER_THRESHOLD && !slider.isVerified) {
-            setSlider(prev => ({
-                ...prev,
-                isVerified: true,
-                isDragging: false,
-                error: '',
-                showReset: false
-            }));
-        }
-    }, [slider.isDragging, slider.isVerified]);
-
-    const handleSliderEnd = useCallback(() => {
-        if (slider.isDragging) {
-            if (!slider.isVerified) {
-                setSlider(prev => ({
-                    ...prev,
-                    value: 0,
-                    error: 'Geser slider sampai ke ujung kanan',
-                    showReset: true,
-                    isDragging: false
-                }));
-            }
-        }
-    }, [slider.isDragging, slider.isVerified]);
-
+    // Reset handler for slider
     const resetSlider = useCallback(() => {
-        setSlider({
-            value: 0,
-            isVerified: false,
-            isDragging: false,
-            error: '',
-            showReset: false
-        });
+        setSlider({ isVerified: false });
+        setSliderResetCount(prev => prev + 1);
     }, []);
 
     // Auto reset timer
@@ -119,32 +69,6 @@ export default function Login() {
         }
         return () => clearTimeout(timeout);
     }, [slider.isVerified, resetSlider]);
-
-    // Global event listeners for slider
-    useEffect(() => {
-        if (!slider.isDragging) return;
-
-        const handleMove = (e) => {
-            e.preventDefault();
-            handleSliderMove(e);
-        };
-
-        const handleEnd = () => {
-            handleSliderEnd();
-        };
-
-        window.addEventListener('mousemove', handleMove);
-        window.addEventListener('mouseup', handleEnd);
-        window.addEventListener('touchmove', handleMove, { passive: false });
-        window.addEventListener('touchend', handleEnd);
-
-        return () => {
-            window.removeEventListener('mousemove', handleMove);
-            window.removeEventListener('mouseup', handleEnd);
-            window.removeEventListener('touchmove', handleMove);
-            window.removeEventListener('touchend', handleEnd);
-        };
-    }, [slider.isDragging, handleSliderMove, handleSliderEnd]);
 
     // Blue-themed background animation
     useEffect(() => {
@@ -325,11 +249,6 @@ export default function Login() {
         e.preventDefault();
 
         if (!slider.isVerified) {
-            setSlider(prev => ({
-                ...prev,
-                error: '🌊 Geser slider untuk verifikasi 🌊',
-                showReset: true
-            }));
             return;
         }
 
@@ -352,23 +271,6 @@ export default function Login() {
             resetSlider();
         }
     };
-
-    // Memoized slider styles
-    const sliderStyles = useMemo(() => ({
-        fill: {
-            width: `${slider.value}%`,
-            background: slider.isVerified 
-                ? 'linear-gradient(90deg, #2C6B9E 0%, #4A90E2 100%)'
-                : 'linear-gradient(90deg, #4A90E2 0%, #7DC9FF 100%)'
-        },
-        thumb: {
-            left: `${slider.value}%`,
-            borderColor: slider.isVerified ? '#2C6B9E' : '#4A90E2',
-            background: slider.isVerified 
-                ? 'linear-gradient(135deg, #2C6B9E, #4A90E2)'
-                : 'linear-gradient(135deg, #4A90E2, #7DC9FF)'
-        }
-    }), [slider.value, slider.isVerified]);
 
     return (
         <>
@@ -492,86 +394,12 @@ export default function Login() {
 
                                 {/* Blue Slider CAPTCHA */}
                                 <div className="mb-4">
-                                    <div className="d-flex justify-content-between align-items-center mb-2">
-                                        <label className="form-label small fw-semibold blue-text">
-                                            <span className="me-1">🔷</span> Verifikasi Keamanan
-                                        </label>
-                                        <span className={`status-badge ${slider.isVerified ? 'verified' : 'pending'}`}>
-                                            {slider.isVerified ? '✓ Terverifikasi' : '⚡ Verifikasi'}
-                                        </span>
-                                    </div>
-
-                                    <div className={`captcha-wrapper ${slider.error ? 'error' : ''} ${slider.isVerified ? 'verified' : ''}`}>
-                                        {/* Slider Container */}
-                                        <div
-                                            ref={sliderRef}
-                                            className={`slider-container ${slider.isVerified ? 'verified' : ''} ${slider.isDragging ? 'dragging' : ''}`}
-                                            onMouseDown={handleSliderStart}
-                                            onTouchStart={handleSliderStart}
-                                            style={{ opacity: isLoading ? 0.6 : 1 }}
-                                        >
-                                            {/* Slider Fill */}
-                                            <div className="slider-fill" style={sliderStyles.fill} />
-
-                                            {/* Slider Thumb */}
-                                            <div className="slider-thumb" style={sliderStyles.thumb}>
-                                                {slider.isVerified ? '✓' : '→'}
-                                            </div>
-
-                                            {/* Slider Text */}
-                                            <div className="slider-text">
-                                                {slider.isVerified ? (
-                                                    <span className="text-white fw-medium">
-                                                        <span className="me-1">🌊</span> Verifikasi Berhasil! 
-                                                    </span>
-                                                ) : slider.value > 0 && slider.value < SLIDER_THRESHOLD ? (
-                                                    <span className={slider.value > 50 ? 'text-white' : 'text-secondary'}>
-                                                        Lepaskan untuk reset
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-secondary">
-                                                        <span className="me-1">→</span> Geser ke kanan untuk verifikasi
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            {/* Floating Blue Dots */}
-                                            {!slider.isVerified && slider.value > 30 && slider.value < 70 && (
-                                                <div className="floating-dots">🔵</div>
-                                            )}
-                                        </div>
-
-                                        {/* Action Buttons */}
-                                        <div className="d-flex justify-content-between align-items-center mt-3">
-                                            {(slider.showReset || slider.error) && (
-                                                <button
-                                                    type="button"
-                                                    className="btn-reset"
-                                                    onClick={resetSlider}
-                                                    disabled={isLoading}
-                                                >
-                                                    <span className="me-1">🔄</span>
-                                                    Coba Lagi
-                                                </button>
-                                            )}
-
-                                            {slider.error && (
-                                                <div className="error-message">
-                                                    <span className="me-1">⚠️</span>
-                                                    {slider.error}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Success Message */}
-                                        {slider.isVerified && (
-                                            <div className="success-message mt-2">
-                                                <div className="success-waves">🌊</div>
-                                                <span>Verifikasi berhasil! Silakan lanjutkan login</span>
-                                                <div className="success-waves">🌊</div>
-                                            </div>
-                                        )}
-                                    </div>
+                                    <SliderCaptcha
+                                        isVerified={slider.isVerified}
+                                        onVerify={(verified) => setSlider(prev => ({ ...prev, isVerified: verified }))}
+                                        resetTrigger={sliderResetCount}
+                                        disabled={isLoading}
+                                    />
                                 </div>
 
                                 {/* Remember Me with Blue Checkbox */}
@@ -826,252 +654,7 @@ export default function Login() {
                     text-decoration: underline !important;
                 }
 
-                /* Status Badge */
-                .status-badge {
-                    padding: 6px 14px;
-                    border-radius: 30px;
-                    font-size: 12px;
-                    font-weight: 600;
-                    transition: all 0.3s;
-                }
 
-                .status-badge.pending {
-                    background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(125, 201, 255, 0.1));
-                    border: 2px solid #4A90E2;
-                    color: #4A90E2;
-                }
-
-                .status-badge.verified {
-                    background: linear-gradient(135deg, rgba(44, 107, 158, 0.1), rgba(74, 144, 226, 0.1));
-                    border: 2px solid #2C6B9E;
-                    color: #2C6B9E;
-                }
-
-                /* Captcha Wrapper */
-                .captcha-wrapper {
-                    background: linear-gradient(135deg, #f0f8ff, #ffffff);
-                    padding: 1.5rem;
-                    border-radius: 20px;
-                    border: 2px solid #e0f0ff;
-                    transition: all 0.3s;
-                    position: relative;
-                    overflow: hidden;
-                }
-
-                .captcha-wrapper::before {
-                    content: '';
-                    position: absolute;
-                    top: -50%;
-                    left: -50%;
-                    width: 200%;
-                    height: 200%;
-                    background: linear-gradient(
-                        45deg,
-                        transparent,
-                        rgba(74, 144, 226, 0.1),
-                        transparent
-                    );
-                    transform: rotate(45deg);
-                    animation: shine 3s infinite;
-                }
-
-                @keyframes shine {
-                    0% { transform: translateX(-100%) rotate(45deg); }
-                    20%, 100% { transform: translateX(100%) rotate(45deg); }
-                }
-
-                .captcha-wrapper.verified {
-                    border-color: #2C6B9E;
-                    background: linear-gradient(135deg, rgba(44, 107, 158, 0.1), rgba(74, 144, 226, 0.1));
-                }
-
-                .captcha-wrapper.error {
-                    border-color: #FF6B6B;
-                    background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 179, 179, 0.1));
-                    animation: shake 0.5s;
-                }
-
-                @keyframes shake {
-                    0%, 100% { transform: translateX(0); }
-                    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-                    20%, 40%, 60%, 80% { transform: translateX(5px); }
-                }
-
-                /* Slider Container */
-                .slider-container {
-                    position: relative;
-                    height: 60px;
-                    background: white;
-                    border-radius: 30px;
-                    cursor: grab;
-                    user-select: none;
-                    overflow: hidden;
-                    border: 2px solid #e0f0ff;
-                    transition: all 0.3s;
-                    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.1);
-                }
-
-                .slider-container:hover {
-                    border-color: #4A90E2;
-                    transform: scale(1.02);
-                    box-shadow: 0 8px 25px rgba(74, 144, 226, 0.2);
-                }
-
-                .slider-container.dragging {
-                    cursor: grabbing;
-                    border-color: #4A90E2;
-                    transform: scale(1.02);
-                }
-
-                .slider-container.verified {
-                    border-color: #2C6B9E;
-                    cursor: default;
-                    background: linear-gradient(135deg, #2C6B9E, #4A90E2);
-                }
-
-                .slider-fill {
-                    position: absolute;
-                    height: 100%;
-                    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    border-radius: 30px;
-                }
-
-                .slider-thumb {
-                    position: absolute;
-                    width: 56px;
-                    height: 56px;
-                    border-radius: 50%;
-                    top: 50%;
-                    transform: translate(-50%, -50%);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-                    border: 3px solid;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    z-index: 2;
-                    font-size: 24px;
-                    color: white;
-                }
-
-                .slider-container:not(.verified) .slider-thumb {
-                    animation: thumbPulse 2s infinite;
-                }
-
-                @keyframes thumbPulse {
-                    0%, 100% { transform: translate(-50%, -50%) scale(1); }
-                    50% { transform: translate(-50%, -50%) scale(1.1); }
-                }
-
-                .slider-container.dragging .slider-thumb {
-                    transform: translate(-50%, -50%) scale(1.15);
-                }
-
-                .slider-text {
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    font-size: 14px;
-                    font-weight: 600;
-                    white-space: nowrap;
-                    z-index: 1;
-                    pointer-events: none;
-                    transition: all 0.3s;
-                }
-
-                .floating-dots {
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    font-size: 20px;
-                    animation: floatDots 1s infinite;
-                    z-index: 3;
-                    pointer-events: none;
-                }
-
-                @keyframes floatDots {
-                    0%, 100% { transform: translate(-50%, -50%) scale(1); }
-                    50% { transform: translate(-50%, -80%) scale(1.2); }
-                }
-
-                /* Reset Button */
-                .btn-reset {
-                    background: linear-gradient(135deg, #f0f8ff, #e0f0ff);
-                    border: 2px solid #4A90E2;
-                    border-radius: 25px;
-                    padding: 8px 20px;
-                    font-size: 13px;
-                    font-weight: 600;
-                    color: #4A90E2;
-                    transition: all 0.3s;
-                    cursor: pointer;
-                }
-
-                .btn-reset:hover {
-                    background: linear-gradient(135deg, #e0f0ff, #d0e8ff);
-                    border-color: #2C6B9E;
-                    color: #2C6B9E;
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2);
-                }
-
-                .btn-reset:active {
-                    transform: translateY(0);
-                }
-
-                .btn-reset:disabled {
-                    opacity: 0.5;
-                    cursor: not-allowed;
-                }
-
-                /* Error Message */
-                .error-message {
-                    color: #FF6B6B;
-                    font-size: 13px;
-                    font-weight: 600;
-                    display: flex;
-                    align-items: center;
-                    padding: 6px 14px;
-                    background: rgba(255, 107, 107, 0.1);
-                    border-radius: 20px;
-                }
-
-                /* Success Message */
-                .success-message {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 10px;
-                    color: #2C6B9E;
-                    font-size: 13px;
-                    font-weight: 600;
-                    padding: 10px;
-                    background: linear-gradient(135deg, rgba(44, 107, 158, 0.1), rgba(74, 144, 226, 0.1));
-                    border-radius: 15px;
-                    animation: slideUp 0.5s;
-                }
-
-                .success-waves {
-                    animation: wave 1s infinite;
-                }
-
-                @keyframes wave {
-                    0%, 100% { opacity: 1; transform: scale(1); }
-                    50% { opacity: 0.5; transform: scale(1.2); }
-                }
-
-                @keyframes slideUp {
-                    from {
-                        opacity: 0;
-                        transform: translateY(10px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
 
                 /* Custom Checkbox */
                 .custom-checkbox {
@@ -1263,19 +846,7 @@ export default function Login() {
                         padding: 1.5rem !important;
                     }
                     
-                    .captcha-wrapper {
-                        padding: 1rem;
-                    }
-                    
-                    .slider-text {
-                        font-size: 12px;
-                    }
-                    
-                    .slider-thumb {
-                        width: 48px;
-                        height: 48px;
-                        font-size: 20px;
-                    }
+
 
                     .decoration {
                         filter: blur(40px);

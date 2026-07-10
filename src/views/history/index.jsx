@@ -28,7 +28,38 @@ export default function History() {
     const [isLoading, setIsLoading] = useState(true);
     const [userData, setUserData] = useState(null);
     const [expandedInvoices, setExpandedInvoices] = useState({});
+    const [uploadingTxId, setUploadingTxId] = useState(null);
     const navigate = useNavigate();
+
+    const handleUploadProof = async (e, transactionId) => {
+        e.preventDefault();
+        const fileInput = e.target.elements.payment_proof;
+        if (!fileInput || !fileInput.files[0]) {
+            alert("Silakan pilih file gambar bukti transfer terlebih dahulu.");
+            return;
+        }
+
+        setUploadingTxId(transactionId);
+        const token = Cookies.get("token");
+        const formData = new FormData();
+        formData.append("payment_proof", fileInput.files[0]);
+
+        try {
+            Api.defaults.headers.common["Authorization"] = token;
+            await Api.put(`/api/transactions/${transactionId}/payment-proof`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            alert("Bukti pembayaran berhasil diunggah!");
+            fetchData(); // Refresh data transaksi
+        } catch (error) {
+            console.error("Error uploading payment proof:", error);
+            alert("Gagal mengunggah bukti pembayaran. Silakan coba lagi.");
+        } finally {
+            setUploadingTxId(null);
+        }
+    };
 
     const userCookie = Cookies.get("user");
     const parsedData = JSON.parse(userCookie);
@@ -279,6 +310,126 @@ export default function History() {
                                                                 );
                                                             })}
                                                         </div>
+
+                                                        {/* Section Info QRIS & Nomor FA */}
+                                                        {!transaction.transaction_details[0]?.status_bayar && (
+                                                            <div className="payment-gateway-section mt-4 p-3 rounded mb-3" style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                                                                <h5 className="fw-bold mb-3 text-secondary d-flex align-items-center">
+                                                                    <FaMoneyBillWave className="me-2 text-primary" style={{ verticalAlign: 'middle' }} /> Rincian Pembayaran
+                                                                </h5>
+                                                                
+                                                                {!transaction.no_fa && !transaction.qris ? (
+                                                                    <div className="alert alert-warning mb-0 border-0 shadow-sm d-flex align-items-center">
+                                                                        <FaInfoCircle className="me-3 fs-3 text-warning" />
+                                                                        <div>
+                                                                            <strong className="d-block text-warning">Menunggu Rincian Pembayaran</strong>
+                                                                            Admin sedang menyiapkan Nomor FA (Virtual Account) dan kode QRIS. Silakan periksa kembali halaman ini secara berkala.
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="row g-3 align-items-stretch text-start">
+                                                                        {/* FA info */}
+                                                                        <div className="col-md-6">
+                                                                            <div className="card h-100 border-0 shadow-sm p-3" style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' }}>
+                                                                                <span className="text-muted small fw-semibold text-uppercase mb-1" style={{ fontSize: '0.75rem' }}>Nomor Virtual Account / FA</span>
+                                                                                <div className="d-flex align-items-center justify-content-between">
+                                                                                    <span className="fs-4 fw-bold text-success">{transaction.no_fa || '-'}</span>
+                                                                                    {transaction.no_fa && (
+                                                                                        <button 
+                                                                                            type="button"
+                                                                                            className="btn btn-sm btn-outline-success border-0 bg-white"
+                                                                                            onClick={() => {
+                                                                                                navigator.clipboard.writeText(transaction.no_fa);
+                                                                                                alert("Nomor FA disalin ke clipboard!");
+                                                                                            }}
+                                                                                        >
+                                                                                            Salin
+                                                                                        </button>
+                                                                                    )}
+                                                                                </div>
+                                                                                <p className="small text-muted mt-2 mb-0" style={{ fontSize: '0.8rem' }}>Lakukan transfer ke nomor Virtual Account di atas.</p>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* QRIS info */}
+                                                                        <div className="col-md-6">
+                                                                            <div className="card h-100 border-0 shadow-sm p-3 text-center d-flex flex-column align-items-center justify-content-center" style={{ backgroundColor: '#fff' }}>
+                                                                                <span className="text-muted small fw-semibold text-uppercase mb-2" style={{ fontSize: '0.75rem' }}>QRIS Kode</span>
+                                                                                {transaction.qris ? (
+                                                                                    <div className="d-flex flex-column align-items-center">
+                                                                                        <img 
+                                                                                            src={`${import.meta.env.VITE_APP_BASEURL}/uploads/${transaction.qris}`} 
+                                                                                            alt="QRIS Code" 
+                                                                                            style={{ maxWidth: '160px', height: 'auto', border: '1px solid #e2e8f0', padding: '6px', borderRadius: '8px' }} 
+                                                                                        />
+                                                                                        <small className="text-muted mt-2 d-block" style={{ fontSize: '0.75rem' }}>Pindai kode QR di atas menggunakan aplikasi pembayaran Anda</small>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <span className="text-muted">-</span>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Payment Proof Section */}
+                                                                        <div className="col-12 mt-3">
+                                                                            <div className="card border-0 shadow-sm p-3" style={{ backgroundColor: '#fff', border: '1px solid #f1f5f9' }}>
+                                                                                <h6 className="fw-bold text-gray-900 mb-3" style={{ fontSize: '0.9rem' }}>Bukti Pembayaran</h6>
+                                                                                
+                                                                                {!transaction.payment_proof ? (
+                                                                                    <form onSubmit={(e) => handleUploadProof(e, transaction.id)}>
+                                                                                        <div className="row align-items-center g-2">
+                                                                                            <div className="col-md-8 col-sm-12">
+                                                                                                <input 
+                                                                                                    type="file" 
+                                                                                                    className="form-control" 
+                                                                                                    name="payment_proof" 
+                                                                                                    accept="image/*"
+                                                                                                    required 
+                                                                                                />
+                                                                                                <small className="text-muted mt-1 d-block" style={{ fontSize: '0.75rem' }}>Pilih gambar bukti pembayaran (.png, .jpg, .jpeg, maks 5MB)</small>
+                                                                                            </div>
+                                                                                            <div className="col-md-4 col-sm-12">
+                                                                                                <button 
+                                                                                                    type="submit" 
+                                                                                                    className="btn btn-success w-100 text-white d-flex align-items-center justify-content-center"
+                                                                                                    disabled={uploadingTxId === transaction.id}
+                                                                                                >
+                                                                                                    {uploadingTxId === transaction.id ? (
+                                                                                                        <><FaSpinner className="spinner me-2" /> Mengirim...</>
+                                                                                                    ) : (
+                                                                                                        "Kirim Bukti Pembayaran"
+                                                                                                    )}
+                                                                                                </button>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </form>
+                                                                                ) : (
+                                                                                    <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-3 p-3 rounded" style={{ backgroundColor: '#f0fdf4' }}>
+                                                                                        <div className="text-success d-flex align-items-center">
+                                                                                            <span className="badge bg-success-lt p-2 rounded-circle me-2" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' }}>✔</span>
+                                                                                            <div>
+                                                                                                <strong className="d-block text-success" style={{ fontSize: '0.9rem' }}>Bukti Pembayaran Terkirim</strong>
+                                                                                                <span className="text-muted small" style={{ fontSize: '0.8rem' }}>Menunggu verifikasi admin untuk mengubah status menjadi Lunas.</span>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div className="ms-md-auto">
+                                                                                            <a 
+                                                                                                href={`${import.meta.env.VITE_APP_BASEURL}/uploads/${transaction.payment_proof}`} 
+                                                                                                target="_blank" 
+                                                                                                rel="noopener noreferrer"
+                                                                                                className="btn btn-sm btn-outline-success d-flex align-items-center gap-1"
+                                                                                            >
+                                                                                                <FaEye /> Lihat Bukti
+                                                                                            </a>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
 
                                                         {/* Actions */}
                                                         <div className="details-footer">
