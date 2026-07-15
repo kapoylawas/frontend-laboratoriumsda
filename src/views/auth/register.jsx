@@ -838,10 +838,10 @@ export default function Register() {
                 </div>
 
                 {/* Login Link */}
-                <div className="form-footer text-center mt-4">
+                <div className="form-footer text-center mt-4 d-flex align-items-center justify-content-center flex-wrap gap-2">
                   <span className="text-muted small">Sudah punya akun? </span>
                   <Link to="/" className="login-link">
-                    Masuk disini 🌊
+                    Masuk disini ➔
                   </Link>
                 </div>
 
@@ -1204,62 +1204,44 @@ export default function Register() {
           color: #6c757d;
         }
 
-        /* Submit Button */
+        /* Submit Button 3D Style */
         .btn-submit {
           width: 100%;
-          height: 50px;
-          border: none;
-          border-radius: 25px;
-          background: linear-gradient(135deg, #4a90e2, #2c6b9e);
+          height: 54px;
+          border: 2px solid #54a0ff;
+          border-radius: 16px;
+          background: linear-gradient(135deg, #4a90e2, #2979ff);
           color: white;
-          font-weight: 600;
-          font-size: 1rem;
-          transition: all 0.3s;
+          font-weight: 700;
+          font-size: 16px;
           cursor: pointer;
           position: relative;
-          overflow: hidden;
-        }
-
-        .btn-submit::before {
-          content: "";
-          position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 200%;
-          height: 200%;
-          background: linear-gradient(
-            45deg,
-            transparent,
-            rgba(255, 255, 255, 0.3),
-            transparent
-          );
-          transform: rotate(45deg);
-          animation: btnShine 3s infinite;
-        }
-
-        @keyframes btnShine {
-          0% {
-            transform: translateX(-100%) rotate(45deg);
-          }
-          20%,
-          100% {
-            transform: translateX(100%) rotate(45deg);
-          }
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 6px 0 #1b5cb8;
+          transition: all 0.1s ease;
+          outline: none;
         }
 
         .btn-submit:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 10px 30px rgba(74, 144, 226, 0.4);
+          background: linear-gradient(135deg, #5c9df2, #3d85ff);
+          border-color: #70b0ff;
+          box-shadow: 0 6px 0 #154c9c;
         }
 
         .btn-submit:active:not(:disabled) {
-          transform: translateY(0);
+          transform: translateY(4px);
+          box-shadow: 0 2px 0 #154c9c;
         }
 
         .btn-submit:disabled {
           background: linear-gradient(135deg, #a0c0e0, #8098b0);
+          border-color: #b0d0f0;
+          box-shadow: 0 4px 0 #607890;
           opacity: 0.7;
           cursor: not-allowed;
+          transform: none;
         }
 
         .spinner {
@@ -1279,17 +1261,34 @@ export default function Register() {
           }
         }
 
-        /* Login Link */
+        /* Login Link 3D Style */
         .login-link {
-          color: #4a90e2;
-          text-decoration: none;
-          font-weight: 600;
-          transition: all 0.3s;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 8px 18px;
+          background: #ffffff;
+          color: #1b4f8b;
+          border: 2px solid #e0f0ff;
+          border-radius: 12px;
+          font-size: 13px;
+          font-weight: 700;
+          text-decoration: none !important;
+          box-shadow: 0 4px 0 #b3d7ff;
+          transition: all 0.1s ease;
+          cursor: pointer;
         }
 
         .login-link:hover {
-          color: #2c6b9e;
-          text-decoration: underline;
+          background: #f7fbff;
+          border-color: #cce5ff;
+          box-shadow: 0 4px 0 #9ecbff;
+          color: #4a90e2;
+        }
+
+        .login-link:active {
+          transform: translateY(2px);
+          box-shadow: 0 2px 0 #9ecbff;
         }
 
         /* Decorative Waves */

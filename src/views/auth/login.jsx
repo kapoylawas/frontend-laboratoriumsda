@@ -451,10 +451,10 @@ export default function Login() {
                     </div>
 
                     {/* Register Link */}
-                    <div className="text-center mt-4 register-link">
+                    <div className="text-center mt-4 register-link d-flex align-items-center justify-content-center flex-wrap gap-2">
                         <span className="text-white-50 small">Belum punya akun? </span>
-                        <Link to="/register" className="small fw-semibold text-white register-link-text">
-                            Daftar disini 🌊
+                        <Link to="/register" className="register-btn-3d">
+                            Daftar disini ➔
                         </Link>
                     </div>
                 </div>
@@ -712,57 +712,44 @@ export default function Login() {
                     transform: rotate(45deg);
                 }
 
-                /* Submit Button */
+                /* Submit Button 3D Style */
                 .btn-submit {
                     width: 100%;
-                    height: 54px;
-                    border: none;
-                    border-radius: 27px;
-                    background: linear-gradient(135deg, #4A90E2, #2C6B9E);
+                    height: 56px;
+                    border: 2px solid #54a0ff;
+                    border-radius: 16px;
+                    background: linear-gradient(135deg, #4A90E2, #2979FF);
                     color: white;
-                    font-weight: 600;
-                    font-size: 15px;
-                    transition: all 0.3s;
+                    font-weight: 700;
+                    font-size: 16px;
                     cursor: pointer;
                     position: relative;
-                    overflow: hidden;
-                }
-
-                .btn-submit::before {
-                    content: '';
-                    position: absolute;
-                    top: -50%;
-                    left: -50%;
-                    width: 200%;
-                    height: 200%;
-                    background: linear-gradient(
-                        45deg,
-                        transparent,
-                        rgba(255, 255, 255, 0.3),
-                        transparent
-                    );
-                    transform: rotate(45deg);
-                    animation: btnShine 3s infinite;
-                }
-
-                @keyframes btnShine {
-                    0% { transform: translateX(-100%) rotate(45deg); }
-                    20%, 100% { transform: translateX(100%) rotate(45deg); }
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 6px 0 #1b5cb8;
+                    transition: all 0.1s ease;
+                    outline: none;
                 }
 
                 .btn-submit:hover:not(:disabled) {
-                    transform: translateY(-2px);
-                    box-shadow: 0 10px 30px rgba(74, 144, 226, 0.4);
+                    background: linear-gradient(135deg, #5c9df2, #3d85ff);
+                    border-color: #70b0ff;
+                    box-shadow: 0 6px 0 #154c9c;
                 }
 
                 .btn-submit:active:not(:disabled) {
-                    transform: translateY(0);
+                    transform: translateY(4px);
+                    box-shadow: 0 2px 0 #154c9c;
                 }
 
                 .btn-submit:disabled {
                     background: linear-gradient(135deg, #a0c0e0, #8098b0);
+                    border-color: #b0d0f0;
+                    box-shadow: 0 4px 0 #607890;
                     opacity: 0.7;
                     cursor: not-allowed;
+                    transform: none;
                 }
 
                 .spinner {
@@ -817,12 +804,34 @@ export default function Login() {
                     animation: fadeInUp 1s;
                 }
 
-                .register-link-text {
-                    transition: all 0.3s;
+                /* Register Link 3D style */
+                .register-btn-3d {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 8px 18px;
+                    background: #ffffff;
+                    color: #1b4f8b;
+                    border: 2px solid #e0f0ff;
+                    border-radius: 12px;
+                    font-size: 13px;
+                    font-weight: 700;
+                    text-decoration: none !important;
+                    box-shadow: 0 4px 0 #b3d7ff;
+                    transition: all 0.1s ease;
+                    cursor: pointer;
                 }
 
-                .register-link-text:hover {
-                    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+                .register-btn-3d:hover {
+                    background: #f7fbff;
+                    border-color: #cce5ff;
+                    box-shadow: 0 4px 0 #9ecbff;
+                    color: #4a90e2;
+                }
+
+                .register-btn-3d:active {
+                    transform: translateY(2px);
+                    box-shadow: 0 2px 0 #9ecbff;
                 }
 
                 @keyframes fadeInUp {
