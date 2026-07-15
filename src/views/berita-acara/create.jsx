@@ -188,7 +188,7 @@ export default function BeritaAcaraCreate() {
                 navigate('/berita-acara');
             } catch (error) {
                 console.error(error);
-                Swal.fire({ icon: 'error', title: 'Gagal', text: error.response?.data?.message || 'Gagal membuat Berita Acara!' });
+                Swal.fire({ icon: 'error', title: 'Gagal', text: error.response?.data?.meta?.message || error.response?.data?.message || 'Gagal membuat Berita Acara!' });
             }
         }
         setIsLoading(false);

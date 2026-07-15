@@ -129,8 +129,8 @@ export default function BeritaAcara() {
                                                     <td>{(pagination.current_page - 1) * pagination.per_page + index + 1}</td>
                                                     <td className="fw-semibold">{item.no_berita_acara || `BA-${item.id}`}</td>
                                                     <td>{item.jadwal ? `JDL-${item.jadwal_id}` : '-'}</td>
-                                                    <td>{item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '-'}</td>
-                                                    <td>{item.petugas?.name || '-'}</td>
+                                                    <td>{item.tanggal_pengambilan ? new Date(item.tanggal_pengambilan).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '-'}</td>
+                                                    <td>{item.petugas_pengambil || '-'}</td>
                                                     <td>{getStatusBadge(item.status)}</td>
                                                     <td>
                                                         <div className="btn-group">

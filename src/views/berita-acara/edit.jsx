@@ -218,7 +218,7 @@ export default function BeritaAcaraEdit() {
                 navigate('/berita-acara');
             } catch (error) {
                 console.error(error);
-                Swal.fire({ icon: 'error', title: 'Gagal', text: error.response?.data?.message || 'Gagal mengupdate Berita Acara!' });
+                Swal.fire({ icon: 'error', title: 'Gagal', text: error.response?.data?.meta?.message || error.response?.data?.message || 'Gagal mengupdate Berita Acara!' });
             }
         }
         setIsLoading(false);
