@@ -523,8 +523,8 @@ export default function Login() {
                     width: 84px;
                     height: 84px;
                     background: #ffffff;
-                    border: 3px solid #000000;
-                    box-shadow: 5px 5px 0px #000000;
+                    border: 2px solid rgba(255, 255, 255, 0.8);
+                    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
                     border-radius: 50%;
                     display: flex;
                     align-items: center;
