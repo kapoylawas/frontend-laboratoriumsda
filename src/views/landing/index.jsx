@@ -155,6 +155,16 @@ export default function LandingPage() {
 
   const IKM_URL = "https://ikm.sidoarjokab.go.id/opd/50018292";
 
+  // Dynamic IKM Iframe source (Vite proxy in dev, Express API proxy in production)
+  const getIkmIframeSrc = () => {
+    if (import.meta.env.DEV) {
+      return "/ikm-proxy/opd/50018292";
+    }
+    const baseUrl = import.meta.env.VITE_APP_BASEURL || "";
+    const cleanBase = baseUrl.replace(/\/$/, "");
+    return cleanBase ? `${cleanBase}/api/ikm-proxy/opd/50018292` : "/ikm-proxy/opd/50018292";
+  };
+
   // Iframe states & controls
   const [iframeLoading, setIframeLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -514,22 +524,28 @@ export default function LandingPage() {
                 <iframe
                   key={iframeKey}
                   ref={iframeRef}
-                  src="/ikm-proxy/opd/50018292"
+                  src={getIkmIframeSrc()}
                   title="Formulir Survei Indeks Kepuasan Masyarakat (IKM) OPD 50018292"
                   className="ikm-iframe-element"
                   onLoad={() => setIframeLoading(false)}
-                  allow="geolocation; microphone; camera"
-                ></iframe>
+                />
               </div>
 
-              {/* Window Footer Notice */}
-              <div className="ikm-window-footer d-flex flex-wrap justify-content-between align-items-center p-3 border-top bg-body-tertiary">
-                <div className="d-flex align-items-center gap-2 small text-secondary">
-                  <IconShieldCheck size={18} className="text-success" />
-                  <span>Diselenggarakan oleh Pemkab Sidoarjo &amp; UPT Labkesda</span>
+              {/* Window Footer & Direct Popup Launcher */}
+              <div className="ikm-window-footer p-3 bg-dark text-white border-top border-dark d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div className="d-flex align-items-center gap-2 small text-white-50">
+                  <IconShieldCheck size={18} className="text-warning" />
+                  <span>Portal Resmi Survei IKM Pemerintah Kabupaten Sidoarjo</span>
                 </div>
-                <div className="small text-secondary">
-                  Kendala pengisian? <button onClick={openIKMPopup} className="btn btn-link p-0 text-danger fw-semibold text-decoration-none">Klik di sini untuk buka Pop-up</button>
+                <div className="d-flex align-items-center gap-2">
+                  <span className="small text-white-50 d-none d-md-inline">Kendala memuat?</span>
+                  <button
+                    onClick={openIKMPopup}
+                    className="btn btn-sm btn-warning fw-black border-dark shadow-sm d-flex align-items-center gap-1"
+                  >
+                    <IconExternalLink size={16} />
+                    <span>Isi Survei IKM (Buka Portal Pop-Up) ↗</span>
+                  </button>
                 </div>
               </div>
             </div>
