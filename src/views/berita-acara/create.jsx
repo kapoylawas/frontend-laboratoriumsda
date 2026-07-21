@@ -25,7 +25,7 @@ export default function BeritaAcaraCreate() {
     };
 
     const [form, setForm] = useState({
-        jadwal_id: '',
+        jadwal_ids: [],
         no_berita_acara: '',
         jenis_sampel: 'Air Bersih',
         nama_sampel: '',
@@ -69,7 +69,7 @@ export default function BeritaAcaraCreate() {
             try {
                 const response = await Api.get('/api/jadwal-pengambilan');
                 // Filter schedules that don't have a berita_acara yet
-                const filtered = (response.data.data || []).filter(j => !j.berita_acara);
+                const filtered = (response.data.data || []).filter(j => !j.berita_acara && !j.berita_acara_id);
                 setJadwals(filtered);
             } catch (error) {
                 console.error('Error fetching schedules:', error);
@@ -78,36 +78,46 @@ export default function BeritaAcaraCreate() {
         setFetchingJadwals(false);
     };
 
-    const handleJadwalChange = (e) => {
-        const id = e.target.value;
-        if (!id) {
-            setForm(prev => ({ ...prev, jadwal_id: '' }));
-            return;
-        }
+    const handleToggleJadwal = (id, checked) => {
+        setForm(prev => {
+            const nextIds = checked
+                ? [...prev.jadwal_ids, id]
+                : prev.jadwal_ids.filter(i => i !== id);
+            
+            const selectedList = jadwals.filter(j => nextIds.includes(j.id));
+            if (selectedList.length === 0) {
+                return {
+                    ...prev,
+                    jadwal_ids: [],
+                    no_berita_acara: '',
+                    petugas_pengambil: '',
+                    pelanggan_saksi: '',
+                    tanggal_pengambilan: '',
+                    waktu_pengambilan: ''
+                };
+            }
 
-        const selected = jadwals.find(j => j.id === parseInt(id));
-        if (selected) {
-            const customerName = selected.transaction_detail?.transaction?.user?.name || '';
-            const officerName = selected.petugas || '';
-            const scheduleDate = selected.tanggal_pengambilan ? selected.tanggal_pengambilan.split('T')[0] : '';
-            const time = selected.jam_pengambilan || '';
-            const parameter = selected.transaction_detail?.sampel?.parameter || '';
+            const first = selectedList[0];
+            const customerName = first.transaction_detail?.transaction?.user?.name || '';
+            const officers = Array.from(new Set(selectedList.map(j => j.petugas).filter(Boolean))).join(', ');
+            const scheduleDate = first.tanggal_pengambilan ? first.tanggal_pengambilan.split('T')[0] : '';
+            const time = first.jam_pengambilan || '';
+            const hasMakanan = selectedList.some(j => j.transaction_detail?.sampel?.parameter?.toLowerCase().includes('makanan'));
 
-            // Generate invoice-based BA number: e.g. BA/506/AB/2026
             const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-            const generatedNo = `BA/${selected.transaction_detail?.transaction?.invoice}/${randomSuffix}`;
+            const generatedNo = prev.no_berita_acara || `BA/${first.transaction_detail?.transaction?.invoice}/${randomSuffix}`;
 
-            setForm(prev => ({
+            return {
                 ...prev,
-                jadwal_id: id,
+                jadwal_ids: nextIds,
                 no_berita_acara: generatedNo,
-                petugas_pengambil: officerName,
+                petugas_pengambil: officers,
                 pelanggan_saksi: customerName,
                 tanggal_pengambilan: scheduleDate,
                 waktu_pengambilan: time,
-                jenis_sampel: parameter.toLowerCase().includes('makanan') ? 'Makanan' : 'Air Bersih'
-            }));
-        }
+                jenis_sampel: hasMakanan ? 'Makanan' : 'Air Bersih'
+            };
+        });
     };
 
     const handleChange = (e) => {
@@ -129,7 +139,7 @@ export default function BeritaAcaraCreate() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!form.jadwal_id || !form.no_berita_acara || !form.jenis_sampel || !form.tanggal_pengambilan || !form.petugas_pengambil) {
+        if (form.jadwal_ids.length === 0 || !form.no_berita_acara || !form.jenis_sampel || !form.tanggal_pengambilan || !form.petugas_pengambil) {
             Swal.fire({ icon: 'warning', title: 'Peringatan', text: 'Lengkapi field wajib yang bertanda bintang (*)' });
             return;
         }
@@ -141,7 +151,7 @@ export default function BeritaAcaraCreate() {
             try {
                 // Construct FormData for multipart upload
                 const formData = new FormData();
-                formData.append('jadwal_id', parseInt(form.jadwal_id));
+                formData.append('jadwal_ids', JSON.stringify(form.jadwal_ids));
                 formData.append('no_berita_acara', form.no_berita_acara);
                 formData.append('jenis_sampel', form.jenis_sampel);
                 formData.append('nama_sampel', form.nama_sampel || '');
@@ -181,9 +191,7 @@ export default function BeritaAcaraCreate() {
                 if (files.foto_pelabelan) formData.append('foto_pelabelan', files.foto_pelabelan);
                 if (files.foto_pengemasan) formData.append('foto_pengemasan', files.foto_pengemasan);
 
-                const response = await Api.post('/api/berita-acara', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
+                const response = await Api.post('/api/berita-acara', formData);
                 await Swal.fire({ icon: 'success', title: 'Berhasil!', text: response.data.message || 'Berita Acara berhasil dibuat!', toast: true, position: 'top', showConfirmButton: false, timer: 1500 });
                 navigate('/berita-acara');
             } catch (error) {
@@ -217,16 +225,37 @@ export default function BeritaAcaraCreate() {
                                     <div className="card-body">
                                         <div className="row g-3">
                                             <div className="col-md-12">
-                                                <label className="form-label fw-semibold required">Pilih Jadwal Pengambilan *</label>
-                                                <select className="form-select" name="jadwal_id" value={form.jadwal_id} onChange={handleJadwalChange} required>
-                                                    <option value="">Pilih Jadwal...</option>
-                                                    {jadwals.map(j => (
-                                                        <option key={j.id} value={j.id}>
-                                                            JDL-{j.id} - Invoice {j.transaction_detail?.transaction?.invoice} | {j.transaction_detail?.sampel?.parameter} ({new Date(j.tanggal_pengambilan).toLocaleDateString('id-ID')})
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                {fetchingJadwals && <div className="form-hint mt-1"><span className="spinner-border spinner-border-sm me-1"></span>Memuat jadwal...</div>}
+                                                <label className="form-label fw-semibold required">Pilih Jadwal Pengambilan (Bisa Pilih Lebih dari 1 Pemeriksaan) *</label>
+                                                {fetchingJadwals ? (
+                                                    <div className="form-hint mt-1"><span className="spinner-border spinner-border-sm me-1"></span>Memuat jadwal...</div>
+                                                ) : jadwals.length === 0 ? (
+                                                    <div className="alert alert-warning py-2 mb-0">Tidak ada jadwal pengambilan yang tersedia</div>
+                                                ) : (
+                                                    <div className="p-3 border rounded-3 bg-light" style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                                                        {jadwals.map(j => {
+                                                            const isSelected = form.jadwal_ids.includes(j.id);
+                                                            return (
+                                                                <div key={j.id} className={`form-check p-2 mb-2 rounded border bg-white ${isSelected ? 'border-primary shadow-sm' : ''}`}>
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        className="form-check-input ms-1"
+                                                                        id={`jadwal-${j.id}`}
+                                                                        checked={isSelected}
+                                                                        onChange={(e) => handleToggleJadwal(j.id, e.target.checked)}
+                                                                    />
+                                                                    <label className="form-check-label ms-2 cursor-pointer w-100" htmlFor={`jadwal-${j.id}`}>
+                                                                        <strong>JDL-{j.id}</strong> - Invoice: <code>{j.transaction_detail?.transaction?.invoice}</code> | <span className="badge bg-info-subtle text-info fw-semibold">{j.transaction_detail?.sampel?.category?.name ? `${j.transaction_detail?.sampel?.category?.name} - ` : ''}{j.transaction_detail?.sampel?.parameter}</span> | Pelanggan: <strong>{j.transaction_detail?.transaction?.user?.name}</strong> ({new Date(j.tanggal_pengambilan).toLocaleDateString('id-ID')})
+                                                                    </label>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                                {form.jadwal_ids.length > 0 && (
+                                                    <div className="form-text text-success fw-semibold mt-1">
+                                                        ✓ {form.jadwal_ids.length} jadwal pengambilan dipilih (akan digabung dalam 1 Berita Acara)
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="col-md-6">

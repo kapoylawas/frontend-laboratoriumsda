@@ -98,9 +98,74 @@ export default function BeritaAcaraDetail() {
         });
     };
 
-    const parameterParam = data.jadwal?.transaction_detail?.sampel?.parameter || '';
-    const isParameterChecked = (paramName) => {
-        return parameterParam.toLowerCase().includes(paramName.toLowerCase());
+    const allJadwals = data.jadwals && data.jadwals.length > 0 ? data.jadwals : (data.jadwal ? [data.jadwal] : []);
+    const firstJadwal = allJadwals[0] || {};
+    const firstUser = firstJadwal.transaction_detail?.transaction?.user || {};
+
+    const selectedSampleParameters = Array.from(new Set(
+        allJadwals.map(j => {
+            const cat = j.transaction_detail?.sampel?.category?.name;
+            const param = j.transaction_detail?.sampel?.parameter;
+            if (!param) return null;
+            return cat ? `${cat} - ${param}` : param;
+        }).filter(Boolean)
+    ));
+
+    const allParametersText = allJadwals.map(j => `${j.transaction_detail?.sampel?.category?.name || ''} ${j.transaction_detail?.sampel?.parameter || ''}`).join(' ').toLowerCase();
+
+    const isParameterChecked = (key) => {
+        const fullText = (allParametersText + ' ' + selectedSampleParameters.join(' ')).toLowerCase();
+
+        switch (key) {
+            case 'Coliform':
+                return fullText.includes('coliform');
+            case 'Fe':
+                return /\bfe\b|kimia air - fe|- fe\b/.test(fullText);
+            case 'E. coli':
+            case 'E.Coli':
+                return fullText.includes('e.coli') || fullText.includes('e. coli') || fullText.includes('e-coli') || fullText.includes('ecoli');
+            case 'F':
+            case 'Fluoride':
+                return fullText.includes('fluoride') || fullText.includes('fluor') || /\bkimia air - f\b|- f\b/.test(fullText);
+            case 'TDS':
+                return fullText.includes('tds');
+            case 'Pb':
+                return /\bpb\b|kimia air - pb|timbal/.test(fullText);
+            case 'Kekeruhan':
+                return fullText.includes('kekeruhan') || fullText.includes('turbid');
+            case 'Cd':
+                return /\bcd\b|kimia air - cd|kadmium/.test(fullText);
+            case 'Suhu':
+                return fullText.includes('suhu') || fullText.includes('temp');
+            case 'Makanan':
+                return fullText.includes('makanan');
+            case 'Warna':
+                return fullText.includes('warna') || fullText.includes('color');
+            case 'Boraks':
+                return fullText.includes('borak');
+            case 'Bau':
+                return fullText.includes('bau') || fullText.includes('odor');
+            case 'Formalin':
+                return fullText.includes('formalin');
+            case 'pH':
+                return /\bph\b/.test(fullText);
+            case 'Methanil':
+                return fullText.includes('methanil') || fullText.includes('metanil');
+            case 'Nitrat':
+                return fullText.includes('nitrat');
+            case 'Rhodamin':
+                return fullText.includes('rhodamin');
+            case 'Nitrit':
+                return fullText.includes('nitrit');
+            case 'Usap Alat':
+                return fullText.includes('usap alat');
+            case 'Mn':
+                return /\bmn\b|kimia air - mn|mangan/.test(fullText);
+            case 'Usap Dubur':
+                return fullText.includes('usap dubur');
+            default:
+                return fullText.includes(key.toLowerCase());
+        }
     };
 
     const handleDownloadPDF = () => {
@@ -118,7 +183,7 @@ export default function BeritaAcaraDetail() {
             margin: 0, // Set margin to 0 so 210mm paper width fits A4 width exactly
             filename: `Berita-Acara-${data.no_berita_acara.replace(/\//g, '-')}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true },
+            html2canvas: { scale: 2, useCORS: true, allowTaint: true },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
             pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } // Avoid breaking inside rows/images
         };
@@ -220,7 +285,7 @@ export default function BeritaAcaraDetail() {
                                         <div className="chk-item"><span className={`box ${isParameterChecked('Coliform') ? 'checked' : ''}`}></span> Mikrobiologi Air - Coliform</div>
                                         <div className="chk-item"><span className={`box ${isParameterChecked('Fe') ? 'checked' : ''}`}></span> Kimia Air - Fe</div>
                                         <div className="chk-item"><span className={`box ${isParameterChecked('E. coli') ? 'checked' : ''}`}></span> Mikrobiologi Air - E. coli</div>
-                                        <div className="chk-item"><span className={`box ${isParameterChecked('Fluoride') || isParameterChecked(' F ') ? 'checked' : ''}`}></span> Kimia Air - F</div>
+                                        <div className="chk-item"><span className={`box ${isParameterChecked('F') ? 'checked' : ''}`}></span> Kimia Air - F</div>
                                         <div className="chk-item"><span className={`box ${isParameterChecked('TDS') ? 'checked' : ''}`}></span> Fisika Air - TDS</div>
                                         <div className="chk-item"><span className={`box ${isParameterChecked('Pb') ? 'checked' : ''}`}></span> Kimia Air - Pb</div>
                                         <div className="chk-item"><span className={`box ${isParameterChecked('Kekeruhan') ? 'checked' : ''}`}></span> Fisika Air - Kekeruhan</div>
@@ -240,22 +305,27 @@ export default function BeritaAcaraDetail() {
                                         <div className="chk-item"><span className={`box ${isParameterChecked('Mn') ? 'checked' : ''}`}></span> Kimia Air - Mn</div>
                                         <div className="chk-item"><span className={`box ${isParameterChecked('Usap Dubur') ? 'checked' : ''}`}></span> Mikrobiologi Usap Dubur</div>
                                     </div>
+                                    {selectedSampleParameters.length > 0 && (
+                                        <div className="mt-2 font-weight-bold" style={{ fontSize: '12px', color: '#1a56db' }}>
+                                            Pemeriksaan yang Dipilih Pelanggan: {selectedSampleParameters.join(' | ')}
+                                        </div>
+                                    )}
                                 </td>
                             </tr>
                             <tr>
                                 <td>Nama Pelanggan / Perusahaan</td>
                                 <td>:</td>
-                                <td>{data.jadwal?.transaction_detail?.transaction?.user?.name || '-'}</td>
+                                <td>{firstUser.name || '-'}</td>
                             </tr>
                             <tr>
                                 <td>Alamat</td>
                                 <td>:</td>
-                                <td>{data.jadwal?.transaction_detail?.transaction?.user?.alamat || '-'}</td>
+                                <td>{firstUser.alamat || '-'}</td>
                             </tr>
                             <tr>
                                 <td>No. Telp / Faks / E-mail</td>
                                 <td>:</td>
-                                <td>{data.jadwal?.transaction_detail?.transaction?.user?.phone || '-'} / {data.jadwal?.transaction_detail?.transaction?.user?.email || '-'}</td>
+                                <td>{firstUser.phone || '-'} / {firstUser.email || '-'}</td>
                             </tr>
                             <tr>
                                 <td>Nama Personil Penghubung</td>
@@ -472,7 +542,7 @@ export default function BeritaAcaraDetail() {
                                     <div className="photo-item">
                                         <p className="font-weight-bold mb-2">1. Dokumentasi Proses Pengambilan Sampel</p>
                                         <div className="photo-wrapper">
-                                            <img src={`${import.meta.env.VITE_APP_BASEURL}/uploads/${data.foto_pengambilan}`} alt="Foto Pengambilan" />
+                                            <img src={`${import.meta.env.VITE_APP_BASEURL}/uploads/${data.foto_pengambilan}`} alt="Foto Pengambilan" crossOrigin="anonymous" />
                                         </div>
                                     </div>
                                 )}
@@ -480,7 +550,7 @@ export default function BeritaAcaraDetail() {
                                     <div className="photo-item">
                                         <p className="font-weight-bold mb-2">2. Dokumentasi Pelabelan Sampel</p>
                                         <div className="photo-wrapper">
-                                            <img src={`${import.meta.env.VITE_APP_BASEURL}/uploads/${data.foto_pelabelan}`} alt="Foto Pelabelan" />
+                                            <img src={`${import.meta.env.VITE_APP_BASEURL}/uploads/${data.foto_pelabelan}`} alt="Foto Pelabelan" crossOrigin="anonymous" />
                                         </div>
                                     </div>
                                 )}
@@ -488,7 +558,7 @@ export default function BeritaAcaraDetail() {
                                     <div className="photo-item">
                                         <p className="font-weight-bold mb-2">3. Dokumentasi Pengemasan Sampel</p>
                                         <div className="photo-wrapper">
-                                            <img src={`${import.meta.env.VITE_APP_BASEURL}/uploads/${data.foto_pengemasan}`} alt="Foto Pengemasan" />
+                                            <img src={`${import.meta.env.VITE_APP_BASEURL}/uploads/${data.foto_pengemasan}`} alt="Foto Pengemasan" crossOrigin="anonymous" />
                                         </div>
                                     </div>
                                 )}
@@ -658,34 +728,39 @@ export default function BeritaAcaraDetail() {
 
                 .photo-grid {
                     display: grid;
-                    grid-template-columns: repeat(2, 1fr);
-                    gap: 15px;
-                    margin-top: 15px;
+                    grid-template-columns: 1fr;
+                    gap: 25px;
+                    margin-top: 20px;
                 }
 
                 .photo-item {
-                    border: 1px solid #ddd;
-                    padding: 8px;
-                    border-radius: 6px;
-                    background: #fafafa;
+                    border: 1px solid #ccc;
+                    padding: 12px;
+                    border-radius: 8px;
+                    background: #fff;
                     text-align: center;
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
                 }
 
                 .photo-wrapper {
-                    height: 180px;
+                    width: 100%;
+                    min-height: 250px;
+                    max-height: 450px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     overflow: hidden;
-                    border-radius: 4px;
-                    background: #eee;
-                    border: 1px solid #eee;
+                    border-radius: 6px;
+                    background: #f8fafc;
+                    border: 1px solid #e2e8f0;
                 }
 
                 .photo-wrapper img {
                     width: 100%;
                     height: 100%;
-                    object-fit: cover;
+                    max-height: 450px;
+                    object-fit: contain;
                 }
 
                 /* Print optimizations */

@@ -60,6 +60,8 @@ export default function BeritaAcaraEdit() {
         status: 'DRAFT'
     });
 
+    const [detailData, setDetailData] = useState(null);
+
     useEffect(() => {
         fetchDetail();
     }, [id]);
@@ -71,6 +73,7 @@ export default function BeritaAcaraEdit() {
             try {
                 const response = await Api.get(`/api/berita-acara/${id}`);
                 const data = response.data.data;
+                setDetailData(data);
 
                 // Safe parsing helper
                 const safeParse = (val) => {
@@ -211,9 +214,7 @@ export default function BeritaAcaraEdit() {
                 if (files.foto_pelabelan) formData.append('foto_pelabelan', files.foto_pelabelan);
                 if (files.foto_pengemasan) formData.append('foto_pengemasan', files.foto_pengemasan);
 
-                const response = await Api.put(`/api/berita-acara/${id}`, formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
+                const response = await Api.put(`/api/berita-acara/${id}`, formData);
                 await Swal.fire({ icon: 'success', title: 'Berhasil!', text: response.data.message || 'Berita Acara berhasil diupdate!', toast: true, position: 'top', showConfirmButton: false, timer: 1500 });
                 navigate('/berita-acara');
             } catch (error) {
@@ -257,6 +258,19 @@ export default function BeritaAcaraEdit() {
                                     <div className="card-header bg-white py-3"><h4 className="fw-bold m-0 text-primary">Informasi Umum</h4></div>
                                     <div className="card-body">
                                         <div className="row g-3">
+                                            {detailData?.jadwals && detailData.jadwals.length > 0 && (
+                                                <div className="col-md-12">
+                                                    <label className="form-label fw-semibold">Jadwal Pengambilan Terhubung ({detailData.jadwals.length} Pemeriksaan)</label>
+                                                    <div className="p-3 bg-light border rounded-3 d-flex flex-wrap gap-2">
+                                                        {detailData.jadwals.map(j => (
+                                                            <div key={j.id} className="badge bg-primary fs-6 px-3 py-2">
+                                                                JDL-{j.id} | {j.transaction_detail?.sampel?.parameter}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             <div className="col-md-6">
                                                 <label className="form-label fw-semibold required">Nomor Berita Acara *</label>
                                                 <input type="text" className="form-control" name="no_berita_acara" value={form.no_berita_acara} onChange={handleChange} required />

@@ -128,7 +128,11 @@ export default function BeritaAcara() {
                                                 <tr key={item.id}>
                                                     <td>{(pagination.current_page - 1) * pagination.per_page + index + 1}</td>
                                                     <td className="fw-semibold">{item.no_berita_acara || `BA-${item.id}`}</td>
-                                                    <td>{item.jadwal ? `JDL-${item.jadwal_id}` : '-'}</td>
+                                                    <td>
+                                                        {item.jadwals && item.jadwals.length > 0
+                                                            ? item.jadwals.map(j => `JDL-${j.id}`).join(', ')
+                                                            : (item.jadwal ? `JDL-${item.jadwal_id}` : '-')}
+                                                    </td>
                                                     <td>{item.tanggal_pengambilan ? new Date(item.tanggal_pengambilan).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '-'}</td>
                                                     <td>{item.petugas_pengambil || '-'}</td>
                                                     <td>{getStatusBadge(item.status)}</td>

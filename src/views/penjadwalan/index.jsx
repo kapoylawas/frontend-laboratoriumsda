@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import Cookies from 'js-cookie';
 import Api from '../../services/api';
@@ -7,6 +8,7 @@ import PaginationComponent from '../../components/Pagination';
 import Swal from 'sweetalert2';
 
 export default function Penjadwalan() {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('jadwal');
     const [jadwalList, setJadwalList] = useState([]);
     const [isLoadingJadwal, setIsLoadingJadwal] = useState(true);
@@ -474,10 +476,23 @@ export default function Penjadwalan() {
                                                                         {upcoming > 0 && <span className="badge bg-success">{upcoming} Akan Datang</span>}
                                                                         {past > 0 && <span className="badge bg-warning text-dark">{past} Sudah Lewat</span>}
                                                                     </div>
-                                                                    <button className="btn btn-sm btn-primary" onClick={() => handleViewDetail(group.items)}>
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '3px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /></svg>
-                                                                        Berita Acara
-                                                                    </button>
+                                                                    {(() => {
+                                                                        const existingBA = group.items.find(j => j.berita_acara)?.berita_acara;
+                                                                        if (existingBA) {
+                                                                            return (
+                                                                                <button className="btn btn-sm btn-success d-flex align-items-center gap-1" onClick={() => navigate(`/berita-acara/${existingBA.id}`)}>
+                                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /></svg>
+                                                                                    Lihat Berita Acara ({existingBA.no_berita_acara})
+                                                                                </button>
+                                                                            );
+                                                                        }
+                                                                        return (
+                                                                            <button className="btn btn-sm btn-primary d-flex align-items-center gap-1" onClick={() => handleViewDetail(group.items)}>
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /></svg>
+                                                                                Pratinjau Berita Acara
+                                                                            </button>
+                                                                        );
+                                                                    })()}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1268,13 +1283,31 @@ export default function Penjadwalan() {
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <div className="modal-footer py-2" style={{ flex: '0 0 auto' }}>
-                                            <button type="button" className="btn btn-outline-secondary" onClick={() => setShowDetailModal(false)}>Tutup</button>
-                                            <button type="button" className="btn btn-primary" onClick={() => window.print()}>
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 17h2a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2h-14a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h2" /><path d="M17 9v-4a2 2 0 0 0 -2 -2h-6a2 2 0 0 0 -2 2v4" /><path d="M7 13m0 2a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M17 13m0 2a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M7 15v4h10v-4" /></svg>
-                                                Cetak
-                                            </button>
+                                        <div className="modal-footer py-2 d-flex justify-content-between align-items-center" style={{ flex: '0 0 auto' }}>
+                                            <div>
+                                                <button type="button" className="btn btn-outline-secondary" onClick={() => setShowDetailModal(false)}>Tutup</button>
+                                            </div>
+                                            <div className="d-flex gap-2">
+                                                {(() => {
+                                                    const linkedBA = detailDataList.find(d => d.berita_acara)?.berita_acara;
+                                                    if (linkedBA) {
+                                                        return (
+                                                            <button type="button" className="btn btn-success" onClick={() => { setShowDetailModal(false); navigate(`/berita-acara/${linkedBA.id}`); }}>
+                                                                Buka Dokumen Berita Acara ({linkedBA.no_berita_acara})
+                                                            </button>
+                                                        );
+                                                    }
+                                                    return (
+                                                        <button type="button" className="btn btn-warning text-dark" onClick={() => { setShowDetailModal(false); navigate('/berita-acara/create'); }}>
+                                                            + Buat Berita Acara Baru
+                                                        </button>
+                                                    );
+                                                })()}
+                                                <button type="button" className="btn btn-primary" onClick={() => window.print()}>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 17h2a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2h-14a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h2" /><path d="M17 9v-4a2 2 0 0 0 -2 -2h-6a2 2 0 0 0 -2 2v4" /><path d="M7 13m0 2a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M17 13m0 2a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M7 15v4h10v-4" /></svg>
+                                                    Cetak
+                                                </button>
+                                            </div>
                                         </div>
                                     </>
                                 );
