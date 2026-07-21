@@ -60,20 +60,18 @@ export default function Register() {
     resize();
     window.addEventListener("resize", resize);
 
-    // Blue color palette
-    const blueShades = [
-      { primary: "#4A90E2", secondary: "#7DC9FF" },
-      { primary: "#2C3E50", secondary: "#3498DB" },
-      { primary: "#1B4F8B", secondary: "#5D9BEC" },
-      { primary: "#0F4C81", secondary: "#6AB0FF" },
-      { primary: "#2874A6", secondary: "#85C1E9" },
-      { primary: "#1A5276", secondary: "#5DADE2" },
+    // Soft Elegant Red color palette
+    const redShades = [
+      { primary: "#b91c1c", secondary: "#f43f5e" },
+      { primary: "#9f1239", secondary: "#fb7185" },
+      { primary: "#881337", secondary: "#fde047" },
+      { primary: "#e11d48", secondary: "#f472b6" },
     ];
 
-    class BlueParticle {
+    class RedParticle {
       constructor() {
         this.colorSet =
-          blueShades[Math.floor(Math.random() * blueShades.length)];
+          redShades[Math.floor(Math.random() * redShades.length)];
         this.reset();
       }
 
@@ -87,7 +85,7 @@ export default function Register() {
         this.rotationSpeed = (Math.random() - 0.5) * 0.001;
         this.pulse = Math.random() * Math.PI * 2;
         this.pulseSpeed = 0.01;
-        this.opacity = Math.random() * 0.1 + 0.05;
+        this.opacity = Math.random() * 0.08 + 0.03;
         this.shape = Math.floor(Math.random() * 3);
       }
 
@@ -156,16 +154,16 @@ export default function Register() {
     const particles = [];
     const PARTICLE_COUNT = 20;
     for (let i = 0; i < PARTICLE_COUNT; i++) {
-      particles.push(new BlueParticle());
+      particles.push(new RedParticle());
     }
 
     // Animation loop
     const animate = () => {
-      // Create blue gradient background
+      // Soft Elegant Deep Crimson Red Gradient background
       const gradient = ctx.createLinearGradient(0, 0, width, height);
-      gradient.addColorStop(0, "#0B2F5C");
-      gradient.addColorStop(0.5, "#1B4F8B");
-      gradient.addColorStop(1, "#2C6B9E");
+      gradient.addColorStop(0, "#991b1b");
+      gradient.addColorStop(0.5, "#881337");
+      gradient.addColorStop(1, "#4c0519");
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, width, height);
 
@@ -181,7 +179,7 @@ export default function Register() {
       for (let i = 0; i < 30; i++) {
         const x = (Math.sin(Date.now() * 0.001 + i) * 50 + i * 70) % width;
         const y = (Math.cos(Date.now() * 0.001 + i) * 30 + i * 40) % height;
-        ctx.fillStyle = i % 2 === 0 ? "#7DC9FF" : "#4A90E2";
+        ctx.fillStyle = i % 2 === 0 ? "#ffe600" : "#ffffff";
         ctx.beginPath();
         ctx.arc(x, y, 2, 0, Math.PI * 2);
         ctx.fill();
@@ -398,7 +396,7 @@ export default function Register() {
 
   return (
     <>
-      {/* Blue Animated Background */}
+      {/* Trakteer Red Animated Canvas Background */}
       <canvas
         ref={bgCanvasRef}
         style={{
@@ -412,35 +410,43 @@ export default function Register() {
         }}
       />
 
-      {/* Blue Decorative Shapes */}
-      <div className="decoration decoration-1"></div>
-      <div className="decoration decoration-2"></div>
-      <div className="decoration decoration-3"></div>
+      {/* Dot grid overlay matching landing page */}
+      <div className="login-dots-overlay"></div>
 
       <div className="register-wrapper">
-        <div className="register-header text-center mb-4">
+        {/* Back to Landing Page Button */}
+        <div className="top-nav-bar">
+          <Link to="/" className="btn-back-home">
+            <span>← Ke Beranda</span>
+          </Link>
+        </div>
+
+        <div className="register-header text-center mb-4 position-relative">
           <div className="logo-wrapper mx-auto">
-            <div className="logo-glow"></div>
             <div className="logo-inner">
               <img
-                src="/images/laboratory.png"
-                alt="Lab Logo"
-                className="logo-image"
+                src="/sidoarjo.png"
+                onError={(e) => { e.target.src = "/images/laboratory.png"; }}
+                width="44"
+                height="52"
+                alt="Logo Kab Sidoarjo"
               />
             </div>
           </div>
-          <h2 className="lab-title">
-            Laboratorium Kesehatan Daerah <br /> Kabupaten Sidoarjo
+          <h2 className="lab-title fw-black text-white text-shadow-heavy mt-3 mb-1">
+            Laboratorium Kesehatan Daerah <br /> (UPT Labkesda Kab. Sidoarjo)
           </h2>
-          <h3 className="register-title">🌊 Pendaftaran Akun Baru 🌊</h3>
-          <p className="register-subtitle">
-            Daftarkan diri Anda untuk mengakses layanan kami
+          <div className="badge-3d-title mb-2">
+            <span>✨ Form Pendaftaran Masyarakat ✨</span>
+          </div>
+          <p className="register-subtitle text-warning-glow fw-bold small">
+            Lengkapi data diri Anda di bawah ini untuk membuat akun baru
           </p>
         </div>
 
         <div className="card-wrapper">
           <div className="card register-card">
-            <div className="card-body p-4">
+            <div className="card-body p-4 p-md-5">
               <form onSubmit={storeRegister} noValidate>
                 <div className="form-grid">
                   {/* Nama Lengkap */}
@@ -455,7 +461,7 @@ export default function Register() {
                           height="20"
                           viewBox="0 0 24 24"
                           fill="none"
-                          stroke="#4A90E2"
+                          stroke="#e50914"
                           strokeWidth="2"
                         >
                           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -488,7 +494,7 @@ export default function Register() {
                           height="20"
                           viewBox="0 0 24 24"
                           fill="none"
-                          stroke="#4A90E2"
+                          stroke="#e50914"
                           strokeWidth="2"
                         >
                           <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
@@ -524,7 +530,7 @@ export default function Register() {
                           height="20"
                           viewBox="0 0 24 24"
                           fill="none"
-                          stroke="#4A90E2"
+                          stroke="#e50914"
                           strokeWidth="2"
                         >
                           <rect
@@ -567,7 +573,7 @@ export default function Register() {
                           height="20"
                           viewBox="0 0 24 24"
                           fill="none"
-                          stroke="#4A90E2"
+                          stroke="#e50914"
                           strokeWidth="2"
                         >
                           <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.574 2.81.7A2 2 0 0 1 22 16.92z" />
@@ -600,7 +606,7 @@ export default function Register() {
                           height="20"
                           viewBox="0 0 24 24"
                           fill="none"
-                          stroke="#4A90E2"
+                          stroke="#e50914"
                           strokeWidth="2"
                         >
                           <circle cx="12" cy="12" r="4" />
@@ -638,7 +644,7 @@ export default function Register() {
                           height="20"
                           viewBox="0 0 24 24"
                           fill="none"
-                          stroke="#4A90E2"
+                          stroke="#e50914"
                           strokeWidth="2"
                         >
                           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
@@ -671,7 +677,7 @@ export default function Register() {
                           height="20"
                           viewBox="0 0 24 24"
                           fill="none"
-                          stroke="#4A90E2"
+                          stroke="#e50914"
                           strokeWidth="2"
                         >
                           <rect
@@ -696,7 +702,7 @@ export default function Register() {
                     </div>
 
                     {/* Password Rules */}
-                    <div className="password-feedback-wrapper">
+                    <div className="password-feedback-wrapper mt-3">
                       <div className="password-feedback">
                         <div className="password-rules">
                           <h6 className="rules-title blue-text">
@@ -784,7 +790,7 @@ export default function Register() {
                           height="20"
                           viewBox="0 0 24 24"
                           fill="none"
-                          stroke="#4A90E2"
+                          stroke="#e50914"
                           strokeWidth="2"
                         >
                           <rect
@@ -863,7 +869,7 @@ export default function Register() {
         />
       </div>
 
-      <style jsx>{`
+      <style>{`
         /* Canvas Background */
         canvas {
           position: fixed;
@@ -928,93 +934,85 @@ export default function Register() {
           }
         }
 
-        /* Main Wrapper */
         .register-wrapper {
           min-height: 100vh;
           padding: 2rem 1.5rem;
           position: relative;
-          z-index: 1;
+          z-index: 2;
           display: flex;
           flex-direction: column;
           align-items: center;
+          justify-content: center;
         }
 
-        /* Logo */
+        .top-nav-bar {
+          position: absolute;
+          top: 20px;
+          left: 20px;
+          z-index: 10;
+        }
+
+        .btn-back-home {
+          background: #67e8f9;
+          color: #000000 !important;
+          font-weight: 800;
+          font-size: 0.88rem;
+          padding: 8px 16px;
+          border-radius: 12px;
+          border: 2.5px solid #000000;
+          box-shadow: 4px 4px 0px #000000;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          text-decoration: none !important;
+          transition: all 0.15s ease-in-out;
+        }
+
+        .btn-back-home:hover {
+          background: #22d3ee;
+          transform: translate(-2px, -2px);
+          box-shadow: 6px 6px 0px #000000;
+        }
+
         .logo-wrapper {
-          width: 90px;
-          height: 90px;
+          width: 84px;
+          height: 84px;
           position: relative;
           display: flex;
           align-items: center;
           justify-content: center;
-          margin-bottom: 1rem;
-        }
-
-        .logo-glow {
-          position: absolute;
-          width: 100%;
-          height: 100%;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #4a90e2, #2c6b9e);
-          filter: blur(15px);
-          opacity: 0.7;
-          animation: glowPulse 3s infinite;
-        }
-
-        @keyframes glowPulse {
-          0%,
-          100% {
-            opacity: 0.7;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 1;
-            transform: scale(1.2);
-          }
+          margin-bottom: 0.5rem;
         }
 
         .logo-inner {
-          width: 70px;
-          height: 70px;
-          background: white;
+          width: 84px;
+          height: 84px;
+          background: #ffffff;
+          border: 3px solid #000000;
+          box-shadow: 5px 5px 0px #000000;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-          position: relative;
-          z-index: 1;
         }
 
-        .logo-image {
-          height: 40px;
-          width: auto;
+        .text-shadow-heavy {
+          text-shadow: 0 3px 8px rgba(0, 0, 0, 0.6);
         }
 
-        /* Header Text */
-        .lab-title {
-          font-size: 1.2rem;
-          font-weight: 600;
-          color: white;
-          margin-bottom: 0.5rem;
-          line-height: 1.4;
+        .badge-3d-title {
+          display: inline-flex;
+          align-items: center;
+          background: #fee2e2;
+          color: #e50914;
+          font-weight: 800;
+          font-size: 0.85rem;
+          padding: 5px 16px;
+          border: 2px solid #000000;
+          box-shadow: 3px 3px 0px #000000;
+          border-radius: 10px;
         }
 
-        .register-title {
-          font-size: 1.5rem;
-          font-weight: 700;
-          background: linear-gradient(135deg, #4a90e2, #2c6b9e);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          margin-bottom: 0.5rem;
-        }
-
-        .register-subtitle {
-          color: rgba(255, 255, 255, 0.8);
-          font-size: 0.9rem;
-        }
-
-        /* Card */
         .card-wrapper {
           width: 100%;
           max-width: 900px;
@@ -1022,29 +1020,15 @@ export default function Register() {
           z-index: 2;
         }
 
+        /* 3D Neubrutalism Card */
         .register-card {
-          border: none;
-          border-radius: 30px;
-          background: rgba(255, 255, 255, 0.98);
-          backdrop-filter: blur(20px);
-          box-shadow:
-            0 20px 40px rgba(0, 0, 0, 0.2),
-            0 0 0 2px rgba(74, 144, 226, 0.1) inset;
-          animation: cardFloat 0.8s ease-out;
+          border: 3px solid #000000;
+          border-radius: 24px;
+          background: #ffffff;
+          box-shadow: 8px 8px 0px #000000;
+          overflow: hidden;
         }
 
-        @keyframes cardFloat {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        /* Form Grid */
         .form-grid {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
@@ -1060,13 +1044,12 @@ export default function Register() {
         }
 
         .blue-text {
-          color: #4a90e2;
-          font-weight: 600;
-          font-size: 0.85rem;
-          margin-bottom: 0.3rem;
+          color: #0f172a;
+          font-weight: 800;
+          font-size: 0.88rem;
+          margin-bottom: 0.4rem;
         }
 
-        /* Input Wrapper */
         .input-wrapper,
         .select-wrapper {
           position: relative;
@@ -1074,7 +1057,7 @@ export default function Register() {
 
         .input-icon-wrapper {
           position: absolute;
-          left: 12px;
+          left: 14px;
           top: 50%;
           transform: translateY(-50%);
           z-index: 2;
@@ -1085,13 +1068,15 @@ export default function Register() {
 
         .form-control,
         .form-select {
-          height: 45px;
+          height: 48px;
           border-radius: 12px;
-          border: 2px solid #e0f0ff;
-          background: white;
-          font-size: 0.9rem;
+          border: 2.5px solid #000000;
+          box-shadow: 3px 3px 0px #000000;
+          background: #ffffff;
+          font-size: 0.92rem;
+          font-weight: 600;
           padding-left: 45px;
-          transition: all 0.3s;
+          transition: all 0.15s ease-in-out;
           width: 100%;
         }
 
@@ -1103,8 +1088,9 @@ export default function Register() {
 
         .form-control:focus,
         .form-select:focus {
-          border-color: #4a90e2;
-          box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.1);
+          background: #fffdf0;
+          border-color: #000000;
+          box-shadow: 5px 5px 0px #000000;
           outline: none;
         }
 
@@ -1116,223 +1102,88 @@ export default function Register() {
         .invalid-feedback {
           color: #dc3545;
           font-size: 0.8rem;
+          font-weight: 700;
           margin-top: 0.3rem;
         }
 
-        /* Password Rules */
         .password-feedback-wrapper {
-          margin-top: 0.5rem;
+          margin-top: 1.25rem;
         }
 
         .password-feedback {
-          background: #f8f9fa;
-          border-radius: 12px;
-          padding: 1rem;
-          border: 2px solid #e0f0ff;
+          background: #f8fafc;
+          border-radius: 14px;
+          padding: 1.2rem;
+          border: 2.5px solid #000000;
+          box-shadow: 3px 3px 0px #000000;
         }
 
-        .rules-title {
-          font-size: 0.85rem;
-          font-weight: 600;
-          margin-bottom: 0.8rem;
-        }
-
-        .rules-list {
-          list-style: none;
-          padding: 0;
-          margin: 0 0 1rem 0;
-        }
-
-        .rule-item {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 0.8rem;
-          margin-bottom: 0.3rem;
-          padding: 0.2rem 0;
-        }
-
-        .rule-item.valid {
-          color: #28a745;
-        }
-
-        .rule-item.invalid {
-          color: #6c757d;
-        }
-
-        .rule-icon {
-          font-size: 1rem;
-        }
-
-        /* Password Strength Indicator */
-        .password-strength-indicator {
-          margin-top: 0.5rem;
-        }
-
-        .strength-meter {
-          display: flex;
-          gap: 0.3rem;
-          margin-bottom: 0.3rem;
-        }
-
-        .strength-bar {
-          height: 4px;
-          flex: 1;
-          background: #e9ecef;
-          border-radius: 2px;
-          transition: all 0.3s;
-        }
-
-        .strength-bar.active {
-          background: currentColor;
-        }
-
-        .password-strength-indicator.danger .strength-bar.active {
-          background: #dc3545;
-        }
-
-        .password-strength-indicator.warning .strength-bar.active {
-          background: #ffc107;
-        }
-
-        .password-strength-indicator.success .strength-bar.active {
-          background: #28a745;
-        }
-
-        .strength-text {
-          font-size: 0.8rem;
-          color: #6c757d;
-        }
-
-        /* Submit Button 3D Style */
+        /* 3D Submit Button */
         .btn-submit {
           width: 100%;
           height: 54px;
-          border: 2px solid #54a0ff;
-          border-radius: 16px;
-          background: linear-gradient(135deg, #4a90e2, #2979ff);
+          border: 3px solid #000000;
+          border-radius: 14px;
+          background: #10b981;
           color: white;
-          font-weight: 700;
-          font-size: 16px;
+          font-weight: 900;
+          font-size: 1.05rem;
           cursor: pointer;
           position: relative;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 6px 0 #1b5cb8;
-          transition: all 0.1s ease;
+          box-shadow: 5px 5px 0px #000000;
+          transition: all 0.15s ease-in-out;
           outline: none;
         }
 
         .btn-submit:hover:not(:disabled) {
-          background: linear-gradient(135deg, #5c9df2, #3d85ff);
-          border-color: #70b0ff;
-          box-shadow: 0 6px 0 #154c9c;
+          background: #059669;
+          transform: translate(-2px, -2px);
+          box-shadow: 7px 7px 0px #000000;
         }
 
         .btn-submit:active:not(:disabled) {
-          transform: translateY(4px);
-          box-shadow: 0 2px 0 #154c9c;
+          transform: translate(2px, 2px);
+          box-shadow: 2px 2px 0px #000000;
         }
 
         .btn-submit:disabled {
-          background: linear-gradient(135deg, #a0c0e0, #8098b0);
-          border-color: #b0d0f0;
-          box-shadow: 0 4px 0 #607890;
-          opacity: 0.7;
+          background: #94a3b8;
+          opacity: 0.8;
           cursor: not-allowed;
-          transform: none;
         }
 
-        .spinner {
-          display: inline-block;
-          width: 20px;
-          height: 20px;
-          border: 3px solid rgba(255, 255, 255, 0.3);
-          border-radius: 50%;
-          border-top-color: white;
-          animation: spin 1s ease-in-out infinite;
-          margin-right: 8px;
-        }
-
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        /* Login Link 3D Style */
+        /* 3D Login Link Button */
         .login-link {
           display: inline-flex;
           align-items: center;
           justify-content: center;
           padding: 8px 18px;
-          background: #ffffff;
-          color: #1b4f8b;
-          border: 2px solid #e0f0ff;
+          background: #fbbf24;
+          color: #000000 !important;
+          border: 2.5px solid #000000;
           border-radius: 12px;
           font-size: 13px;
-          font-weight: 700;
+          font-weight: 800;
           text-decoration: none !important;
-          box-shadow: 0 4px 0 #b3d7ff;
-          transition: all 0.1s ease;
+          box-shadow: 4px 4px 0px #000000;
+          transition: all 0.15s ease-in-out;
           cursor: pointer;
         }
 
         .login-link:hover {
-          background: #f7fbff;
-          border-color: #cce5ff;
-          box-shadow: 0 4px 0 #9ecbff;
-          color: #4a90e2;
+          background: #f59e0b;
+          transform: translate(-2px, -2px);
+          box-shadow: 6px 6px 0px #000000;
         }
 
         .login-link:active {
-          transform: translateY(2px);
-          box-shadow: 0 2px 0 #9ecbff;
+          transform: translate(2px, 2px);
+          box-shadow: 1px 1px 0px #000000;
         }
 
-        /* Decorative Waves */
-        .decorative-waves {
-          position: relative;
-          margin-top: 20px;
-          height: 20px;
-        }
-
-        .wave {
-          position: absolute;
-          height: 2px;
-          background: linear-gradient(90deg, transparent, #4a90e2, transparent);
-        }
-
-        .wave-1 {
-          width: 100%;
-          top: 0;
-          animation: waveMove 3s infinite;
-        }
-
-        .wave-2 {
-          width: 70%;
-          left: 15%;
-          top: 10px;
-          animation: waveMove 3s infinite reverse;
-        }
-
-        @keyframes waveMove {
-          0% {
-            opacity: 0.3;
-            width: 0;
-          }
-          50% {
-            opacity: 1;
-            width: 100%;
-          }
-          100% {
-            opacity: 0.3;
-            width: 0;
-          }
-        }
-
-        /* Responsive */
         @media (max-width: 768px) {
           .form-grid {
             grid-template-columns: 1fr;
@@ -1343,29 +1194,12 @@ export default function Register() {
           }
 
           .register-wrapper {
-            padding: 1.5rem 1rem;
+            padding: 4rem 1rem 2rem 1rem;
           }
 
-          .lab-title {
-            font-size: 1rem;
-          }
-
-          .register-title {
-            font-size: 1.3rem;
-          }
-
-          .decoration {
-            filter: blur(40px);
-          }
-
-          .decoration-1 {
-            width: 200px;
-            height: 200px;
-          }
-
-          .decoration-2 {
-            width: 300px;
-            height: 300px;
+          .top-nav-bar {
+            top: 12px;
+            left: 12px;
           }
         }
       `}</style>

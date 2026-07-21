@@ -66,23 +66,23 @@ export default function Header() {
             {/* Top Header Bar */}
             <header className="navbar navbar-expand-md navbar-cashier-main">
                 <div className="container-xl">
-                    {/* Brand Logo & Name */}
+                    {/* Brand Logo & Name matching Landing Page */}
                     <div className="navbar-brand-wrapper">
-                        <Link to="/" className="navbar-brand" onClick={closeMobileMenu}>
-                            <div className="brand-content">
-                                <div className="logo-container">
+                        <Link to="/" className="navbar-brand text-white d-flex align-items-center gap-2" onClick={closeMobileMenu}>
+                            <div className="brand-content d-flex align-items-center gap-2">
+                                <div className="logo-container me-1">
                                     <img
-                                        src="/images/laboratory.png"
-                                        width="44"
+                                        src="/sidoarjo.png"
+                                        onError={(e) => { e.target.src = "/images/laboratory.png"; }}
+                                        width="36"
                                         height="44"
-                                        alt="Labkesda"
-                                        className="brand-logo"
+                                        alt="Logo Kab Sidoarjo"
+                                        className="brand-logo-img"
                                     />
-                                    <div className="logo-glow"></div>
                                 </div>
-                                <div className="brand-text">
-                                    <span className="brand-name">Labkesda</span>
-                                    <span className="brand-tagline">Laboratorium Kesehatan Daerah</span>
+                                <div className="brand-text lh-1">
+                                    <span className="brand-name fw-black fs-5 text-white d-block mb-1">Labkesda Sidoarjo</span>
+                                    <span className="brand-tagline text-warning-glow fw-bold" style={{ fontSize: '0.68rem', letterSpacing: '0.5px' }}>UPT LABORATORIUM KESEHATAN DAERAH</span>
                                 </div>
                             </div>
                         </Link>

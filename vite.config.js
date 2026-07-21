@@ -4,6 +4,23 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  server: {
+    proxy: {
+      '/ikm-proxy': {
+        target: 'https://ikm.sidoarjokab.go.id',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/ikm-proxy/, ''),
+        configure: (proxy, _options) => {
+          proxy.on('proxyRes', (proxyRes, _req, _res) => {
+            delete proxyRes.headers['x-frame-options'];
+            delete proxyRes.headers['X-Frame-Options'];
+            delete proxyRes.headers['content-security-policy'];
+            delete proxyRes.headers['Content-Security-Policy'];
+          });
+        }
+      }
+    }
+  },
   plugins: [
     react(),
     VitePWA({

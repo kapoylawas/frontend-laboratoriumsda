@@ -38,11 +38,18 @@ import BeritaAcaraCreate from "../views/berita-acara/create.jsx";
 import BeritaAcaraEdit from "../views/berita-acara/edit.jsx";
 import BeritaAcaraDetail from "../views/berita-acara/detail.jsx";
 
+// Import Landing view
+import LandingPage from "../views/landing/index.jsx";
+
 export default function AppRoutes() {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/" element={<Login />} />
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/landing" element={<LandingPage />} />
+      <Route path="/ikm" element={<LandingPage />} />
+      <Route path="/survei" element={<LandingPage />} />
+      <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/aktifasi/:token" element={<Aktifasi />} />
       <Route path="/forbidden" element={<Forbidden />} />

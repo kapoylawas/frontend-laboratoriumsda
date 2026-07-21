@@ -1,6 +1,5 @@
-
 //import hook react
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 //import hook useNavigate from react router dom
 import { Link, useNavigate } from "react-router-dom";
@@ -11,6 +10,8 @@ import { useStore } from '../../stores/user';
 //import SliderCaptcha component
 import SliderCaptcha from '../../components/SliderCaptcha';
 
+//import Tabler Icons
+import { IconArrowLeft, IconLock, IconMail, IconSparkles, IconUserPlus, IconFlask } from '@tabler/icons-react';
 
 export default function Login() {
     const navigate = useNavigate();
@@ -28,7 +29,7 @@ export default function Login() {
     const [errors, setErrors] = useState({});
     const [loginFailed, setLoginFailed] = useState('');
 
-        // Slider CAPTCHA state
+    // Slider CAPTCHA state
     const [slider, setSlider] = useState({
         isVerified: false
     });
@@ -70,7 +71,7 @@ export default function Login() {
         return () => clearTimeout(timeout);
     }, [slider.isVerified, resetSlider]);
 
-    // Blue-themed background animation
+    // Red-themed Trakteer background animation
     useEffect(() => {
         const canvas = bgCanvasRef.current;
         if (!canvas) return;
@@ -87,19 +88,17 @@ export default function Login() {
         resize();
         window.addEventListener('resize', resize);
 
-        // Blue color palette
-        const blueShades = [
-            { primary: '#4A90E2', secondary: '#7DC9FF' }, // Bright Blue
-            { primary: '#2C3E50', secondary: '#3498DB' }, // Dark to Medium Blue
-            { primary: '#1B4F8B', secondary: '#5D9BEC' }, // Navy to Sky Blue
-            { primary: '#0F4C81', secondary: '#6AB0FF' }, // Indigo to Light Blue
-            { primary: '#2874A6', secondary: '#85C1E9' }, // Ocean Blue
-            { primary: '#1A5276', secondary: '#5DADE2' }  // Deep Blue
+        // Soft Elegant Red color palette
+        const redShades = [
+            { primary: '#b91c1c', secondary: '#f43f5e' },
+            { primary: '#9f1239', secondary: '#fb7185' },
+            { primary: '#881337', secondary: '#fde047' },
+            { primary: '#e11d48', secondary: '#f472b6' }
         ];
 
-        class BlueParticle {
+        class RedParticle {
             constructor() {
-                this.colorSet = blueShades[Math.floor(Math.random() * blueShades.length)];
+                this.colorSet = redShades[Math.floor(Math.random() * redShades.length)];
                 this.reset();
             }
 
@@ -113,7 +112,7 @@ export default function Login() {
                 this.rotationSpeed = (Math.random() - 0.5) * 0.001;
                 this.pulse = Math.random() * Math.PI * 2;
                 this.pulseSpeed = 0.01;
-                this.opacity = Math.random() * 0.1 + 0.05;
+                this.opacity = Math.random() * 0.08 + 0.03;
                 this.shape = Math.floor(Math.random() * 3);
             }
 
@@ -175,16 +174,16 @@ export default function Login() {
         const particles = [];
         const PARTICLE_COUNT = 20;
         for (let i = 0; i < PARTICLE_COUNT; i++) {
-            particles.push(new BlueParticle());
+            particles.push(new RedParticle());
         }
 
         // Animation loop
         const animate = () => {
-            // Create blue gradient background
+            // Soft Elegant Deep Crimson Red Gradient background
             const gradient = ctx.createLinearGradient(0, 0, width, height);
-            gradient.addColorStop(0, '#0B2F5C');
-            gradient.addColorStop(0.5, '#1B4F8B');
-            gradient.addColorStop(1, '#2C6B9E');
+            gradient.addColorStop(0, '#991b1b');
+            gradient.addColorStop(0.5, '#881337');
+            gradient.addColorStop(1, '#4c0519');
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, width, height);
 
@@ -200,7 +199,7 @@ export default function Login() {
             for (let i = 0; i < 30; i++) {
                 const x = (Math.sin(Date.now() * 0.001 + i) * 50 + i * 70) % width;
                 const y = (Math.cos(Date.now() * 0.001 + i) * 30 + i * 40) % height;
-                ctx.fillStyle = i % 2 === 0 ? '#7DC9FF' : '#4A90E2';
+                ctx.fillStyle = i % 2 === 0 ? '#ffe600' : '#ffffff';
                 ctx.beginPath();
                 ctx.arc(x, y, 2, 0, Math.PI * 2);
                 ctx.fill();
@@ -274,7 +273,7 @@ export default function Login() {
 
     return (
         <>
-            {/* Blue Animated Background */}
+            {/* Trakteer Red Animated Canvas Background */}
             <canvas
                 ref={bgCanvasRef}
                 style={{
@@ -288,49 +287,59 @@ export default function Login() {
                 }}
             />
 
-            <div className="login-container">
-                {/* Blue Decorative Shapes */}
-                <div className="decoration decoration-1"></div>
-                <div className="decoration decoration-2"></div>
-                <div className="decoration decoration-3"></div>
+            {/* Dot grid overlay matching landing page */}
+            <div className="login-dots-overlay"></div>
 
-                {/* Header with Blue Glow */}
-                <div className="text-center mb-4 position-relative">
-                    <div className="logo-wrapper mx-auto">
-                        <div className="logo-glow"></div>
-                        <div className="logo-inner">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="url(#blueGradient)" strokeWidth="1.5">
-                                <defs>
-                                    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" stopColor="#4A90E2" />
-                                        <stop offset="100%" stopColor="#2C6B9E" />
-                                    </linearGradient>
-                                </defs>
-                                <path d="M4 4h16v16H4z" />
-                                <path d="M8 8h8v8H8z" />
-                                <circle cx="12" cy="12" r="2" fill="url(#blueGradient)" />
-                                <path d="M12 4v4M12 16v4M4 12h4M16 12h4" />
-                            </svg>
-                        </div>
-                    </div>
-                    <h2 className="h4 fw-bold mt-3 mb-1 text-white">Laboratorium Kesehatan Daerah</h2>
-                    <p className="text-white-50 small">(Labkesda)</p>
+            <div className="login-container">
+                {/* Back to Landing Page Button */}
+                <div className="top-nav-bar">
+                    <Link to="/" className="btn-back-home">
+                        <IconArrowLeft size={18} />
+                        <span>Ke Beranda</span>
+                    </Link>
                 </div>
 
-                {/* Login Card with Frosted Blue Glass */}
+                {/* Header Section */}
+                <div className="text-center mb-4 position-relative">
+                    <div className="logo-wrapper mx-auto">
+                        <div className="logo-inner">
+                            <img
+                                src="/sidoarjo.png"
+                                onError={(e) => { e.target.src = "/images/laboratory.png"; }}
+                                width="44"
+                                height="52"
+                                alt="Logo Kab Sidoarjo"
+                            />
+                        </div>
+                    </div>
+                    <h2 className="h4 fw-black mt-3 mb-1 text-white text-shadow-heavy">
+                        Laboratorium Kesehatan Daerah
+                    </h2>
+                    <p className="text-warning-glow fw-bold small text-shadow-sub">
+                        (UPT Labkesda Kab. Sidoarjo)
+                    </p>
+                </div>
+
+                {/* 3D Neubrutalism Login Card */}
                 <div className="card-wrapper">
                     <div className="card login-card">
-                        <div className="card-body p-4">
-                            <h3 className="h5 text-center mb-1 blue-gradient-text">🌊 Selamat Datang Kembali 🌊</h3>
-                            <p className="text-center text-muted small mb-4">
-                                Masuk ke akun Anda untuk melanjutkan
-                            </p>
+                        <div className="card-body p-4 p-md-5">
+                            <div className="text-center mb-4">
+                                <div className="badge-3d-title mb-2">
+                                    <IconSparkles size={16} className="text-danger me-1" />
+                                    <span>Portal Masuk Sistem</span>
+                                </div>
+                                <h3 className="h4 fw-black text-dark mb-1">Selamat Datang Kembali</h3>
+                                <p className="text-secondary small mb-0">
+                                    Masukkan email dan kata sandi Anda untuk melanjutkan
+                                </p>
+                            </div>
 
                             {/* Error Alert */}
                             {(loginFailed || errors.general) && (
-                                <div className="alert alert-blue d-flex align-items-center mb-4">
+                                <div className="alert alert-red-3d d-flex align-items-center mb-4">
                                     <div className="alert-icon me-2">⚠️</div>
-                                    <span className="small">{loginFailed || errors.general}</span>
+                                    <span className="small fw-bold">{loginFailed || errors.general}</span>
                                 </div>
                             )}
 
@@ -338,18 +347,15 @@ export default function Login() {
                             <form onSubmit={loginHandler} noValidate>
                                 {/* Email Field */}
                                 <div className="mb-3">
-                                    <label className="form-label small fw-semibold blue-text">Email</label>
+                                    <label className="form-label small fw-bold text-dark">Alamat Email</label>
                                     <div className="input-wrapper">
                                         <div className="input-icon-wrapper">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A90E2" strokeWidth="2">
-                                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                                                <polyline points="22,6 12,13 2,6" />
-                                            </svg>
+                                            <IconMail size={20} className="text-danger" />
                                         </div>
                                         <input
                                             type="email"
                                             name="email"
-                                            className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                                            className={`form-control form-control-3d ${errors.email ? 'is-invalid' : ''}`}
                                             value={formData.email}
                                             onChange={handleInputChange}
                                             placeholder="nama@email.com"
@@ -357,30 +363,27 @@ export default function Login() {
                                             autoFocus
                                         />
                                         {errors.email && (
-                                            <div className="invalid-feedback small">{errors.email}</div>
+                                            <div className="invalid-feedback small fw-bold mt-1">{errors.email}</div>
                                         )}
                                     </div>
                                 </div>
 
                                 {/* Password Field */}
                                 <div className="mb-3">
-                                    <div className="d-flex justify-content-between align-items-center">
-                                        <label className="form-label small fw-semibold blue-text">Password</label>
-                                        <Link to="/forgot-password" className="small text-decoration-none forgot-link">
+                                    <div className="d-flex justify-content-between align-items-center mb-1">
+                                        <label className="form-label small fw-bold text-dark mb-0">Kata Sandi</label>
+                                        <Link to="/forgot-password" className="small fw-bold text-danger forgot-link">
                                             Lupa password?
                                         </Link>
                                     </div>
                                     <div className="input-wrapper">
                                         <div className="input-icon-wrapper">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A90E2" strokeWidth="2">
-                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                                            </svg>
+                                            <IconLock size={20} className="text-danger" />
                                         </div>
                                         <input
                                             type="password"
                                             name="password"
-                                            className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                                            className={`form-control form-control-3d ${errors.password ? 'is-invalid' : ''}`}
                                             value={formData.password}
                                             onChange={handleInputChange}
                                             placeholder="••••••••"
@@ -388,11 +391,11 @@ export default function Login() {
                                         />
                                     </div>
                                     {errors.password && (
-                                        <div className="invalid-feedback small">{errors.password}</div>
+                                        <div className="invalid-feedback small fw-bold mt-1">{errors.password}</div>
                                     )}
                                 </div>
 
-                                {/* Blue Slider CAPTCHA */}
+                                {/* Slider CAPTCHA */}
                                 <div className="mb-4">
                                     <SliderCaptcha
                                         isVerified={slider.isVerified}
@@ -402,9 +405,9 @@ export default function Login() {
                                     />
                                 </div>
 
-                                {/* Remember Me with Blue Checkbox */}
+                                {/* Remember Me */}
                                 <div className="mb-4">
-                                    <label className="custom-checkbox">
+                                    <label className="custom-checkbox-3d">
                                         <input
                                             type="checkbox"
                                             name="rememberMe"
@@ -412,191 +415,172 @@ export default function Login() {
                                             onChange={handleInputChange}
                                             disabled={isLoading}
                                         />
-                                        <span className="checkmark"></span>
-                                        <span className="text-muted small">Ingat saya</span>
+                                        <span className="checkmark-3d"></span>
+                                        <span className="fw-semibold small text-dark">Ingat sesi saya</span>
                                     </label>
                                 </div>
 
-                                {/* Blue Submit Button */}
+                                {/* 3D Green Submit Button */}
                                 <button
                                     type="submit"
-                                    className="btn-submit"
+                                    className="btn-submit-3d"
                                     disabled={isLoading || !slider.isVerified}
                                 >
                                     {isLoading ? (
                                         <>
-                                            <span className="spinner"></span>
-                                            Memproses...
+                                            <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                                            Memproses Masuk...
                                         </>
                                     ) : !slider.isVerified ? (
                                         <>
-                                            <span className="me-1">🔷</span>
-                                            Verifikasi Terlebih Dahulu
+                                            <IconLock size={18} className="me-1" />
+                                            Verifikasi Geser Terlebih Dahulu
                                         </>
                                     ) : (
                                         <>
-                                            <span className="me-1">🚀</span>
-                                            Masuk ke Dashboard
+                                            🚀 Masuk ke Dashboard
                                         </>
                                     )}
                                 </button>
-
-                                {/* Decorative Blue Waves */}
-                                <div className="decorative-waves">
-                                    <div className="wave wave-1"></div>
-                                    <div className="wave wave-2"></div>
-                                </div>
                             </form>
                         </div>
                     </div>
 
-                    {/* Register Link */}
-                    <div className="text-center mt-4 register-link d-flex align-items-center justify-content-center flex-wrap gap-2">
-                        <span className="text-white-50 small">Belum punya akun? </span>
+                    {/* 3D Register Link */}
+                    <div className="text-center mt-4 d-flex align-items-center justify-content-center flex-wrap gap-2">
+                        <span className="text-white fw-bold small text-shadow-sub">Belum punya akun? </span>
                         <Link to="/register" className="register-btn-3d">
-                            Daftar disini ➔
+                            <IconUserPlus size={16} />
+                            <span>Daftar Akun Baru ➔</span>
                         </Link>
                     </div>
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
+                .login-dots-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-image: radial-gradient(rgba(255, 255, 255, 0.18) 1.5px, transparent 1.5px);
+                    background-size: 24px 24px;
+                    pointer-events: none;
+                    z-index: 1;
+                }
+
                 .login-container {
                     min-height: 100vh;
                     display: flex;
                     flex-direction: column;
                     justify-content: center;
                     align-items: center;
-                    padding: 1.5rem;
-                    position: relative;
-                    z-index: 1;
-                }
-
-                /* Blue Decorative Floating Shapes */
-                .decoration {
-                    position: fixed;
-                    border-radius: 50%;
-                    filter: blur(60px);
-                    z-index: 0;
-                    animation: float 20s infinite ease-in-out;
-                }
-
-                .decoration-1 {
-                    width: 300px;
-                    height: 300px;
-                    background: rgba(74, 144, 226, 0.2);
-                    top: -100px;
-                    right: -100px;
-                    animation-delay: 0s;
-                }
-
-                .decoration-2 {
-                    width: 400px;
-                    height: 400px;
-                    background: rgba(44, 107, 158, 0.2);
-                    bottom: -150px;
-                    left: -150px;
-                    animation-delay: -5s;
-                }
-
-                .decoration-3 {
-                    width: 200px;
-                    height: 200px;
-                    background: rgba(125, 201, 255, 0.2);
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    animation-delay: -10s;
-                }
-
-                @keyframes float {
-                    0%, 100% { transform: translate(0, 0) rotate(0deg); }
-                    25% { transform: translate(50px, 50px) rotate(5deg); }
-                    50% { transform: translate(0, 100px) rotate(10deg); }
-                    75% { transform: translate(-50px, 50px) rotate(5deg); }
-                }
-
-                /* Logo with Blue Glow */
-                .logo-wrapper {
-                    width: 90px;
-                    height: 90px;
-                    position: relative;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-
-                .logo-glow {
-                    position: absolute;
-                    width: 100%;
-                    height: 100%;
-                    border-radius: 50%;
-                    background: linear-gradient(135deg, #4A90E2, #2C6B9E);
-                    filter: blur(15px);
-                    opacity: 0.7;
-                    animation: glowPulse 3s infinite;
-                }
-
-                @keyframes glowPulse {
-                    0%, 100% { opacity: 0.7; transform: scale(1); }
-                    50% { opacity: 1; transform: scale(1.2); }
-                }
-
-                .logo-inner {
-                    width: 70px;
-                    height: 70px;
-                    background: white;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-                    position: relative;
-                    z-index: 1;
-                }
-
-                /* Card Styles */
-                .card-wrapper {
-                    width: 100%;
-                    max-width: 440px;
+                    padding: 2rem 1.5rem;
                     position: relative;
                     z-index: 2;
                 }
 
+                .top-nav-bar {
+                    position: absolute;
+                    top: 20px;
+                    left: 20px;
+                    z-index: 10;
+                }
+
+                .btn-back-home {
+                    background: #67e8f9;
+                    color: #000000 !important;
+                    font-weight: 800;
+                    font-size: 0.88rem;
+                    padding: 8px 16px;
+                    border-radius: 12px;
+                    border: 2.5px solid #000000;
+                    box-shadow: 4px 4px 0px #000000;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    text-decoration: none !important;
+                    transition: all 0.15s ease-in-out;
+                }
+
+                .btn-back-home:hover {
+                    background: #22d3ee;
+                    transform: translate(-2px, -2px);
+                    box-shadow: 6px 6px 0px #000000;
+                }
+
+                .logo-wrapper {
+                    width: 84px;
+                    height: 84px;
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .logo-inner {
+                    width: 84px;
+                    height: 84px;
+                    background: #ffffff;
+                    border: 3px solid #000000;
+                    box-shadow: 5px 5px 0px #000000;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .text-shadow-heavy {
+                    text-shadow: 0 3px 8px rgba(0, 0, 0, 0.6);
+                }
+
+                .text-shadow-sub {
+                    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+                }
+
+                .text-warning-glow {
+                    color: #ffe600 !important;
+                }
+
+                .card-wrapper {
+                    width: 100%;
+                    max-width: 460px;
+                    position: relative;
+                    z-index: 2;
+                }
+
+                /* 3D Neubrutalism Card */
                 .login-card {
-                    border: none;
-                    border-radius: 30px;
-                    background: rgba(255, 255, 255, 0.95);
-                    backdrop-filter: blur(20px);
-                    box-shadow: 
-                        0 20px 40px rgba(0, 0, 0, 0.2),
-                        0 0 0 2px rgba(74, 144, 226, 0.1) inset;
-                    animation: cardFloat 1s ease-out;
+                    background: #ffffff;
+                    border: 3px solid #000000;
+                    border-radius: 24px;
+                    box-shadow: 8px 8px 0px #000000;
+                    overflow: hidden;
                 }
 
-                @keyframes cardFloat {
-                    from {
-                        opacity: 0;
-                        transform: translateY(30px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
+                .badge-3d-title {
+                    display: inline-flex;
+                    align-items: center;
+                    background: #fee2e2;
+                    color: #e50914;
+                    font-weight: 800;
+                    font-size: 0.82rem;
+                    padding: 5px 14px;
+                    border: 2px solid #000000;
+                    box-shadow: 3px 3px 0px #000000;
+                    border-radius: 10px;
                 }
 
-                .blue-gradient-text {
-                    background: linear-gradient(135deg, #4A90E2, #2C6B9E);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    font-weight: 600;
+                .alert-red-3d {
+                    background: #fef2f2;
+                    border: 2.5px solid #000000;
+                    box-shadow: 4px 4px 0px #000000;
+                    border-radius: 14px;
+                    color: #991b1b;
+                    padding: 12px 16px;
                 }
 
-                .blue-text {
-                    color: #4A90E2;
-                }
-
-                /* Input Styles */
                 .input-wrapper {
                     position: relative;
                 }
@@ -606,58 +590,29 @@ export default function Login() {
                     left: 16px;
                     top: 50%;
                     transform: translateY(-50%);
-                    z-index: 2;
-                    color: #4A90E2;
+                    z-index: 3;
                 }
 
-                .form-control {
+                .form-control-3d {
                     height: 52px;
-                    border-radius: 15px;
-                    border: 2px solid #e0f0ff;
-                    background: white;
+                    border-radius: 14px;
+                    border: 2.5px solid #000000;
+                    box-shadow: 3px 3px 0px #000000;
+                    background: #ffffff;
                     font-size: 14px;
+                    font-weight: 600;
                     padding-left: 50px;
-                    transition: all 0.3s;
+                    transition: all 0.15s ease-in-out;
                 }
 
-                .form-control:focus {
-                    border-color: #4A90E2;
-                    box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.1);
+                .form-control-3d:focus {
+                    background: #fffdf0;
+                    border-color: #000000;
+                    box-shadow: 5px 5px 0px #000000;
                     outline: none;
                 }
 
-                .form-control.is-invalid {
-                    border-color: #FF6B6B;
-                }
-
-                /* Blue Alert */
-                .alert-blue {
-                    background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(44, 107, 158, 0.1));
-                    border: 2px solid #4A90E2;
-                    border-radius: 15px;
-                    color: #2C6B9E;
-                    padding: 12px 16px;
-                }
-
-                .alert-icon {
-                    font-size: 20px;
-                }
-
-                /* Forgot Password Link */
-                .forgot-link {
-                    color: #4A90E2;
-                    transition: all 0.3s;
-                }
-
-                .forgot-link:hover {
-                    color: #2C6B9E;
-                    text-decoration: underline !important;
-                }
-
-
-
-                /* Custom Checkbox */
-                .custom-checkbox {
+                .custom-checkbox-3d {
                     display: flex;
                     align-items: center;
                     gap: 10px;
@@ -665,210 +620,114 @@ export default function Login() {
                     user-select: none;
                 }
 
-                .custom-checkbox input {
+                .custom-checkbox-3d input {
                     position: absolute;
                     opacity: 0;
                     cursor: pointer;
-                    height: 0;
-                    width: 0;
                 }
 
-                .checkmark {
+                .checkmark-3d {
                     position: relative;
-                    height: 20px;
-                    width: 20px;
-                    background: white;
-                    border: 2px solid #4A90E2;
+                    height: 22px;
+                    width: 22px;
+                    background: #ffffff;
+                    border: 2.5px solid #000000;
+                    box-shadow: 2px 2px 0px #000000;
                     border-radius: 6px;
-                    transition: all 0.3s;
+                    transition: all 0.15s;
                 }
 
-                .custom-checkbox:hover .checkmark {
-                    background: rgba(74, 144, 226, 0.1);
+                .custom-checkbox-3d input:checked ~ .checkmark-3d {
+                    background: #10b981;
                 }
 
-                .custom-checkbox input:checked ~ .checkmark {
-                    background: linear-gradient(135deg, #4A90E2, #2C6B9E);
-                    border-color: transparent;
-                }
-
-                .checkmark:after {
+                .checkmark-3d:after {
                     content: "";
                     position: absolute;
                     display: none;
-                }
-
-                .custom-checkbox input:checked ~ .checkmark:after {
-                    display: block;
-                }
-
-                .custom-checkbox .checkmark:after {
                     left: 6px;
                     top: 2px;
-                    width: 5px;
-                    height: 10px;
+                    width: 6px;
+                    height: 11px;
                     border: solid white;
-                    border-width: 0 2px 2px 0;
+                    border-width: 0 2.5px 2.5px 0;
                     transform: rotate(45deg);
                 }
 
-                /* Submit Button 3D Style */
-                .btn-submit {
+                .custom-checkbox-3d input:checked ~ .checkmark-3d:after {
+                    display: block;
+                }
+
+                /* 3D Submit Button */
+                .btn-submit-3d {
                     width: 100%;
-                    height: 56px;
-                    border: 2px solid #54a0ff;
-                    border-radius: 16px;
-                    background: linear-gradient(135deg, #4A90E2, #2979FF);
-                    color: white;
-                    font-weight: 700;
-                    font-size: 16px;
+                    height: 54px;
+                    border: 3px solid #000000;
+                    border-radius: 14px;
+                    background: #10b981;
+                    color: #ffffff;
+                    font-weight: 900;
+                    font-size: 1.05rem;
                     cursor: pointer;
-                    position: relative;
-                    display: inline-flex;
+                    display: flex;
                     align-items: center;
                     justify-content: center;
-                    box-shadow: 0 6px 0 #1b5cb8;
-                    transition: all 0.1s ease;
-                    outline: none;
+                    box-shadow: 5px 5px 0px #000000;
+                    transition: all 0.15s ease-in-out;
                 }
 
-                .btn-submit:hover:not(:disabled) {
-                    background: linear-gradient(135deg, #5c9df2, #3d85ff);
-                    border-color: #70b0ff;
-                    box-shadow: 0 6px 0 #154c9c;
+                .btn-submit-3d:hover:not(:disabled) {
+                    background: #059669;
+                    transform: translate(-2px, -2px);
+                    box-shadow: 7px 7px 0px #000000;
                 }
 
-                .btn-submit:active:not(:disabled) {
-                    transform: translateY(4px);
-                    box-shadow: 0 2px 0 #154c9c;
+                .btn-submit-3d:active:not(:disabled) {
+                    transform: translate(2px, 2px);
+                    box-shadow: 2px 2px 0px #000000;
                 }
 
-                .btn-submit:disabled {
-                    background: linear-gradient(135deg, #a0c0e0, #8098b0);
-                    border-color: #b0d0f0;
-                    box-shadow: 0 4px 0 #607890;
-                    opacity: 0.7;
+                .btn-submit-3d:disabled {
+                    background: #94a3b8;
                     cursor: not-allowed;
-                    transform: none;
+                    opacity: 0.8;
                 }
 
-                .spinner {
-                    display: inline-block;
-                    width: 20px;
-                    height: 20px;
-                    border: 3px solid rgba(255, 255, 255, 0.3);
-                    border-radius: 50%;
-                    border-top-color: white;
-                    animation: spin 1s ease-in-out infinite;
-                    margin-right: 8px;
-                }
-
-                @keyframes spin {
-                    to { transform: rotate(360deg); }
-                }
-
-                /* Decorative Waves */
-                .decorative-waves {
-                    position: relative;
-                    margin-top: 20px;
-                    height: 20px;
-                }
-
-                .wave {
-                    position: absolute;
-                    height: 2px;
-                    background: linear-gradient(90deg, transparent, #4A90E2, transparent);
-                }
-
-                .wave-1 {
-                    width: 100%;
-                    top: 0;
-                    animation: waveMove 3s infinite;
-                }
-
-                .wave-2 {
-                    width: 70%;
-                    left: 15%;
-                    top: 10px;
-                    animation: waveMove 3s infinite reverse;
-                }
-
-                @keyframes waveMove {
-                    0% { opacity: 0.3; width: 0; }
-                    50% { opacity: 1; width: 100%; }
-                    100% { opacity: 0.3; width: 0; }
-                }
-
-                /* Register Link */
-                .register-link {
-                    animation: fadeInUp 1s;
-                }
-
-                /* Register Link 3D style */
+                /* 3D Register Button */
                 .register-btn-3d {
                     display: inline-flex;
                     align-items: center;
-                    justify-content: center;
+                    gap: 6px;
                     padding: 8px 18px;
-                    background: #ffffff;
-                    color: #1b4f8b;
-                    border: 2px solid #e0f0ff;
+                    background: #fbbf24;
+                    color: #000000 !important;
+                    border: 2.5px solid #000000;
                     border-radius: 12px;
                     font-size: 13px;
-                    font-weight: 700;
+                    font-weight: 800;
                     text-decoration: none !important;
-                    box-shadow: 0 4px 0 #b3d7ff;
-                    transition: all 0.1s ease;
-                    cursor: pointer;
+                    box-shadow: 4px 4px 0px #000000;
+                    transition: all 0.15s ease-in-out;
                 }
 
                 .register-btn-3d:hover {
-                    background: #f7fbff;
-                    border-color: #cce5ff;
-                    box-shadow: 0 4px 0 #9ecbff;
-                    color: #4a90e2;
+                    background: #f59e0b;
+                    transform: translate(-2px, -2px);
+                    box-shadow: 6px 6px 0px #000000;
                 }
 
                 .register-btn-3d:active {
-                    transform: translateY(2px);
-                    box-shadow: 0 2px 0 #9ecbff;
+                    transform: translate(2px, 2px);
+                    box-shadow: 1px 1px 0px #000000;
                 }
 
-                @keyframes fadeInUp {
-                    from {
-                        opacity: 0;
-                        transform: translateY(20px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
-
-                /* Responsive */
                 @media (max-width: 576px) {
                     .login-container {
-                        padding: 1rem;
+                        padding: 4rem 1rem 2rem 1rem;
                     }
-                    
-                    .login-card .card-body {
-                        padding: 1.5rem !important;
-                    }
-                    
-
-
-                    .decoration {
-                        filter: blur(40px);
-                    }
-
-                    .decoration-1 {
-                        width: 200px;
-                        height: 200px;
-                    }
-
-                    .decoration-2 {
-                        width: 300px;
-                        height: 300px;
+                    .top-nav-bar {
+                        top: 12px;
+                        left: 12px;
                     }
                 }
             `}</style>

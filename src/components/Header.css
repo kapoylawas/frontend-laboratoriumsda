@@ -9,7 +9,7 @@
 /* Main Header - Blue Cashier Theme */
 
 .navbar-cashier-main {
-    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    background: linear-gradient(135deg, #991b1b 0%, #881337 50%, #4c0519 100%);
     padding: 0.75rem 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
@@ -306,16 +306,19 @@
 }
 
 .cashier-nav-link:hover {
-    background: #3b82f6;
+    background: #e50914;
     color: white !important;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    border: 2px solid #000000;
+    box-shadow: 3px 3px 0px #000000;
+    transform: translate(-1px, -1px);
 }
 
 .nav-item.active .cashier-nav-link {
-    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-    color: white !important;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    background: #fbbf24;
+    color: #000000 !important;
+    font-weight: 800;
+    border: 2px solid #000000;
+    box-shadow: 3px 3px 0px #000000;
 }
 
 .nav-icon {
@@ -644,7 +647,7 @@
         align-items: center;
         justify-content: space-between;
         padding: 1rem 1.5rem;
-        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+        background: linear-gradient(135deg, #991b1b 0%, #881337 50%, #4c0519 100%);
         color: white;
     }
     .mobile-user-info {
