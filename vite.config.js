@@ -21,6 +21,26 @@ export default defineConfig({
       }
     }
   },
+  build: {
+    chunkSizeWarningLimit: 1600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'vendor-react';
+            }
+            if (id.includes('html2pdf') || id.includes('html2canvas') || id.includes('jspdf')) {
+              return 'vendor-pdf';
+            }
+            if (id.includes('sweetalert2') || id.includes('axios')) {
+              return 'vendor-utils';
+            }
+          }
+        }
+      }
+    }
+  },
   plugins: [
     react(),
     VitePWA({
@@ -44,6 +64,7 @@ export default defineConfig({
         ]
       },
       workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         runtimeCaching: [{
           urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
