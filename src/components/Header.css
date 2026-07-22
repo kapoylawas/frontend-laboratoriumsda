@@ -270,46 +270,61 @@
 .navbar-cashier-nav {
     background: linear-gradient(to right, #f8fafc, #f1f5f9);
     border-bottom: 1px solid #e2e8f0;
-    padding: 0.5rem 0;
+    padding: 0.35rem 0;
+    width: 100%;
 }
 
 .navbar-nav-wrapper {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.navbar-nav-wrapper::-webkit-scrollbar {
+    display: none;
 }
 
 .navbar-nav {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    margin: 0;
+    padding: 0;
 }
 
 .nav-item {
     position: relative;
+    flex-shrink: 0;
 }
 
 .cashier-nav-link {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 20px !important;
-    border-radius: 10px;
+    gap: 6px;
+    padding: 8px 12px !important;
+    border-radius: 8px;
     color: #64748b !important;
     font-weight: 600;
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
     text-decoration: none;
-    border: none;
+    border: 2px solid transparent;
     background: transparent;
-    font-size: 0.875rem;
+    font-size: 0.825rem;
+    white-space: nowrap;
 }
 
 .cashier-nav-link:hover {
     background: #e50914;
     color: white !important;
     border: 2px solid #000000;
-    box-shadow: 3px 3px 0px #000000;
+    box-shadow: 2px 2px 0px #000000;
     transform: translate(-1px, -1px);
 }
 
@@ -318,18 +333,38 @@
     color: #000000 !important;
     font-weight: 800;
     border: 2px solid #000000;
-    box-shadow: 3px 3px 0px #000000;
+    box-shadow: 2px 2px 0px #000000;
 }
 
 .nav-icon {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
 .nav-label {
-    font-size: 0.875rem;
-    font-weight: 600;
+    font-size: 0.8rem;
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.2px;
+}
+
+@media (max-width: 1300px) {
+    .cashier-nav-link {
+        padding: 6px 9px !important;
+        font-size: 0.775rem;
+        gap: 4px;
+    }
+    .nav-label {
+        font-size: 0.75rem;
+    }
+    .nav-icon {
+        width: 16px;
+        height: 16px;
+    }
 }
 
 
@@ -594,15 +629,15 @@
 }
 
 
-/* Mobile Responsive Styles */
+/* Mobile & Tablet Responsive Styles */
 
-@media (max-width: 768px) {
-    /* Hide desktop elements on mobile */
+@media (max-width: 991px) {
+    /* Hide desktop elements on mobile & tablet */
     .desktop-actions,
     .desktop-nav {
         display: none !important;
     }
-    /* Mobile Toggler Animation */
+    /* Mobile/Tablet Toggler Animation */
     .cashier-toggler.active .toggler-icon:nth-child(1) {
         transform: rotate(45deg) translate(6px, 6px);
     }
@@ -612,7 +647,7 @@
     .cashier-toggler.active .toggler-icon:nth-child(3) {
         transform: rotate(-45deg) translate(6px, -6px);
     }
-    /* Mobile Menu Overlay */
+    /* Mobile/Tablet Menu Overlay */
     .mobile-menu-overlay {
         position: fixed;
         top: 0;
@@ -623,13 +658,13 @@
         z-index: 1040;
         backdrop-filter: blur(4px);
     }
-    /* Mobile Sidebar */
+    /* Mobile & Tablet Sidebar Drawer */
     .mobile-sidebar {
         position: fixed;
         top: 0;
         right: -100%;
         width: 85%;
-        max-width: 320px;
+        max-width: 360px;
         height: 100vh;
         background: white;
         z-index: 1050;
@@ -821,7 +856,7 @@
 
 /* Desktop styles */
 
-@media (min-width: 769px) {
+@media (min-width: 992px) {
     .mobile-sidebar,
     .mobile-menu-overlay {
         display: none !important;
@@ -829,9 +864,9 @@
 }
 
 
-/* Touch improvements for mobile */
+/* Touch improvements for mobile & tablet */
 
-@media (max-width: 768px) {
+@media (max-width: 991px) {
     .cashier-nav-link,
     .mobile-nav-link,
     .mobile-action-btn,
@@ -847,9 +882,10 @@
 
 /* Landscape orientation support */
 
-@media (max-width: 768px) and (orientation: landscape) {
+@media (max-width: 991px) and (orientation: landscape) {
     .mobile-sidebar {
-        width: 70%;
+        width: 75%;
+        max-width: 400px;
     }
     .mobile-sidebar-content {
         max-height: 80vh;

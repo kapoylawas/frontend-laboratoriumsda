@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import Api from '../../services/api';
 import LayoutAdmin from '../../layouts/admin';
-import { FaPrint, FaArrowLeft, FaEdit, FaFilePdf } from 'react-icons/fa';
+import { FaArrowLeft, FaEdit, FaFilePdf } from 'react-icons/fa';
 import html2pdf from 'html2pdf.js';
 
 export default function BeritaAcaraDetail() {
@@ -148,11 +148,11 @@ export default function BeritaAcaraDetail() {
             case 'Formalin':
                 return fullText.includes('formalin');
             case 'pH':
-                return /\bph\b/.test(fullText);
+                return fullText.includes('ph');
             case 'Methanil':
-                return fullText.includes('methanil') || fullText.includes('metanil');
+                return fullText.includes('methanil');
             case 'Nitrat':
-                return fullText.includes('nitrat');
+                return fullText.includes('nitrat') && !fullText.includes('nitrit');
             case 'Rhodamin':
                 return fullText.includes('rhodamin');
             case 'Nitrit':
@@ -160,11 +160,11 @@ export default function BeritaAcaraDetail() {
             case 'Usap Alat':
                 return fullText.includes('usap alat');
             case 'Mn':
-                return /\bmn\b|kimia air - mn|mangan/.test(fullText);
+                return /\bmn\b|mangan/.test(fullText);
             case 'Usap Dubur':
                 return fullText.includes('usap dubur');
             default:
-                return fullText.includes(key.toLowerCase());
+                return false;
         }
     };
 
@@ -172,20 +172,18 @@ export default function BeritaAcaraDetail() {
         const element = document.querySelector('.ba-paper');
         if (!element) return;
 
-        // Temporarily remove border and box shadow to prevent border lines in the PDF
         const originalBorder = element.style.border;
         const originalShadow = element.style.boxShadow;
-        
         element.style.border = 'none';
         element.style.boxShadow = 'none';
 
         const options = {
-            margin: 0, // Set margin to 0 so 210mm paper width fits A4 width exactly
+            margin: [8, 8, 8, 8], // 8mm margin around A4
             filename: `Berita-Acara-${data.no_berita_acara.replace(/\//g, '-')}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+            html2canvas: { scale: 2, useCORS: true, allowTaint: true, scrollY: 0 },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } // Avoid breaking inside rows/images
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
         };
 
         html2pdf()
@@ -193,7 +191,6 @@ export default function BeritaAcaraDetail() {
             .from(element)
             .save()
             .then(() => {
-                // Restore original styles
                 element.style.border = originalBorder;
                 element.style.boxShadow = originalShadow;
             })
@@ -241,16 +238,21 @@ export default function BeritaAcaraDetail() {
                     <div className="double-line"></div>
 
                     {/* Title */}
-                    <div className="text-center my-4">
-                        <h4 className="font-weight-bold mb-1 text-decoration-underline" style={{ letterSpacing: '1px' }}>BERITA ACARA PENGAMBILAN SAMPEL</h4>
+                    <div className="text-center my-3">
+                        <h4 className="font-weight-bold mb-1 text-decoration-underline" style={{ letterSpacing: '1px', fontSize: '15px' }}>BERITA ACARA PENGAMBILAN SAMPEL</h4>
                     </div>
 
-                    {/* Table-based fields to match the image */}
+                    {/* Table-based fields to match official format */}
                     <table className="table-ba-form">
+                        <colgroup>
+                            <col style={{ width: '32%' }} />
+                            <col style={{ width: '3%' }} />
+                            <col style={{ width: '65%' }} />
+                        </colgroup>
                         <tbody>
                             <tr>
-                                <td style={{ width: '230px' }}>Nomor Sampel</td>
-                                <td style={{ width: '15px' }}>:</td>
+                                <td>Nomor Sampel</td>
+                                <td>:</td>
                                 <td className="font-weight-bold">{data.no_berita_acara}</td>
                             </tr>
                             <tr>
@@ -264,8 +266,8 @@ export default function BeritaAcaraDetail() {
                                 <td>{data.nama_sampel || '-'}</td>
                             </tr>
                             <tr>
-                                <td style={{ verticalAlign: 'top' }}>Tujuan Pengambilan Sampel</td>
-                                <td style={{ verticalAlign: 'top' }}>:</td>
+                                <td>Tujuan Pengambilan Sampel</td>
+                                <td>:</td>
                                 <td>
                                     <div className="checkbox-grid">
                                         <div className="chk-item"><span className={`box ${isChecked(data.tujuan_pengambilan, 'Pemantauan') ? 'checked' : ''}`}></span> Pemantauan</div>
@@ -278,8 +280,8 @@ export default function BeritaAcaraDetail() {
                                 </td>
                             </tr>
                             <tr>
-                                <td style={{ verticalAlign: 'top' }}>Parameter</td>
-                                <td style={{ verticalAlign: 'top' }}>:</td>
+                                <td>Parameter</td>
+                                <td>:</td>
                                 <td>
                                     <div className="checkbox-grid-3">
                                         <div className="chk-item"><span className={`box ${isParameterChecked('Coliform') ? 'checked' : ''}`}></span> Mikrobiologi Air - Coliform</div>
@@ -306,7 +308,7 @@ export default function BeritaAcaraDetail() {
                                         <div className="chk-item"><span className={`box ${isParameterChecked('Usap Dubur') ? 'checked' : ''}`}></span> Mikrobiologi Usap Dubur</div>
                                     </div>
                                     {selectedSampleParameters.length > 0 && (
-                                        <div className="mt-2 font-weight-bold" style={{ fontSize: '12px', color: '#1a56db' }}>
+                                        <div className="mt-2 text-primary font-weight-bold" style={{ fontSize: '11px' }}>
                                             Pemeriksaan yang Dipilih Pelanggan: {selectedSampleParameters.join(' | ')}
                                         </div>
                                     )}
@@ -315,26 +317,26 @@ export default function BeritaAcaraDetail() {
                             <tr>
                                 <td>Nama Pelanggan / Perusahaan</td>
                                 <td>:</td>
-                                <td>{firstUser.name || '-'}</td>
+                                <td>{firstUser.name || data.pelanggan_saksi || '-'}</td>
                             </tr>
                             <tr>
                                 <td>Alamat</td>
                                 <td>:</td>
-                                <td>{firstUser.alamat || '-'}</td>
+                                <td>{firstUser.address || '-'}</td>
                             </tr>
                             <tr>
                                 <td>No. Telp / Faks / E-mail</td>
                                 <td>:</td>
-                                <td>{firstUser.phone || '-'} / {firstUser.email || '-'}</td>
+                                <td>{firstUser.phone || '-'}{firstUser.email ? ` / ${firstUser.email}` : ''}</td>
                             </tr>
                             <tr>
                                 <td>Nama Personil Penghubung</td>
                                 <td>:</td>
-                                <td>{data.pelanggan_saksi || '-'}</td>
+                                <td>{firstUser.name || '-'}</td>
                             </tr>
                             <tr>
-                                <td style={{ verticalAlign: 'top' }}>Nama Pengambil Sampel</td>
-                                <td style={{ verticalAlign: 'top' }}>:</td>
+                                <td>Nama Pengambil Sampel</td>
+                                <td>:</td>
                                 <td>{data.petugas_pengambil}</td>
                             </tr>
                             <tr>
@@ -358,8 +360,8 @@ export default function BeritaAcaraDetail() {
                                 <td>{formatDateLong(data.tanggal_selesai_estimasi)}</td>
                             </tr>
                             <tr>
-                                <td style={{ verticalAlign: 'top' }}>Jumlah Wadah Sampel</td>
-                                <td style={{ verticalAlign: 'top' }}>:</td>
+                                <td>Jumlah Wadah Sampel</td>
+                                <td>:</td>
                                 <td>
                                     <div className="checkbox-grid">
                                         <div className="chk-item">
@@ -372,10 +374,10 @@ export default function BeritaAcaraDetail() {
                                 </td>
                             </tr>
                             <tr>
-                                <td style={{ verticalAlign: 'top' }}>Peralatan Pengambilan Sampel</td>
-                                <td style={{ verticalAlign: 'top' }}>:</td>
+                                <td>Peralatan Pengambilan Sampel</td>
+                                <td>:</td>
                                 <td>
-                                    <div className="checkbox-grid">
+                                    <div className="checkbox-grid-3">
                                         <div className="chk-item"><span className={`box ${isChecked(data.peralatan_pengambilan, 'Botol Pemberat') ? 'checked' : ''}`}></span> Botol Pemberat</div>
                                         <div className="chk-item"><span className={`box ${isChecked(data.peralatan_pengambilan, 'Gayung Bertangkai Plastik') ? 'checked' : ''}`}></span> Gayung Bertangkai Plastik</div>
                                         <div className="chk-item"><span className={`box ${isChecked(data.peralatan_pengambilan, 'Botol Sampel') ? 'checked' : ''}`}></span> Botol Sampel</div>
@@ -383,8 +385,8 @@ export default function BeritaAcaraDetail() {
                                 </td>
                             </tr>
                             <tr>
-                                <td style={{ verticalAlign: 'top' }}>Peralatan Pengukur Lapangan</td>
-                                <td style={{ verticalAlign: 'top' }}>:</td>
+                                <td>Peralatan Pengukur Lapangan</td>
+                                <td>:</td>
                                 <td>
                                     <div className="checkbox-grid-3">
                                         <div className="chk-item"><span className={`box ${isChecked(data.peralatan_pengukur, 'Tidak ada') ? 'checked' : ''}`}></span> Tidak ada</div>
@@ -399,8 +401,8 @@ export default function BeritaAcaraDetail() {
                                 </td>
                             </tr>
                             <tr>
-                                <td style={{ verticalAlign: 'top' }}>Peralatan Pendukung</td>
-                                <td style={{ verticalAlign: 'top' }}>:</td>
+                                <td>Peralatan Pendukung</td>
+                                <td>:</td>
                                 <td>
                                     <div className="checkbox-grid-3">
                                         <div className="chk-item"><span className={`box ${isChecked(data.peralatan_pendukung, 'Berita Acara') ? 'checked' : ''}`}></span> Berita Acara</div>
@@ -429,8 +431,8 @@ export default function BeritaAcaraDetail() {
                                 </td>
                             </tr>
                             <tr>
-                                <td style={{ verticalAlign: 'top' }}>Peralatan K3</td>
-                                <td style={{ verticalAlign: 'top' }}>:</td>
+                                <td>Peralatan K3</td>
+                                <td>:</td>
                                 <td>
                                     <div className="checkbox-grid">
                                         <div className="chk-item"><span className={`box ${isChecked(data.peralatan_k3, 'Rompi Sampling') ? 'checked' : ''}`}></span> Rompi Sampling</div>
@@ -441,8 +443,8 @@ export default function BeritaAcaraDetail() {
                                 </td>
                             </tr>
                             <tr>
-                                <td style={{ verticalAlign: 'top' }}>Cara Pengambilan Sampel</td>
-                                <td style={{ verticalAlign: 'top' }}>:</td>
+                                <td>Cara Pengambilan Sampel</td>
+                                <td>:</td>
                                 <td>
                                     <div className="checkbox-grid-3">
                                         <div className="chk-item"><span className={`box ${isChecked(data.cara_pengambilan, 'Sesaat') ? 'checked' : ''}`}></span> Sesaat</div>
@@ -455,8 +457,8 @@ export default function BeritaAcaraDetail() {
                                 </td>
                             </tr>
                             <tr>
-                                <td style={{ verticalAlign: 'top' }}>Pengendalian Mutu Lapangan</td>
-                                <td style={{ verticalAlign: 'top' }}>:</td>
+                                <td>Pengendalian Mutu Lapangan</td>
+                                <td>:</td>
                                 <td>
                                     <div className="checkbox-grid">
                                         <div className="chk-item"><span className={`box ${isChecked(data.pengendalian_mutu, 'Blanko Peralatan') ? 'checked' : ''}`}></span> Blanko Peralatan</div>
@@ -467,8 +469,8 @@ export default function BeritaAcaraDetail() {
                                 </td>
                             </tr>
                             <tr>
-                                <td style={{ verticalAlign: 'top' }}>Pengawet</td>
-                                <td style={{ verticalAlign: 'top' }}>:</td>
+                                <td>Pengawet</td>
+                                <td>:</td>
                                 <td>
                                     <div className="checkbox-grid-3">
                                         <div className="chk-item"><span className={`box ${isChecked(data.pengawet, 'Ice Pack') ? 'checked' : ''}`}></span> Ice Pack</div>
@@ -480,8 +482,8 @@ export default function BeritaAcaraDetail() {
                                 </td>
                             </tr>
                             <tr>
-                                <td style={{ verticalAlign: 'top' }}>Pengamanan dan Transportasi Sampel</td>
-                                <td style={{ verticalAlign: 'top' }}>:</td>
+                                <td>Pengamanan dan Transportasi Sampel</td>
+                                <td>:</td>
                                 <td>
                                     <div className="checkbox-grid">
                                         <div className="chk-item"><span className={`box ${isChecked(data.pengamanan_transportasi, 'Pengemasan Sampel') ? 'checked' : ''}`}></span> Pengemasan Sampel</div>
@@ -490,10 +492,10 @@ export default function BeritaAcaraDetail() {
                                 </td>
                             </tr>
                             <tr>
-                                <td style={{ verticalAlign: 'top' }}>
+                                <td>
                                     Hasil Pengukuran Parameter Lapangan dan Rincian dari Kondisi Lingkungan Pengambilan Sampel
                                 </td>
-                                <td style={{ verticalAlign: 'top' }}>:</td>
+                                <td>:</td>
                                 <td>
                                     <div className="field-grid">
                                         <div className="field-item">Suhu = {getHasilValue('suhu') || '.....'} °C</div>
@@ -510,37 +512,49 @@ export default function BeritaAcaraDetail() {
                     </table>
 
                     {/* Signatures */}
-                    <div className="ba-signature-section page-break html2pdf__page-break">
+                    <div className="ba-signature-section">
                         <div className="date-place">
                             Sidoarjo, {formatDateLong(data.sidoarjo_date || data.tanggal_pengambilan)}
                         </div>
                         <div className="signatures-row">
                             <div className="sig-col">
-                                <p className="mb-5">Mengetahui,<br /><strong>Petugas Pengambil Sampel</strong></p>
-                                <div className="signature-line"></div>
-                                <p className="font-weight-bold">{data.petugas_pengambil}</p>
+                                <p className="mb-2">Mengetahui,<br /><strong>Petugas Pengambil Sampel</strong></p>
+                                {getHasilValue('ttd_petugas') ? (
+                                    <div style={{ height: '65px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <img src={getHasilValue('ttd_petugas')} alt="TTD Petugas" style={{ maxHeight: '60px', maxWidth: '140px', objectFit: 'contain' }} />
+                                    </div>
+                                ) : (
+                                    <div className="signature-line" style={{ marginTop: '45px' }}></div>
+                                )}
+                                <p className="font-weight-bold mt-2">{data.petugas_pengambil}</p>
                             </div>
                             <div className="sig-col">
-                                <p className="mb-5"><br /><strong>Pelanggan/Saksi</strong></p>
-                                <div className="signature-line"></div>
-                                <p className="font-weight-bold">{data.pelanggan_saksi || '...................................'}</p>
+                                <p className="mb-2"><br /><strong>Pelanggan/Saksi</strong></p>
+                                {getHasilValue('ttd_pelanggan') ? (
+                                    <div style={{ height: '65px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <img src={getHasilValue('ttd_pelanggan')} alt="TTD Pelanggan" style={{ maxHeight: '60px', maxWidth: '140px', objectFit: 'contain' }} />
+                                    </div>
+                                ) : (
+                                    <div className="signature-line" style={{ marginTop: '45px' }}></div>
+                                )}
+                                <p className="font-weight-bold mt-2">{data.pelanggan_saksi || '...................................'}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Photo Documentation Section */}
                     {(data.foto_pengambilan || data.foto_pelabelan || data.foto_pengemasan) && (
-                        <div className="ba-photo-documentation page-break html2pdf__page-break">
+                        <div className="ba-photo-documentation">
                             <hr className="my-4 d-print-none" />
                             <div className="text-center mb-4">
-                                <h4 className="fw-bold m-0 font-weight-bold" style={{ textAlign: 'center', fontSize: '16px', borderBottom: '2px solid #000', paddingBottom: '5px' }}>
+                                <h4 className="fw-bold m-0 font-weight-bold" style={{ textAlign: 'center', fontSize: '15px', borderBottom: '2px solid #000', paddingBottom: '5px', display: 'inline-block' }}>
                                     LAMPIRAN FOTO DOKUMENTASI
                                 </h4>
                             </div>
                             <div className="photo-grid">
                                 {data.foto_pengambilan && (
                                     <div className="photo-item">
-                                        <p className="font-weight-bold mb-2">1. Dokumentasi Proses Pengambilan Sampel</p>
+                                        <p className="font-weight-bold mb-2" style={{ fontSize: '13px' }}>1. Dokumentasi Proses Pengambilan Sampel</p>
                                         <div className="photo-wrapper">
                                             <img src={`${import.meta.env.VITE_APP_BASEURL}/uploads/${data.foto_pengambilan}`} alt="Foto Pengambilan" crossOrigin="anonymous" />
                                         </div>
@@ -548,7 +562,7 @@ export default function BeritaAcaraDetail() {
                                 )}
                                 {data.foto_pelabelan && (
                                     <div className="photo-item">
-                                        <p className="font-weight-bold mb-2">2. Dokumentasi Pelabelan Sampel</p>
+                                        <p className="font-weight-bold mb-2" style={{ fontSize: '13px' }}>2. Dokumentasi Pelabelan Sampel</p>
                                         <div className="photo-wrapper">
                                             <img src={`${import.meta.env.VITE_APP_BASEURL}/uploads/${data.foto_pelabelan}`} alt="Foto Pelabelan" crossOrigin="anonymous" />
                                         </div>
@@ -556,7 +570,7 @@ export default function BeritaAcaraDetail() {
                                 )}
                                 {data.foto_pengemasan && (
                                     <div className="photo-item">
-                                        <p className="font-weight-bold mb-2">3. Dokumentasi Pengemasan Sampel</p>
+                                        <p className="font-weight-bold mb-2" style={{ fontSize: '13px' }}>3. Dokumentasi Pengemasan Sampel</p>
                                         <div className="photo-wrapper">
                                             <img src={`${import.meta.env.VITE_APP_BASEURL}/uploads/${data.foto_pengemasan}`} alt="Foto Pengemasan" crossOrigin="anonymous" />
                                         </div>
@@ -572,18 +586,17 @@ export default function BeritaAcaraDetail() {
                 .font-weight-bold { font-weight: bold; }
                 .text-decoration-underline { text-decoration: underline; }
                 
-                /* Paper Styling */
+                /* Official A4 Document Paper Styling */
                 .ba-paper {
                     box-sizing: border-box;
                     background: white;
                     color: black;
-                    padding: 50px 60px;
-                    width: 210mm;
-                    min-height: 297mm;
+                    padding: 6mm 10mm;
+                    width: 194mm; /* Fits A4 portrait inside html2pdf 8mm margin */
                     margin: 0 auto;
                     font-family: 'Times New Roman', Times, serif;
-                    font-size: 13.5px;
-                    line-height: 1.5;
+                    font-size: 10.5px;
+                    line-height: 1.25;
                     border: 1px solid #ccc;
                     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
                 }
@@ -591,13 +604,13 @@ export default function BeritaAcaraDetail() {
                 .ba-header-container {
                     display: flex;
                     align-items: center;
-                    margin-bottom: 8px;
+                    margin-bottom: 4px;
                 }
 
                 .logo-pemkab {
-                    width: 75px;
+                    width: 60px;
                     height: auto;
-                    margin-right: 25px;
+                    margin-right: 15px;
                 }
 
                 .ba-header-text {
@@ -606,37 +619,41 @@ export default function BeritaAcaraDetail() {
                 }
 
                 .ba-header-text h3 {
-                    font-size: 19px;
+                    font-size: 15px;
                     font-weight: 900;
-                    margin: 2px 0;
+                    margin: 1px 0;
                 }
 
                 .ba-header-text h4 {
-                    font-size: 15px;
+                    font-size: 12.5px;
                     font-weight: 700;
-                    margin: 2px 0;
+                    margin: 1px 0;
                 }
 
                 .double-line {
-                    border-top: 3px solid black;
+                    border-top: 2px solid black;
                     border-bottom: 1px solid black;
-                    height: 4px;
-                    margin-bottom: 20px;
+                    height: 3px;
+                    margin-bottom: 8px;
                 }
 
                 .table-ba-form {
                     width: 100%;
-                    border-collapse: separate;
-                    border-spacing: 0;
-                    border-top: 1px solid #888;
-                    border-left: 1px solid #888;
+                    table-layout: fixed;
+                    border-collapse: collapse;
+                    border-top: 1px solid #000;
+                    border-left: 1px solid #000;
+                    margin-bottom: 10px;
+                    font-size: 10.5px;
                 }
 
                 .table-ba-form td {
-                    padding: 6px 8px;
-                    vertical-align: middle;
-                    border-right: 1px solid #888;
-                    border-bottom: 1px solid #888;
+                    padding: 2.5px 5px;
+                    vertical-align: top;
+                    border-right: 1px solid #000;
+                    border-bottom: 1px solid #000;
+                    word-wrap: break-word;
+                    overflow-wrap: break-word;
                 }
 
                 .table-ba-form tr {
@@ -646,97 +663,112 @@ export default function BeritaAcaraDetail() {
 
                 /* Checkboxes simulation */
                 .checkbox-grid {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 6px;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 2px 10px;
                 }
 
                 .checkbox-grid-3 {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr 1fr;
-                    gap: 6px;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 2px 8px;
                 }
 
                 .chk-item {
-                    display: flex;
+                    display: inline-flex;
                     align-items: flex-start;
-                    gap: 8px;
-                    font-size: 12.5px;
-                    line-height: 1.3;
+                    gap: 4px;
+                    font-size: 10px;
+                    line-height: 1.15;
+                    width: 48%;
+                }
+
+                .checkbox-grid-3 .chk-item {
+                    width: 31%;
                 }
 
                 .chk-item .box {
                     display: inline-block;
-                    width: 13px;
-                    height: 13px;
-                    border: 1.5px solid black;
-                    border-radius: 2px;
+                    width: 11px;
+                    height: 11px;
+                    border: 1px solid black;
+                    border-radius: 1px;
                     position: relative;
                     flex-shrink: 0;
-                    margin-top: 2px;
+                    margin-top: 1px;
                 }
 
                 .chk-item .box.checked::after {
                     content: '✓';
                     position: absolute;
-                    top: -4px;
+                    top: -5px;
                     left: 1px;
-                    font-size: 13px;
+                    font-size: 11px;
                     font-weight: bold;
                 }
 
                 .field-grid {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 8px;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 2px 12px;
                 }
 
                 .field-item {
                     font-weight: 500;
+                    width: 45%;
                 }
 
                 .ba-signature-section {
-                    margin-top: 40px;
-                    text-align: right;
+                    margin-top: 12px;
+                    width: 100%;
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
                 }
 
                 .date-place {
-                    margin-bottom: 15px;
-                    font-size: 14px;
-                    padding-right: 40px;
+                    text-align: right;
+                    margin-bottom: 6px;
+                    font-size: 11px;
+                    padding-right: 20px;
                 }
 
                 .signatures-row {
                     display: flex;
                     justify-content: space-between;
+                    align-items: flex-end;
+                    width: 100%;
                     text-align: center;
                 }
 
                 .sig-col {
                     width: 45%;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
                 }
 
                 .signature-line {
                     width: 80%;
                     border-bottom: 1px solid black;
-                    margin: 0 auto 5px;
+                    margin: 0 auto 3px;
                 }
 
                 .ba-photo-documentation {
-                    margin-top: 40px;
+                    margin-top: 20px;
+                    page-break-before: always;
                 }
 
                 .photo-grid {
-                    display: grid;
-                    grid-template-columns: 1fr;
-                    gap: 25px;
-                    margin-top: 20px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 20px;
+                    margin-top: 15px;
                 }
 
                 .photo-item {
                     border: 1px solid #ccc;
                     padding: 12px;
-                    border-radius: 8px;
+                    border-radius: 6px;
                     background: #fff;
                     text-align: center;
                     page-break-inside: avoid !important;
@@ -745,21 +777,19 @@ export default function BeritaAcaraDetail() {
 
                 .photo-wrapper {
                     width: 100%;
-                    min-height: 250px;
-                    max-height: 450px;
+                    max-height: 320px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     overflow: hidden;
-                    border-radius: 6px;
+                    border-radius: 4px;
                     background: #f8fafc;
                     border: 1px solid #e2e8f0;
                 }
 
                 .photo-wrapper img {
-                    width: 100%;
-                    height: 100%;
-                    max-height: 450px;
+                    max-width: 100%;
+                    max-height: 320px;
                     object-fit: contain;
                 }
 
@@ -767,8 +797,6 @@ export default function BeritaAcaraDetail() {
                 @media print {
                     .page-break {
                         page-break-before: always;
-                        margin-top: 0px;
-                        padding-top: 20px;
                     }
                     body {
                         background: white !important;
@@ -784,18 +812,7 @@ export default function BeritaAcaraDetail() {
                         box-shadow: none !important;
                         padding: 0 !important;
                         width: 100% !important;
-                        min-height: auto !important;
                         margin: 0 !important;
-                    }
-                    .table-ba-form {
-                        border-top: 1px solid black !important;
-                        border-left: 1px solid black !important;
-                    }
-                    .table-ba-form td {
-                        border-right: 1px solid black !important;
-                        border-bottom: 1px solid black !important;
-                        border-top: none !important;
-                        border-left: none !important;
                     }
                 }
             `}</style>

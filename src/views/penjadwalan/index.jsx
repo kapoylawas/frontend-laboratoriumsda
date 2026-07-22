@@ -54,7 +54,7 @@ export default function Penjadwalan() {
 
     const handlePaymentInfoSubmit = async (e) => {
         e.preventDefault();
-        if (!adminNoFa && !adminQrisFile) {
+        if (!adminNoFa && !adminQrisFile && !adminPaymentTx?.qris && !adminPaymentTx?.no_fa) {
             Swal.fire({ icon: 'warning', title: 'Input Kosong', text: 'Masukkan Nomor FA atau pilih file QRIS!' });
             return;
         }
@@ -801,18 +801,44 @@ export default function Penjadwalan() {
                                                             )}
 
                                                             {/* Admin Payment Archive (If Paid) */}
-                                                            {allPaid && (transaction.no_fa || transaction.payment_proof) && (
+                                                            {allPaid && (transaction.no_fa || transaction.qris || transaction.payment_proof) && (
                                                                 <div className="payment-admin-panel mt-3 p-3 rounded border text-start" style={{ backgroundColor: '#f0fdf4', borderColor: '#b7ebc6' }}>
-                                                                    <h6 className="fw-bold text-success mb-3 d-flex align-items-center" style={{ fontSize: '0.85rem' }}>
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" className="me-2 text-success" style={{ verticalAlign: 'middle' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>
-                                                                        Arsip & Bukti Pembayaran (Lunas)
-                                                                    </h6>
+                                                                    <div className="d-flex justify-content-between align-items-center mb-3">
+                                                                        <h6 className="fw-bold text-success mb-0 d-flex align-items-center" style={{ fontSize: '0.85rem' }}>
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" className="me-2 text-success" style={{ verticalAlign: 'middle' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>
+                                                                            Arsip & Bukti Pembayaran (Lunas)
+                                                                        </h6>
+                                                                        <button 
+                                                                            type="button" 
+                                                                            className="btn btn-xs btn-outline-success px-2 py-1"
+                                                                            onClick={() => openPaymentInfoModal(transaction)}
+                                                                            style={{ fontSize: '0.75rem' }}
+                                                                        >
+                                                                            Edit FA / QRIS
+                                                                        </button>
+                                                                    </div>
                                                                     <div className="row g-3 align-items-center">
                                                                         <div className="col-md-6">
                                                                             {transaction.no_fa && (
-                                                                                <div>
+                                                                                <div className="mb-2">
                                                                                     <span className="text-muted small d-block" style={{ fontSize: '0.75rem' }}>Nomor FA / Virtual Account:</span>
                                                                                     <strong className="text-success">{transaction.no_fa}</strong>
+                                                                                </div>
+                                                                            )}
+                                                                            {transaction.qris && (
+                                                                                <div>
+                                                                                    <span className="text-muted small d-block mb-1" style={{ fontSize: '0.75rem' }}>Kode QRIS:</span>
+                                                                                    <a 
+                                                                                        href={`${import.meta.env.VITE_APP_BASEURL}/uploads/${transaction.qris}`} 
+                                                                                        target="_blank" 
+                                                                                        rel="noopener noreferrer"
+                                                                                    >
+                                                                                        <img 
+                                                                                            src={`${import.meta.env.VITE_APP_BASEURL}/uploads/${transaction.qris}`} 
+                                                                                            alt="QRIS" 
+                                                                                            style={{ maxWidth: '80px', maxHeight: '80px', objectFit: 'contain', border: '1px solid #b7ebc6', borderRadius: '4px' }} 
+                                                                                        />
+                                                                                    </a>
                                                                                 </div>
                                                                             )}
                                                                         </div>

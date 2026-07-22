@@ -4,23 +4,75 @@ import Cookies from 'js-cookie';
 import Api from '../../services/api';
 import Swal from 'sweetalert2';
 import LayoutAdmin from '../../layouts/admin';
-import { FaSave, FaArrowLeft } from 'react-icons/fa';
+import { 
+    FaSave, 
+    FaArrowLeft, 
+    FaInfoCircle, 
+    FaClipboardList, 
+    FaFlask, 
+    FaCamera, 
+    FaTruck, 
+    FaFileSignature, 
+    FaCalendarAlt, 
+    FaUserCheck,
+    FaCheck,
+    FaListAlt
+} from 'react-icons/fa';
+import SignaturePad from '../../components/SignaturePad';
 
 export default function BeritaAcaraCreate() {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [jadwals, setJadwals] = useState([]);
     const [fetchingJadwals, setFetchingJadwals] = useState(true);
+    const [errors, setErrors] = useState({});
+
+    const [ttdPetugas, setTtdPetugas] = useState('');
+    const [ttdPelanggan, setTtdPelanggan] = useState('');
+
     const [files, setFiles] = useState({
         foto_pengambilan: null,
         foto_pelabelan: null,
         foto_pengemasan: null
     });
 
+    const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+
     const handleFileChange = (e) => {
         const { name, files: selectedFiles } = e.target;
         if (selectedFiles && selectedFiles[0]) {
-            setFiles(prev => ({ ...prev, [name]: selectedFiles[0] }));
+            const file = selectedFiles[0];
+
+            if (!ALLOWED_TYPES.includes(file.type.toLowerCase())) {
+                const errorMsg = 'Format file harus berupa gambar (JPG, JPEG, PNG, WEBP)';
+                setErrors(prev => ({ ...prev, [name]: errorMsg }));
+                setFiles(prev => ({ ...prev, [name]: null }));
+                e.target.value = '';
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Format File Salah',
+                    text: errorMsg
+                });
+                return;
+            }
+
+            if (file.size > MAX_FILE_SIZE) {
+                const fileSizeMb = (file.size / (1024 * 1024)).toFixed(2);
+                const errorMsg = `Ukuran file (${fileSizeMb} MB) melebihi batas maksimal 5 MB`;
+                setErrors(prev => ({ ...prev, [name]: errorMsg }));
+                setFiles(prev => ({ ...prev, [name]: null }));
+                e.target.value = '';
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'File Terlalu Besar',
+                    text: errorMsg
+                });
+                return;
+            }
+
+            setErrors(prev => ({ ...prev, [name]: null }));
+            setFiles(prev => ({ ...prev, [name]: file }));
         }
     };
 
@@ -68,7 +120,6 @@ export default function BeritaAcaraCreate() {
             Api.defaults.headers.common['Authorization'] = token;
             try {
                 const response = await Api.get('/api/jadwal-pengambilan');
-                // Filter schedules that don't have a berita_acara yet
                 const filtered = (response.data.data || []).filter(j => !j.berita_acara && !j.berita_acara_id);
                 setJadwals(filtered);
             } catch (error) {
@@ -83,6 +134,10 @@ export default function BeritaAcaraCreate() {
             const nextIds = checked
                 ? [...prev.jadwal_ids, id]
                 : prev.jadwal_ids.filter(i => i !== id);
+
+            if (nextIds.length > 0) {
+                setErrors(p => ({ ...p, jadwal_ids: null }));
+            }
             
             const selectedList = jadwals.filter(j => nextIds.includes(j.id));
             if (selectedList.length === 0) {
@@ -123,6 +178,9 @@ export default function BeritaAcaraCreate() {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setForm(prev => ({ ...prev, [name]: value }));
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: null }));
+        }
     };
 
     const handleCheckboxChange = (sectionName, value) => {
@@ -136,11 +194,38 @@ export default function BeritaAcaraCreate() {
         });
     };
 
+    const validateForm = () => {
+        const newErrors = {};
+
+        if (!form.jadwal_ids || form.jadwal_ids.length === 0) {
+            newErrors.jadwal_ids = 'Pilih setidaknya 1 jadwal pengambilan sampel.';
+        }
+        if (!form.no_berita_acara || !form.no_berita_acara.trim()) {
+            newErrors.no_berita_acara = 'Nomor Berita Acara wajib diisi.';
+        }
+        if (!form.jenis_sampel || !form.jenis_sampel.trim()) {
+            newErrors.jenis_sampel = 'Jenis Sampel wajib diisi.';
+        }
+        if (!form.tanggal_pengambilan) {
+            newErrors.tanggal_pengambilan = 'Tanggal Pengambilan wajib diisi.';
+        }
+        if (!form.petugas_pengambil || !form.petugas_pengambil.trim()) {
+            newErrors.petugas_pengambil = 'Nama Petugas Pengambil wajib diisi.';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (form.jadwal_ids.length === 0 || !form.no_berita_acara || !form.jenis_sampel || !form.tanggal_pengambilan || !form.petugas_pengambil) {
-            Swal.fire({ icon: 'warning', title: 'Peringatan', text: 'Lengkapi field wajib yang bertanda bintang (*)' });
+        if (!validateForm()) {
+            Swal.fire({ 
+                icon: 'warning', 
+                title: 'Form Belum Lengkap', 
+                text: 'Silakan periksa kembali dan lengkapi field wajib bertanda bintang (*).' 
+            });
             return;
         }
 
@@ -149,7 +234,6 @@ export default function BeritaAcaraCreate() {
         if (token) {
             Api.defaults.headers.common['Authorization'] = token;
             try {
-                // Construct FormData for multipart upload
                 const formData = new FormData();
                 formData.append('jadwal_ids', JSON.stringify(form.jadwal_ids));
                 formData.append('no_berita_acara', form.no_berita_acara);
@@ -181,7 +265,9 @@ export default function BeritaAcaraCreate() {
                     sisa_klor: form.sisa_klor,
                     tds: form.tds,
                     do: form.do,
-                    kekeruhan: form.kekeruhan
+                    kekeruhan: form.kekeruhan,
+                    ttd_petugas: ttdPetugas,
+                    ttd_pelanggan: ttdPelanggan
                 }));
                 formData.append('petugas_pengambil', form.petugas_pengambil);
                 formData.append('pelanggan_saksi', form.pelanggan_saksi || '');
@@ -196,7 +282,21 @@ export default function BeritaAcaraCreate() {
                 navigate('/berita-acara');
             } catch (error) {
                 console.error(error);
-                Swal.fire({ icon: 'error', title: 'Gagal', text: error.response?.data?.meta?.message || error.response?.data?.message || 'Gagal membuat Berita Acara!' });
+                if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+                    const apiErrors = {};
+                    error.response.data.errors.forEach(err => {
+                        const key = err.path || err.param;
+                        if (key) apiErrors[key] = err.msg;
+                    });
+                    setErrors(prev => ({ ...prev, ...apiErrors }));
+                    Swal.fire({ 
+                        icon: 'error', 
+                        title: 'Validasi Server Gagal', 
+                        text: 'Terdapat kesalahan input. Periksa pesan error di bawah bidang yang sesuai.' 
+                    });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Gagal', text: error.response?.data?.meta?.message || error.response?.data?.message || 'Gagal membuat Berita Acara!' });
+                }
             }
         }
         setIsLoading(false);
@@ -204,91 +304,139 @@ export default function BeritaAcaraCreate() {
 
     return (
         <LayoutAdmin>
-            <div className="page-wrapper" style={{ minHeight: '100vh', background: '#f8fafc', padding: '30px 0' }}>
+            <div className="page-wrapper" style={{ minHeight: '100vh', background: '#f1f5f9', padding: '24px 0 80px 0' }}>
                 <div className="container-xl">
-                    <div className="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <h2 className="fw-bold text-dark m-0">Buat Berita Acara Baru</h2>
-                            <p className="text-muted m-0">Isi lengkap berita acara pengambilan sampel lapangan</p>
+                    {/* Header Banner */}
+                    <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: '16px', background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)', color: 'white' }}>
+                        <div className="card-body p-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+                            <div className="d-flex align-items-center gap-3">
+                                <div className="bg-white bg-opacity-20 p-3 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '56px', height: '56px', backdropFilter: 'blur(4px)' }}>
+                                    <FaListAlt className="text-white fs-3" />
+                                </div>
+                                <div>
+                                    <h2 className="fw-bold m-0 text-white" style={{ fontSize: '1.5rem' }}>Buat Berita Acara Pengambilan</h2>
+                                    <p className="m-0 text-white-50 small">Formulir digital pembuatan Berita Acara sampel lapangan (Optimal untuk Tablet & Desktop)</p>
+                                </div>
+                            </div>
+                            <button className="btn btn-light btn-sm px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2 rounded-3 shadow-sm" onClick={() => navigate('/berita-acara')}>
+                                <FaArrowLeft /> Kembali ke Daftar
+                            </button>
                         </div>
-                        <button className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={() => navigate('/berita-acara')}>
-                            <FaArrowLeft /> Kembali
-                        </button>
                     </div>
 
-                    <form onSubmit={handleSubmit}>
+                    <form onSubmit={handleSubmit} noValidate>
                         <div className="row g-4">
-                            {/* Left Column: General & Fields */}
-                            <div className="col-lg-8">
+                            {/* Left Column: General & Checklists */}
+                            <div className="col-12 col-lg-7 col-xl-8">
+                                {/* Informasi Umum Card */}
                                 <div className="card shadow-sm border-0 mb-4" style={{ borderRadius: '16px' }}>
-                                    <div className="card-header bg-white py-3"><h4 className="fw-bold m-0 text-primary">Informasi Umum</h4></div>
-                                    <div className="card-body">
+                                    <div className="card-header bg-white py-3 px-4 d-flex align-items-center gap-2 border-bottom-0">
+                                        <span className="badge bg-primary-lt p-2 rounded-3">
+                                            <FaInfoCircle className="fs-5 text-primary" />
+                                        </span>
+                                        <h4 className="fw-bold m-0 text-dark">Informasi Umum</h4>
+                                    </div>
+                                    <div className="card-body px-4 pt-2 pb-4">
                                         <div className="row g-3">
-                                            <div className="col-md-12">
-                                                <label className="form-label fw-semibold required">Pilih Jadwal Pengambilan (Bisa Pilih Lebih dari 1 Pemeriksaan) *</label>
+                                            <div className="col-12">
+                                                <label className="form-label fw-bold required text-dark">Pilih Jadwal Pengambilan (Bisa Lebih Dari 1 Pemeriksaan) *</label>
                                                 {fetchingJadwals ? (
-                                                    <div className="form-hint mt-1"><span className="spinner-border spinner-border-sm me-1"></span>Memuat jadwal...</div>
+                                                    <div className="form-hint mt-1"><span className="spinner-border spinner-border-sm me-1"></span>Memuat data jadwal...</div>
                                                 ) : jadwals.length === 0 ? (
-                                                    <div className="alert alert-warning py-2 mb-0">Tidak ada jadwal pengambilan yang tersedia</div>
+                                                    <div className="alert alert-warning py-3 rounded-3 mb-0 d-flex align-items-center gap-2">
+                                                        <FaInfoCircle /> Tidak ada jadwal pengambilan yang tersedia untuk dibuat Berita Acara.
+                                                    </div>
                                                 ) : (
-                                                    <div className="p-3 border rounded-3 bg-light" style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                                                    <div className={`p-3 border rounded-3 bg-light ${errors.jadwal_ids ? 'border-danger' : ''}`} style={{ maxHeight: '260px', overflowY: 'auto' }}>
                                                         {jadwals.map(j => {
                                                             const isSelected = form.jadwal_ids.includes(j.id);
                                                             return (
-                                                                <div key={j.id} className={`form-check p-2 mb-2 rounded border bg-white ${isSelected ? 'border-primary shadow-sm' : ''}`}>
+                                                                <div key={j.id} className={`form-check p-3 mb-2 rounded-3 border transition-all ${isSelected ? 'border-primary bg-primary-subtle shadow-sm' : 'bg-white'}`} style={{ cursor: 'pointer' }}>
                                                                     <input
                                                                         type="checkbox"
-                                                                        className="form-check-input ms-1"
+                                                                        className="form-check-input ms-0 me-2"
                                                                         id={`jadwal-${j.id}`}
                                                                         checked={isSelected}
                                                                         onChange={(e) => handleToggleJadwal(j.id, e.target.checked)}
                                                                     />
-                                                                    <label className="form-check-label ms-2 cursor-pointer w-100" htmlFor={`jadwal-${j.id}`}>
-                                                                        <strong>JDL-{j.id}</strong> - Invoice: <code>{j.transaction_detail?.transaction?.invoice}</code> | <span className="badge bg-info-subtle text-info fw-semibold">{j.transaction_detail?.sampel?.category?.name ? `${j.transaction_detail?.sampel?.category?.name} - ` : ''}{j.transaction_detail?.sampel?.parameter}</span> | Pelanggan: <strong>{j.transaction_detail?.transaction?.user?.name}</strong> ({new Date(j.tanggal_pengambilan).toLocaleDateString('id-ID')})
+                                                                    <label className="form-check-label cursor-pointer w-100" htmlFor={`jadwal-${j.id}`}>
+                                                                        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                                                            <span><strong>JDL-{j.id}</strong> — Invoice: <code>{j.transaction_detail?.transaction?.invoice}</code></span>
+                                                                            <span className="badge bg-info-subtle text-info fw-semibold">{j.transaction_detail?.sampel?.category?.name ? `${j.transaction_detail?.sampel?.category?.name} - ` : ''}{j.transaction_detail?.sampel?.parameter}</span>
+                                                                        </div>
+                                                                        <div className="small text-muted mt-1">
+                                                                            Pelanggan: <strong>{j.transaction_detail?.transaction?.user?.name}</strong> | Tgl: {new Date(j.tanggal_pengambilan).toLocaleDateString('id-ID')}
+                                                                        </div>
                                                                     </label>
                                                                 </div>
                                                             );
                                                         })}
                                                     </div>
                                                 )}
+                                                {errors.jadwal_ids && (
+                                                    <div className="alert alert-danger py-2 mt-2 mb-0 small">⚠️ {errors.jadwal_ids}</div>
+                                                )}
                                                 {form.jadwal_ids.length > 0 && (
-                                                    <div className="form-text text-success fw-semibold mt-1">
-                                                        ✓ {form.jadwal_ids.length} jadwal pengambilan dipilih (akan digabung dalam 1 Berita Acara)
+                                                    <div className="form-text text-success fw-bold mt-2 d-flex align-items-center gap-1">
+                                                        <FaCheck /> {form.jadwal_ids.length} jadwal pengambilan dipilih (otomatis digabung ke 1 Berita Acara)
                                                     </div>
                                                 )}
                                             </div>
 
-                                            <div className="col-md-6">
+                                            <div className="col-12 col-md-6">
                                                 <label className="form-label fw-semibold required">Nomor Berita Acara *</label>
-                                                <input type="text" className="form-control" name="no_berita_acara" value={form.no_berita_acara} onChange={handleChange} required />
+                                                <input 
+                                                    type="text" 
+                                                    className={`form-control form-control-md ${errors.no_berita_acara ? 'is-invalid' : ''}`} 
+                                                    name="no_berita_acara" 
+                                                    value={form.no_berita_acara} 
+                                                    onChange={handleChange} 
+                                                    placeholder="cth: BA/INV-2026/001"
+                                                />
+                                                {errors.no_berita_acara && <div className="invalid-feedback">{errors.no_berita_acara}</div>}
                                             </div>
 
-                                            <div className="col-md-6">
+                                            <div className="col-12 col-md-6">
                                                 <label className="form-label fw-semibold required">Jenis Sampel *</label>
-                                                <input type="text" className="form-control" name="jenis_sampel" value={form.jenis_sampel} onChange={handleChange} required />
+                                                <input 
+                                                    type="text" 
+                                                    className={`form-control form-control-md ${errors.jenis_sampel ? 'is-invalid' : ''}`} 
+                                                    name="jenis_sampel" 
+                                                    value={form.jenis_sampel} 
+                                                    onChange={handleChange} 
+                                                    placeholder="cth: Air Bersih / Makanan"
+                                                />
+                                                {errors.jenis_sampel && <div className="invalid-feedback">{errors.jenis_sampel}</div>}
                                             </div>
 
-                                            <div className="col-md-6">
+                                            <div className="col-12 col-md-6">
                                                 <label className="form-label fw-semibold">Nama Sampel (Opsional)</label>
                                                 <input type="text" className="form-control" name="nama_sampel" value={form.nama_sampel} onChange={handleChange} placeholder="cth: Air Kran Utama" />
                                             </div>
 
-                                            <div className="col-md-6">
+                                            <div className="col-12 col-md-6">
                                                 <label className="form-label fw-semibold">Titik Pengambilan Sampel</label>
-                                                <input type="text" className="form-control" name="titik_pengambilan" value={form.titik_pengambilan} onChange={handleChange} placeholder="cth: Kamar Mandi Utama" />
+                                                <input type="text" className="form-control" name="titik_pengambilan" value={form.titik_pengambilan} onChange={handleChange} placeholder="cth: Dapur / Kamar Mandi Utama" />
                                             </div>
 
-                                            <div className="col-md-4">
+                                            <div className="col-12 col-sm-6 col-md-4">
                                                 <label className="form-label fw-semibold required">Tanggal Pengambilan *</label>
-                                                <input type="date" className="form-control" name="tanggal_pengambilan" value={form.tanggal_pengambilan} onChange={handleChange} required />
+                                                <input 
+                                                    type="date" 
+                                                    className={`form-control ${errors.tanggal_pengambilan ? 'is-invalid' : ''}`} 
+                                                    name="tanggal_pengambilan" 
+                                                    value={form.tanggal_pengambilan} 
+                                                    onChange={handleChange} 
+                                                />
+                                                {errors.tanggal_pengambilan && <div className="invalid-feedback">{errors.tanggal_pengambilan}</div>}
                                             </div>
 
-                                            <div className="col-md-4">
+                                            <div className="col-12 col-sm-6 col-md-4">
                                                 <label className="form-label fw-semibold">Waktu Pengambilan</label>
                                                 <input type="time" className="form-control" name="waktu_pengambilan" value={form.waktu_pengambilan} onChange={handleChange} />
                                             </div>
 
-                                            <div className="col-md-4">
+                                            <div className="col-12 col-sm-6 col-md-4">
                                                 <label className="form-label fw-semibold">Estimasi Selesai Pengujian</label>
                                                 <input type="date" className="form-control" name="tanggal_selesai_estimasi" value={form.tanggal_selesai_estimasi} onChange={handleChange} />
                                             </div>
@@ -296,193 +444,274 @@ export default function BeritaAcaraCreate() {
                                     </div>
                                 </div>
 
-                                {/* Checkbox Checklist sections */}
+                                {/* Checklist Card */}
                                 <div className="card shadow-sm border-0 mb-4" style={{ borderRadius: '16px' }}>
-                                    <div className="card-header bg-white py-3"><h4 className="fw-bold m-0 text-primary">Checklist Parameter & Peralatan</h4></div>
-                                    <div className="card-body">
+                                    <div className="card-header bg-white py-3 px-4 d-flex align-items-center gap-2 border-bottom-0">
+                                        <span className="badge bg-success-lt p-2 rounded-3">
+                                            <FaClipboardList className="fs-5 text-success" />
+                                        </span>
+                                        <h4 className="fw-bold m-0 text-dark">Checklist Parameter & Peralatan Lapangan</h4>
+                                    </div>
+                                    <div className="card-body px-4 pt-2 pb-4">
                                         {/* Tujuan Pengambilan */}
                                         <div className="mb-4">
-                                            <h5 className="fw-bold mb-2">Tujuan Pengambilan Sampel</h5>
-                                            <div className="d-flex flex-wrap gap-3">
-                                                {['Pemantauan', 'Pengawasan', 'Penelitian', 'Lainnya'].map(item => (
-                                                    <label key={item} className="form-check form-check-inline m-0">
-                                                        <input className="form-check-input" type="checkbox" checked={form.tujuan_pengambilan.includes(item)} onChange={() => handleCheckboxChange('tujuan_pengambilan', item)} />
-                                                        <span className="form-check-label">{item}</span>
-                                                    </label>
-                                                ))}
+                                            <h6 className="fw-bold text-dark mb-2">Tujuan Pengambilan Sampel</h6>
+                                            <div className="d-flex flex-wrap gap-2">
+                                                {['Pemantauan', 'Pengawasan', 'Penelitian', 'Lainnya'].map(item => {
+                                                    const isChecked = form.tujuan_pengambilan.includes(item);
+                                                    return (
+                                                        <label key={item} className={`btn btn-sm ${isChecked ? 'btn-primary' : 'btn-outline-secondary'} rounded-pill px-3 transition-all`} style={{ cursor: 'pointer' }}>
+                                                            <input className="d-none" type="checkbox" checked={isChecked} onChange={() => handleCheckboxChange('tujuan_pengambilan', item)} />
+                                                            {isChecked && <FaCheck className="me-1" />} {item}
+                                                        </label>
+                                                    );
+                                                })}
                                             </div>
                                             {form.tujuan_pengambilan.includes('Lainnya') && (
                                                 <input type="text" className="form-control mt-2" name="tujuan_lainnya" value={form.tujuan_lainnya} onChange={handleChange} placeholder="Sebutkan tujuan lainnya..." />
                                             )}
                                         </div>
 
-                                        <hr className="my-4" />
+                                        <hr className="my-3 text-muted opacity-25" />
 
-                                        {/* Wadah */}
+                                        {/* Wadah Sampel */}
                                         <div className="mb-4">
-                                            <h5 className="fw-bold mb-2">Wadah Sampel</h5>
-                                            <div className="row g-3 align-items-center">
-                                                <div className="col-auto">
+                                            <h6 className="fw-bold text-dark mb-2">Wadah Sampel</h6>
+                                            <div className="row g-2 align-items-center">
+                                                <div className="col-6 col-sm-auto">
                                                     <select className="form-select" name="wadah_tipe" value={form.wadah_tipe} onChange={handleChange}>
                                                         <option value="Botol">Botol</option>
                                                         <option value="Lainnya">Lainnya</option>
                                                     </select>
                                                 </div>
-                                                <div className="col-auto">
-                                                    <input type="number" className="form-control" name="wadah_qty" value={form.wadah_qty} onChange={handleChange} placeholder="Jumlah buah" style={{ width: '120px' }} />
+                                                <div className="col-6 col-sm-auto">
+                                                    <input type="number" className="form-control" name="wadah_qty" value={form.wadah_qty} onChange={handleChange} placeholder="Jumlah buah" style={{ minWidth: '110px' }} />
                                                 </div>
                                                 {form.wadah_tipe === 'Lainnya' && (
-                                                    <div className="col">
+                                                    <div className="col-12 col-sm">
                                                         <input type="text" className="form-control" name="wadah_lainnya" value={form.wadah_lainnya} onChange={handleChange} placeholder="Sebutkan wadah lainnya..." />
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
 
-                                        <hr className="my-4" />
+                                        <hr className="my-3 text-muted opacity-25" />
 
                                         {/* Peralatan Pengambilan */}
                                         <div className="mb-4">
-                                            <h5 className="fw-bold mb-2">Peralatan Pengambilan Sampel</h5>
-                                            <div className="d-flex flex-wrap gap-3">
-                                                {['Botol Pemberat', 'Botol Sampel', 'Gayung Bertangkai Plastik'].map(item => (
-                                                    <label key={item} className="form-check form-check-inline m-0">
-                                                        <input className="form-check-input" type="checkbox" checked={form.peralatan_pengambilan.includes(item)} onChange={() => handleCheckboxChange('peralatan_pengambilan', item)} />
-                                                        <span className="form-check-label">{item}</span>
-                                                    </label>
-                                                ))}
+                                            <h6 className="fw-bold text-dark mb-2">Peralatan Pengambilan Sampel</h6>
+                                            <div className="d-flex flex-wrap gap-2">
+                                                {['Botol Pemberat', 'Botol Sampel', 'Gayung Bertangkai Plastik'].map(item => {
+                                                    const isChecked = form.peralatan_pengambilan.includes(item);
+                                                    return (
+                                                        <label key={item} className={`btn btn-sm ${isChecked ? 'btn-success' : 'btn-outline-secondary'} rounded-pill px-3 transition-all`} style={{ cursor: 'pointer' }}>
+                                                            <input className="d-none" type="checkbox" checked={isChecked} onChange={() => handleCheckboxChange('peralatan_pengambilan', item)} />
+                                                            {isChecked && <FaCheck className="me-1" />} {item}
+                                                        </label>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
 
-                                        <hr className="my-4" />
+                                        <hr className="my-3 text-muted opacity-25" />
 
                                         {/* Peralatan Pengukur */}
-                                        <div className="mb-4">
-                                            <h5 className="fw-bold mb-2">Peralatan Pengukur Lapangan</h5>
+                                        <div>
+                                            <h6 className="fw-bold text-dark mb-2">Peralatan Pengukur Lapangan</h6>
                                             <div className="row g-2">
-                                                {['Tidak ada', 'TDS Meter', 'Klorin Test', 'pH meter', 'Thermometer', 'DO Meter', 'Turbidimeter', 'Konduktimeter'].map(item => (
-                                                    <div key={item} className="col-md-3">
-                                                        <label className="form-check m-0">
-                                                            <input className="form-check-input" type="checkbox" checked={form.peralatan_pengukur.includes(item)} onChange={() => handleCheckboxChange('peralatan_pengukur', item)} />
-                                                            <span className="form-check-label">{item}</span>
-                                                        </label>
-                                                    </div>
-                                                ))}
+                                                {['Tidak ada', 'TDS Meter', 'Klorin Test', 'pH meter', 'Thermometer', 'DO Meter', 'Turbidimeter', 'Konduktimeter'].map(item => {
+                                                    const isChecked = form.peralatan_pengukur.includes(item);
+                                                    return (
+                                                        <div key={item} className="col-6 col-sm-4 col-md-3">
+                                                            <label className={`form-check p-2 border rounded-3 bg-white w-100 ${isChecked ? 'border-primary bg-primary-subtle' : ''}`} style={{ cursor: 'pointer' }}>
+                                                                <input className="form-check-input ms-1 me-2" type="checkbox" checked={isChecked} onChange={() => handleCheckboxChange('peralatan_pengukur', item)} />
+                                                                <span className="form-check-label small fw-medium">{item}</span>
+                                                            </label>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Right Column: Other Checklists & Measurement results */}
-                            <div className="col-lg-4">
+                            {/* Right Column: Hasil Lapangan, Foto, Kondisi & TTD */}
+                            <div className="col-12 col-lg-5 col-xl-4">
+                                {/* Hasil Pengukuran Card */}
                                 <div className="card shadow-sm border-0 mb-4" style={{ borderRadius: '16px' }}>
-                                    <div className="card-header bg-white py-3"><h4 className="fw-bold m-0 text-primary">Hasil Pengukuran</h4></div>
-                                    <div className="card-body">
-                                        <div className="row g-3">
+                                    <div className="card-header bg-white py-3 px-4 d-flex align-items-center justify-content-between border-bottom-0">
+                                        <div className="d-flex align-items-center gap-2">
+                                            <span className="badge bg-purple-lt p-2 rounded-3" style={{ color: '#7c3aed', backgroundColor: '#f3e8ff' }}>
+                                                <FaFlask className="fs-5" />
+                                            </span>
+                                            <h4 className="fw-bold m-0 text-dark">Hasil Pengukuran</h4>
+                                        </div>
+                                        <span className="badge bg-secondary-subtle text-secondary fw-normal">Opsional</span>
+                                    </div>
+                                    <div className="card-body px-4 pt-0 pb-4">
+                                        <div className="text-muted small mb-3" style={{ fontSize: '0.78rem' }}>
+                                            Boleh dikosongkan jika tidak ada pengukuran parameter lapangan.
+                                        </div>
+                                        <div className="row g-2">
                                             <div className="col-6">
-                                                <label className="form-label">Suhu (°C)</label>
-                                                <input type="text" className="form-control" name="suhu" value={form.suhu} onChange={handleChange} placeholder="Suhu" />
+                                                <label className="form-label small fw-semibold">Suhu (°C)</label>
+                                                <input type="text" className="form-control form-control-sm" name="suhu" value={form.suhu} onChange={handleChange} placeholder="Suhu" />
                                             </div>
                                             <div className="col-6">
-                                                <label className="form-label">pH</label>
-                                                <input type="text" className="form-control" name="ph" value={form.ph} onChange={handleChange} placeholder="pH" />
+                                                <label className="form-label small fw-semibold">pH</label>
+                                                <input type="text" className="form-control form-control-sm" name="ph" value={form.ph} onChange={handleChange} placeholder="pH" />
                                             </div>
                                             <div className="col-6">
-                                                <label className="form-label">TDS (mg/l)</label>
-                                                <input type="text" className="form-control" name="tds" value={form.tds} onChange={handleChange} placeholder="TDS" />
+                                                <label className="form-label small fw-semibold">TDS (mg/l)</label>
+                                                <input type="text" className="form-control form-control-sm" name="tds" value={form.tds} onChange={handleChange} placeholder="TDS" />
                                             </div>
                                             <div className="col-6">
-                                                <label className="form-label">Kekeruhan (NTU)</label>
-                                                <input type="text" className="form-control" name="kekeruhan" value={form.kekeruhan} onChange={handleChange} placeholder="Kekeruhan" />
+                                                <label className="form-label small fw-semibold">Kekeruhan (NTU)</label>
+                                                <input type="text" className="form-control form-control-sm" name="kekeruhan" value={form.kekeruhan} onChange={handleChange} placeholder="Kekeruhan" />
                                             </div>
                                             <div className="col-6">
-                                                <label className="form-label">DHL (µs/cm)</label>
-                                                <input type="text" className="form-control" name="dhl" value={form.dhl} onChange={handleChange} placeholder="DHL" />
+                                                <label className="form-label small fw-semibold">DHL (µs/cm)</label>
+                                                <input type="text" className="form-control form-control-sm" name="dhl" value={form.dhl} onChange={handleChange} placeholder="DHL" />
                                             </div>
                                             <div className="col-6">
-                                                <label className="form-label">Sisa Klor (mg/l)</label>
-                                                <input type="text" className="form-control" name="sisa_klor" value={form.sisa_klor} onChange={handleChange} placeholder="Sisa Klor" />
+                                                <label className="form-label small fw-semibold">Sisa Klor (mg/l)</label>
+                                                <input type="text" className="form-control form-control-sm" name="sisa_klor" value={form.sisa_klor} onChange={handleChange} placeholder="Sisa Klor" />
                                             </div>
                                             <div className="col-12">
-                                                <label className="form-label">DO (mg/l)</label>
-                                                <input type="text" className="form-control" name="do" value={form.do} onChange={handleChange} placeholder="Dissolved Oxygen" />
+                                                <label className="form-label small fw-semibold">DO (mg/l)</label>
+                                                <input type="text" className="form-control form-control-sm" name="do" value={form.do} onChange={handleChange} placeholder="Dissolved Oxygen" />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
+                                {/* Foto Dokumentasi Card */}
                                 <div className="card shadow-sm border-0 mb-4" style={{ borderRadius: '16px' }}>
-                                    <div className="card-header bg-white py-3"><h4 className="fw-bold m-0 text-primary">Foto Dokumentasi</h4></div>
-                                    <div className="card-body">
-                                        <div className="mb-3">
-                                            <label className="form-label fw-semibold">1. Foto Dokumentasi Proses Pengambilan Sampel</label>
-                                            <input type="file" className="form-control" name="foto_pengambilan" onChange={handleFileChange} accept="image/*" />
+                                    <div className="card-header bg-white py-3 px-4 d-flex align-items-center gap-2 border-bottom-0">
+                                        <span className="badge bg-warning-lt p-2 rounded-3">
+                                            <FaCamera className="fs-5 text-warning" />
+                                        </span>
+                                        <h4 className="fw-bold m-0 text-dark">Foto Dokumentasi</h4>
+                                    </div>
+                                    <div className="card-body px-4 pt-0 pb-4">
+                                        <div className="alert alert-info py-2 px-3 mb-3 rounded-3" style={{ fontSize: '0.78rem' }}>
+                                            <strong>📌 Ketentuan Upload Foto:</strong>
+                                            <ul className="mb-0 ps-3 mt-1">
+                                                <li>Format file: <strong>JPG, JPEG, PNG, WEBP</strong></li>
+                                                <li>Ukuran maksimal: <strong>5 MB</strong> per foto</li>
+                                            </ul>
                                         </div>
+
                                         <div className="mb-3">
-                                            <label className="form-label fw-semibold">2. Foto Dokumentasi Pelabelan Sampel</label>
-                                            <input type="file" className="form-control" name="foto_pelabelan" onChange={handleFileChange} accept="image/*" />
+                                            <label className="form-label fw-semibold small">1. Foto Pengambilan Sampel</label>
+                                            <input 
+                                                type="file" 
+                                                className={`form-control form-control-sm ${errors.foto_pengambilan ? 'is-invalid' : ''}`} 
+                                                name="foto_pengambilan" 
+                                                onChange={handleFileChange} 
+                                                accept="image/jpeg,image/png,image/jpg,image/webp" 
+                                            />
+                                            {files.foto_pengambilan && (
+                                                <small className="text-success fw-semibold d-block mt-1" style={{ fontSize: '0.75rem' }}>
+                                                    ✓ File: {files.foto_pengambilan.name} ({(files.foto_pengambilan.size / (1024 * 1024)).toFixed(2)} MB)
+                                                </small>
+                                            )}
+                                            {errors.foto_pengambilan && <div className="text-danger small mt-1">⚠️ {errors.foto_pengambilan}</div>}
                                         </div>
+
                                         <div className="mb-3">
-                                            <label className="form-label fw-semibold">3. Foto Dokumentasi Pengemasan Sampel</label>
-                                            <input type="file" className="form-control" name="foto_pengemasan" onChange={handleFileChange} accept="image/*" />
+                                            <label className="form-label fw-semibold small">2. Foto Pelabelan Sampel</label>
+                                            <input 
+                                                type="file" 
+                                                className={`form-control form-control-sm ${errors.foto_pelabelan ? 'is-invalid' : ''}`} 
+                                                name="foto_pelabelan" 
+                                                onChange={handleFileChange} 
+                                                accept="image/jpeg,image/png,image/jpg,image/webp" 
+                                            />
+                                            {files.foto_pelabelan && (
+                                                <small className="text-success fw-semibold d-block mt-1" style={{ fontSize: '0.75rem' }}>
+                                                    ✓ File: {files.foto_pelabelan.name} ({(files.foto_pelabelan.size / (1024 * 1024)).toFixed(2)} MB)
+                                                </small>
+                                            )}
+                                            {errors.foto_pelabelan && <div className="text-danger small mt-1">⚠️ {errors.foto_pelabelan}</div>}
+                                        </div>
+
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold small">3. Foto Pengemasan Sampel</label>
+                                            <input 
+                                                type="file" 
+                                                className={`form-control form-control-sm ${errors.foto_pengemasan ? 'is-invalid' : ''}`} 
+                                                name="foto_pengemasan" 
+                                                onChange={handleFileChange} 
+                                                accept="image/jpeg,image/png,image/jpg,image/webp" 
+                                            />
+                                            {files.foto_pengemasan && (
+                                                <small className="text-success fw-semibold d-block mt-1" style={{ fontSize: '0.75rem' }}>
+                                                    ✓ File: {files.foto_pengemasan.name} ({(files.foto_pengemasan.size / (1024 * 1024)).toFixed(2)} MB)
+                                                </small>
+                                            )}
+                                            {errors.foto_pengemasan && <div className="text-danger small mt-1">⚠️ {errors.foto_pengemasan}</div>}
                                         </div>
                                     </div>
                                 </div>
 
+                                {/* Kondisi & Pengesahan TTD Card */}
                                 <div className="card shadow-sm border-0 mb-4" style={{ borderRadius: '16px' }}>
-                                    <div className="card-header bg-white py-3"><h4 className="fw-bold m-0 text-primary">Kondisi & Transportasi</h4></div>
-                                    <div className="card-body">
-                                        {/* Pengawet */}
-                                        <div className="mb-4">
-                                            <h6 className="fw-bold text-secondary mb-2">Pengawet yang Digunakan</h6>
-                                            <div className="d-flex flex-column gap-2">
-                                                {['Ice Pack', 'H2SO4', 'HNO3', 'NaOH', '(CH3COO)2Zn'].map(item => (
-                                                    <label key={item} className="form-check m-0">
-                                                        <input className="form-check-input" type="checkbox" checked={form.pengawet.includes(item)} onChange={() => handleCheckboxChange('pengawet', item)} />
-                                                        <span className="form-check-label">{item}</span>
-                                                    </label>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <hr />
-
-                                        {/* K3 */}
-                                        <div className="mb-4">
-                                            <h6 className="fw-bold text-secondary mb-2">Peralatan K3</h6>
-                                            <div className="d-flex flex-column gap-2">
-                                                {['Rompi Sampling', 'Sarung Tangan', 'Masker', 'Helmet & Goggle'].map(item => (
-                                                    <label key={item} className="form-check m-0">
-                                                        <input className="form-check-input" type="checkbox" checked={form.peralatan_k3.includes(item)} onChange={() => handleCheckboxChange('peralatan_k3', item)} />
-                                                        <span className="form-check-label">{item}</span>
-                                                    </label>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <hr />
-
-                                        {/* Petugas & Saksi */}
+                                    <div className="card-header bg-white py-3 px-4 d-flex align-items-center gap-2 border-bottom-0">
+                                        <span className="badge bg-info-lt p-2 rounded-3">
+                                            <FaUserCheck className="fs-5 text-info" />
+                                        </span>
+                                        <h4 className="fw-bold m-0 text-dark">Petugas, Saksi & TTD Digital</h4>
+                                    </div>
+                                    <div className="card-body px-4 pt-0 pb-4">
                                         <div className="mb-3">
-                                            <label className="form-label fw-semibold required">Nama Petugas Pengambil *</label>
-                                            <input type="text" className="form-control" name="petugas_pengambil" value={form.petugas_pengambil} onChange={handleChange} required />
-                                        </div>
-                                        <div className="mb-3">
-                                            <label className="form-label fw-semibold">Nama Pelanggan / Saksi</label>
-                                            <input type="text" className="form-control" name="pelanggan_saksi" value={form.pelanggan_saksi} onChange={handleChange} />
+                                            <label className="form-label fw-semibold required small">Nama Petugas Pengambil *</label>
+                                            <input 
+                                                type="text" 
+                                                className={`form-control ${errors.petugas_pengambil ? 'is-invalid' : ''}`} 
+                                                name="petugas_pengambil" 
+                                                value={form.petugas_pengambil} 
+                                                onChange={handleChange} 
+                                                placeholder="Nama petugas pengambil"
+                                            />
+                                            {errors.petugas_pengambil && <div className="invalid-feedback">{errors.petugas_pengambil}</div>}
                                         </div>
 
                                         <div className="mb-3">
-                                            <label className="form-label fw-semibold">Status Dokumen</label>
+                                            <label className="form-label fw-semibold small">Nama Pelanggan / Saksi</label>
+                                            <input type="text" className="form-control" name="pelanggan_saksi" value={form.pelanggan_saksi} onChange={handleChange} placeholder="Nama pelanggan atau saksi" />
+                                        </div>
+
+                                        <hr className="my-3 text-muted opacity-25" />
+
+                                        {/* Tanda Tangan Digital Section */}
+                                        <SignaturePad 
+                                            label="1. TTD Petugas Pengambil" 
+                                            value={ttdPetugas} 
+                                            onChange={setTtdPetugas} 
+                                            placeholderName={form.petugas_pengambil || 'Petugas'} 
+                                        />
+                                        
+                                        <SignaturePad 
+                                            label="2. TTD Pelanggan / Saksi" 
+                                            value={ttdPelanggan} 
+                                            onChange={setTtdPelanggan} 
+                                            placeholderName={form.pelanggan_saksi || 'Pelanggan/Saksi'} 
+                                        />
+
+                                        <hr className="my-3 text-muted opacity-25" />
+
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold small">Status Dokumen</label>
                                             <select className="form-select" name="status" value={form.status} onChange={handleChange}>
-                                                <option value="DRAFT">DRAFT (Bisa Diedit)</option>
-                                                <option value="FINAL">FINAL (Kunci Data)</option>
+                                                <option value="DRAFT">DRAFT (Masih Bisa Diedit)</option>
+                                                <option value="FINAL">FINAL (Dokumen Resmi & Kunci Data)</option>
                                             </select>
                                         </div>
                                     </div>
-                                    <div className="card-footer bg-white border-0 py-3 text-end">
-                                        <button type="submit" className="btn btn-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2" disabled={isLoading}>
+                                    <div className="card-footer bg-white border-0 py-3 px-4 text-end">
+                                        <button type="submit" className="btn btn-primary w-100 py-2.5 fw-bold d-flex align-items-center justify-content-center gap-2 rounded-3 shadow-sm" disabled={isLoading}>
                                             <FaSave /> {isLoading ? 'Menyimpan...' : 'Simpan Berita Acara'}
                                         </button>
                                     </div>
