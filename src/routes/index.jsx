@@ -26,6 +26,7 @@ import Cart from "../views/card/index.jsx";
 import History from "../views/history/index.jsx";
 import InvoicePrint from "../views/history/invoicePrint.jsx";
 import Hasil from "../views/hasil/index.jsx";
+import PrintLaporanHasil from "../views/hasil/printLaporanHasil.jsx";
 import Penjadwalan from "../views/penjadwalan/index.jsx";
 import SemuaPenawaran from "../views/penawaran-all/index.jsx";
 import SemuaPenawaranDetail from "../views/penawaran-all/detail.jsx";
@@ -128,10 +129,20 @@ export default function AppRoutes() {
         </AdminRoute>
       } />
 
-      {/* Hasil Route - Accessible by Admin Labkesda & Analisis */}
+      {/* Hasil Route - Accessible by Admin Labkesda, Analisis, Verifikator, & Kepala */}
       <Route path="/hasil" element={
         <HasilRoute>
           <Hasil />
+        </HasilRoute>
+      } />
+      <Route path="/hasil/print" element={
+        <HasilRoute>
+          <PrintLaporanHasil />
+        </HasilRoute>
+      } />
+      <Route path="/hasil/print/:id" element={
+        <HasilRoute>
+          <PrintLaporanHasil />
         </HasilRoute>
       } />
 

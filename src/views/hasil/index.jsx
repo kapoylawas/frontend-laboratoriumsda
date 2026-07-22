@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import LayoutAdmin from "../../layouts/admin";
 import PaginationComponent from "../../components/Pagination";
 import Cookies from "js-cookie";
@@ -29,6 +29,192 @@ export default function HasilIndex() {
     totalPages: 1,
   });
   const [expandedCategories, setExpandedCategories] = useState({});
+  const [selectedPrintIds, setSelectedPrintIds] = useState(new Set());
+  const navigate = useNavigate();
+
+  const currentUserCookie = Cookies.get("user");
+  const currentUser = currentUserCookie ? JSON.parse(currentUserCookie) : {};
+  const userRoleId = currentUser?.role_id;
+
+  // ---- PRINT SELECTION HELPERS ----
+  const togglePrintSelect = (hasilId) => {
+    setSelectedPrintIds((prev) => {
+      const next = new Set(prev);
+      next.has(hasilId) ? next.delete(hasilId) : next.add(hasilId);
+      return next;
+    });
+  };
+
+  const toggleGroupSelect = (items) => {
+    const groupIds = items.map((i) => i.id);
+    const allSelected = groupIds.every((id) => selectedPrintIds.has(id));
+    setSelectedPrintIds((prev) => {
+      const next = new Set(prev);
+      if (allSelected) {
+        groupIds.forEach((id) => next.delete(id));
+      } else {
+        groupIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const handleCetakTerpilih = () => {
+    if (selectedPrintIds.size === 0) {
+      Swal.fire({ icon: "warning", title: "Belum ada sampel dipilih", text: "Centang sampel yang ingin dicetak terlebih dahulu.", timer: 2000, showConfirmButton: false });
+      return;
+    }
+    const ids = [...selectedPrintIds];
+    navigate(`/hasil/print/${ids[0]}`, { state: { selectedIds: ids } });
+  };
+
+  const getVerifikasiBadge = (statusVerifikasi) => {
+    switch (statusVerifikasi) {
+      case "MENUNGGU_VERIFIKASI":
+        return <span className="badge bg-warning text-dark">⏳ Menunggu Verifikator</span>;
+      case "REVISI_ANALIS":
+        return <span className="badge bg-danger text-white">⚠️ Revisi Analis</span>;
+      case "DIVERIFIKASI":
+        return <span className="badge bg-info text-dark">🔍 Diverifikasi (Kepala)</span>;
+      case "DISETUJUI":
+        return <span className="badge bg-success text-white">✅ Disetujui Kepala</span>;
+      case "DRAFT":
+      default:
+        return <span className="badge bg-secondary text-white">📝 Draft Analis</span>;
+    }
+  };
+
+  const handleVerifikasiAction = async (hasilId, action) => {
+    try {
+      let catatan = "";
+      if (action === "VERIFY_REJECT" || action === "KEPALA_REJECT") {
+        const { value: text } = await Swal.fire({
+          title: "Catatan Revisi",
+          input: "textarea",
+          inputLabel: "Catatan revisi untuk Analis",
+          inputPlaceholder: "Tuliskan poin perbaikan...",
+          showCancelButton: true,
+          confirmButtonText: "Kirim Revisi",
+          cancelButtonText: "Batal"
+        });
+        if (!text) return;
+        catatan = text;
+      } else {
+        const confirmResult = await Swal.fire({
+          title: "Konfirmasi Verifikasi",
+          text: action === "SUBMIT_VERIFIKASI"
+            ? "Kirim hasil pengujian ini ke Verifikator?"
+            : action === "VERIFY_APPROVE"
+            ? "Verifikasi dan teruskan ke Kepala Labkesda?"
+            : "Setujui secara akhir laporan hasil pengujian ini?",
+          icon: "question",
+          showCancelButton: true,
+          confirmButtonColor: "#0d6efd",
+          confirmButtonText: "Ya, Lanjutkan!",
+          cancelButtonText: "Batal"
+        });
+        if (!confirmResult.isConfirmed) return;
+      }
+
+      Swal.fire({
+        title: "Memproses verifikasi...",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      const token = Cookies.get("token");
+      if (!token) return;
+      Api.defaults.headers.common["Authorization"] = token;
+
+      await Api.put(`/api/hasils/${hasilId}/verifikasi`, {
+        action,
+        catatan_revisi: catatan
+      });
+
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil!",
+        text: "Status verifikasi berjenjang berhasil diperbarui.",
+        timer: 1800,
+        showConfirmButton: false
+      });
+
+      fetchData(pagination.currentPage, search, filterDate);
+    } catch (error) {
+      console.error("Error verifikasi:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Gagal Verifikasi",
+        text: error.response?.data?.message || "Terjadi kesalahan"
+      });
+    }
+  };
+
+  const handleBatchVerifikasi = async (items, action) => {
+    const ids = items.map((i) => i.id);
+    if (ids.length === 0) return;
+
+    try {
+      let catatan = "";
+      if (action === "VERIFY_REJECT" || action === "KEPALA_REJECT") {
+        const { value: text } = await Swal.fire({
+          title: "Catatan Revisi Kumpulan Sampel",
+          input: "textarea",
+          inputLabel: "Masukkan alasan/catatan revisi",
+          inputPlaceholder: "Tuliskan poin perbaikan...",
+          showCancelButton: true,
+          confirmButtonText: "Kirim Revisi",
+          cancelButtonText: "Batal"
+        });
+        if (!text) return;
+        catatan = text;
+      } else {
+        const confirmResult = await Swal.fire({
+          title: "Verifikasi Batch Kumpulan Sampel",
+          text: `Apakah Anda yakin ingin memproses status verifikasi untuk ${ids.length} parameter sampel ini sekaligus?`,
+          icon: "question",
+          showCancelButton: true,
+          confirmButtonColor: "#0d6efd",
+          confirmButtonText: "Ya, Verifikasi Semua!",
+          cancelButtonText: "Batal"
+        });
+        if (!confirmResult.isConfirmed) return;
+      }
+
+      Swal.fire({
+        title: "Memproses verifikasi batch...",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      const token = Cookies.get("token");
+      if (!token) return;
+      Api.defaults.headers.common["Authorization"] = token;
+
+      await Api.put(`/api/hasils/${ids[0]}/verifikasi`, {
+        action,
+        catatan_revisi: catatan,
+        hasil_ids: ids
+      });
+
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil!",
+        text: `Berhasil memproses status verifikasi untuk ${ids.length} parameter sampel!`,
+        timer: 1800,
+        showConfirmButton: false
+      });
+
+      fetchData(pagination.currentPage, search, filterDate);
+    } catch (error) {
+      console.error("Error batch verifikasi:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Gagal Verifikasi",
+        text: error.response?.data?.message || "Terjadi kesalahan"
+      });
+    }
+  };
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat("id-ID", {
@@ -95,21 +281,47 @@ export default function HasilIndex() {
     fetchData(1, search, newDate);
   };
 
+  const [groupByMode, setGroupByMode] = useState("invoice"); // "invoice" or "category"
+
   const handleClearFilters = () => {
     setSearch("");
     setFilterDate("");
     fetchData(1, "", "");
   };
 
-  // Group hasils by category
-  const getGroupedByCategory = () => {
+  // Group hasils by Transaction ID (unique per transaction) or by Category
+  const getGroupedData = () => {
+    // Store full meta per group key so we can display it in the header
     const grouped = {};
+    const meta = {};
+
     hasils.forEach((hasil) => {
-      const catName = hasil.sampel?.category?.name || "Tanpa Kategori";
-      if (!grouped[catName]) grouped[catName] = [];
-      grouped[catName].push(hasil);
+      let groupKey = "";
+      if (groupByMode === "invoice") {
+        // Use transaction_id as unique key — different transactions ALWAYS get different cards
+        const txId = hasil.transaction_id || hasil.transaction?.id || `user_${hasil.user_id}`;
+        groupKey = `INVOICE___${txId}`;
+
+        // Store meta from the first item in this group
+        if (!meta[groupKey]) {
+          meta[groupKey] = {
+            txId,
+            invoice: hasil.transaction?.invoice || hasil.nomor_laporan || `INV-${txId}`,
+            userName: hasil.transaction?.user?.name || hasil.user?.name || "Pemohon",
+            createdAt: hasil.transaction?.created_at || hasil.created_at
+          };
+        }
+      } else {
+        const catName = hasil.sampel?.category?.name || "Tanpa Kategori";
+        groupKey = `CATEGORY___${catName}`;
+        if (!meta[groupKey]) meta[groupKey] = { catName };
+      }
+
+      if (!grouped[groupKey]) grouped[groupKey] = [];
+      grouped[groupKey].push(hasil);
     });
-    return grouped;
+
+    return { grouped, meta };
   };
 
   const toggleCategory = (catName) => {
@@ -483,7 +695,42 @@ export default function HasilIndex() {
                 <div className="text-muted mt-1 fw-semibold">Kelola dan atur parameter hasil uji laboratorium</div>
               </div>
               <div className="col-auto ms-auto d-print-none">
-                <div className="d-flex gap-2">
+                <div className="d-flex align-items-center gap-2">
+                  {/* View Mode Toggle: Per Invoice vs Per Kategori */}
+                  <div className="btn-group banner-3d p-1" style={{ backgroundColor: '#f1f5f9' }}>
+                    <button
+                      type="button"
+                      className={`btn btn-sm ${groupByMode === 'invoice' ? 'btn-primary fw-bold' : 'btn-ghost-secondary text-dark'}`}
+                      onClick={() => setGroupByMode('invoice')}
+                    >
+                      📄 Per Invoice / Pemohon
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn btn-sm ${groupByMode === 'category' ? 'btn-primary fw-bold' : 'btn-ghost-secondary text-dark'}`}
+                      onClick={() => setGroupByMode('category')}
+                    >
+                      🧪 Per Kategori Sampel
+                    </button>
+                  </div>
+                  {/* Tombol Cetak Terpilih */}
+                  {selectedPrintIds.size > 0 && (
+                    <button
+                      className="btn btn-3d-primary d-flex align-items-center gap-2 fw-bold"
+                      onClick={handleCetakTerpilih}
+                    >
+                      🖨️ Cetak {selectedPrintIds.size} Terpilih
+                    </button>
+                  )}
+                  {selectedPrintIds.size > 0 && (
+                    <button
+                      className="btn btn-outline-secondary btn-sm"
+                      onClick={() => setSelectedPrintIds(new Set())}
+                      title="Hapus semua pilihan"
+                    >
+                      ✕ Hapus Pilihan
+                    </button>
+                  )}
                   <button className="btn btn-3d-secondary" onClick={handleClearFilters}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2" /><path d="M4 5v4h4" /><path d="M4 13a8.1 8.1 0 0 0 15.5 2" /><path d="M20 19v-4h-4" /></svg>
                     Reset Filter
@@ -513,6 +760,19 @@ export default function HasilIndex() {
                 </Link>
               </div>
             </div>
+
+            {/* Mode Indicator Bar */}
+            {(() => { const { grouped: _g } = getGroupedData(); return (
+            <div className="d-flex align-items-center justify-content-between mb-3 px-1">
+              <span className="fw-bold text-dark fs-5">
+                {groupByMode === 'invoice' ? '📄 Pengelompokan Berdasarkan Invoice / Transaksi' : '🧪 Pengelompokan Berdasarkan Kategori Parameter'}
+              </span>
+              <span className="badge bg-secondary-lt fw-bold">
+                Terkumpul: {Object.keys(_g).length} {groupByMode === 'invoice' ? 'Transaksi' : 'Kategori'}
+              </span>
+            </div>
+            ); })()}
+
             {/* 3D Search & Filter Card */}
             <div className="card mb-4 card-3d">
               <div className="card-body p-3">
@@ -528,7 +788,7 @@ export default function HasilIndex() {
                           className="form-control form-control-3d"
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
-                          placeholder="🔍 Cari hasil pemeriksaan atau sampel..."
+                          placeholder="🔍 Cari invoice, nama pemohon, atau sampel..."
                           style={{ paddingLeft: '42px' }}
                         />
                       </div>
@@ -573,7 +833,7 @@ export default function HasilIndex() {
                   <p className="mt-3 text-muted fw-bold">Memuat data hasil...</p>
                 </div>
               </div>
-            ) : Object.keys(getGroupedByCategory()).length === 0 ? (
+            ) : Object.keys(getGroupedData().grouped).length === 0 ? (
               <div className="card card-3d">
                 <div className="card-body text-center py-5">
                   <div style={{ opacity: 0.4 }}>
@@ -590,35 +850,126 @@ export default function HasilIndex() {
               </div>
             ) : (
               <>
-                {/* Grouped by Category */}
-                {Object.entries(getGroupedByCategory()).map(([catName, items]) => {
-                  const color = getCategoryColor(catName);
-                  const isExpanded = expandedCategories[catName] !== false;
+                {/* Grouped Items Loop — per Transaction ID (like Penjadwalan) */}
+                {(() => {
+                  const { grouped, meta } = getGroupedData();
+                  return Object.entries(grouped).map(([groupKey, items]) => {
+                  const isInvoiceMode = groupKey.startsWith('INVOICE___');
+                  const groupMeta = meta[groupKey] || {};
+                  const color = isInvoiceMode ? 'primary' : getCategoryColor(groupMeta.catName || '');
+                  const isExpanded = expandedCategories[groupKey] !== false;
                   const completedCount = items.filter((i) => i.status).length;
                   const totalCount = items.length;
 
+                  const displayInvoice = isInvoiceMode
+                    ? (groupMeta.invoice || `INV-${groupMeta.txId}`)
+                    : (groupMeta.catName || '');
+                  const displayUser = isInvoiceMode ? (groupMeta.userName || 'Pemohon') : '';
+                  const displayDate = groupMeta.createdAt
+                    ? new Date(groupMeta.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                    : '';
+
                   return (
-                    <div className="card mb-4 card-3d" key={catName}>
+                    <div className="card mb-4 card-3d" key={groupKey}>
                       <div
                         className="card-header cursor-pointer py-3"
-                        onClick={() => toggleCategory(catName)}
-                        style={{ cursor: "pointer", background: '#fafafa', borderBottom: '2px solid #000' }}
+                        onClick={() => toggleCategory(groupKey)}
+                        style={{ cursor: "pointer", background: isInvoiceMode ? '#f8fafc' : '#fafafa', borderBottom: '2px solid #000' }}
                       >
-                        <div className="d-flex justify-content-between align-items-center">
-                          <div className="d-flex align-items-center gap-2">
-                            <span className={`badge-3d bg-${color} text-white me-2`} style={{ fontSize: "0.85rem", padding: "6px 12px" }}>
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "4px", verticalAlign: "text-bottom" }}>
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M9 3h6v11l-3 3l-3 -3v-11z" />
-                                <path d="M7 21h10" />
-                                <path d="M9 14h6v3h-6z" />
-                              </svg>
-                              {catName}
-                            </span>
-                            <span className="text-muted small fw-bold">{totalCount} parameter</span>
-                          </div>
+                        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
                           <div className="d-flex align-items-center gap-3">
-                            <div className="progress banner-3d" style={{ width: "120px", height: "10px" }}>
+                            {/* Icon Badge */}
+                            <div className={`badge-3d bg-${color} text-white d-flex align-items-center justify-content-center`}
+                              style={{ width: '44px', height: '44px', borderRadius: '12px', fontSize: '1.2rem' }}>
+                              {isInvoiceMode ? '🧾' : '🧪'}
+                            </div>
+                            <div>
+                              {/* Baris 1: Nomor Invoice / Nama Kategori */}
+                              <div className="fw-extrabold text-dark" style={{ fontSize: '1.05rem' }}>
+                                {isInvoiceMode ? displayInvoice : displayInvoice}
+                              </div>
+                              {/* Baris 2: Info pendukung */}
+                              <div className="text-muted small d-flex flex-wrap align-items-center gap-2 mt-1">
+                                {isInvoiceMode && (
+                                  <span className="fw-bold text-dark">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '3px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>
+                                    {displayUser}
+                                  </span>
+                                )}
+                                <span className="badge-3d bg-info text-white" style={{ fontSize: '0.75rem', padding: '2px 8px' }}>
+                                  {totalCount} Parameter Sampel
+                                </span>
+                                {displayDate && (
+                                  <span className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                    🕐 {displayDate}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="d-flex align-items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            {/* Tombol Cetak — dinamis sesuai centang dalam grup */}
+                            {items.length > 0 && (() => {
+                              const selectedInGroup = items.filter((i) => selectedPrintIds.has(i.id));
+                              const printItems = selectedInGroup.length > 0 ? selectedInGroup : items;
+                              const printCount = printItems.length;
+                              const hasSelection = selectedInGroup.length > 0;
+                              return (
+                                <button
+                                  className={`btn btn-sm d-flex align-items-center gap-1 ${hasSelection ? 'btn-3d-primary fw-bold' : 'btn-3d-outline-danger'}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(
+                                      `/hasil/print/${isInvoiceMode ? (groupMeta.txId || items[0].id) : items[0].id}`,
+                                      { state: { hasilItems: printItems, selectedIds: printItems.map((i) => i.id) } }
+                                    );
+                                  }}
+                                  title={hasSelection ? `Cetak ${printCount} sampel yang dicentang` : `Cetak semua ${printCount} sampel`}
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><path d="M12 17v-6" /><path d="M9 14l3 3l3 -3" /></svg>
+                                  {hasSelection ? `🖨️ Cetak (${printCount})` : `Cetak (${printCount})`}
+                                </button>
+                              );
+                            })()}
+
+                            {/* Tombol Batch Verifikasi berdasarkan Role */}
+                            {(userRoleId === 2 || userRoleId === 3) && (
+                              <button
+                                className="btn btn-sm btn-warning text-dark fw-bold"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleBatchVerifikasi(items, "SUBMIT_VERIFIKASI");
+                                }}
+                              >
+                                📤 Kirim Verifikasi All
+                              </button>
+                            )}
+
+                            {(userRoleId === 2 || userRoleId === 4) && (
+                              <button
+                                className="btn btn-sm btn-success fw-bold"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleBatchVerifikasi(items, "VERIFY_APPROVE");
+                                }}
+                              >
+                                ✓ Verifikasi All
+                              </button>
+                            )}
+
+                            {(userRoleId === 2 || userRoleId === 5) && (
+                              <button
+                                className="btn btn-sm btn-success fw-bold"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleBatchVerifikasi(items, "KEPALA_APPROVE");
+                                }}
+                              >
+                                🔏 ACC TTD All
+                              </button>
+                            )}
+
+                            <div className="progress banner-3d" style={{ width: "100px", height: "10px" }}>
                               <div
                                 className="progress-bar bg-success"
                                 style={{ width: totalCount > 0 ? `${(completedCount / totalCount) * 100}%` : "0%" }}
@@ -651,6 +1002,15 @@ export default function HasilIndex() {
                           <table className="table table-vcenter card-table">
                             <thead>
                               <tr>
+                                <th style={{ width: "40px" }} title="Pilih untuk cetak">
+                                  <input
+                                    type="checkbox"
+                                    className="form-check-input"
+                                    title="Pilih/Hapus semua dalam grup ini"
+                                    checked={items.length > 0 && items.every((i) => selectedPrintIds.has(i.id))}
+                                    onChange={() => toggleGroupSelect(items)}
+                                  />
+                                </th>
                                 <th style={{ width: "50px" }}>No</th>
                                 <th>Kode Sampel</th>
                                 <th>Parameter</th>
@@ -660,17 +1020,27 @@ export default function HasilIndex() {
                                 <th>Metode</th>
                                 <th className="text-center">Qty</th>
                                 <th className="text-end">Harga</th>
-                                <th className="text-center">Status</th>
-                                <th>Pemohon</th>
+                                <th className="text-center">Verifikasi Berjenjang</th>
+                                <th>Pemeriksa (Analis)</th>
                                 <th className="text-center">Tanggal</th>
-                                <th className="text-center" style={{ width: "120px" }}>Aksi</th>
+                                <th className="text-center" style={{ minWidth: "160px" }}>Aksi & Laporan</th>
                               </tr>
                             </thead>
                             <tbody>
                               {items.map((hasil) => {
                                 const globalIndex = hasils.indexOf(hasil);
+                                const isPrintSelected = selectedPrintIds.has(hasil.id);
                                 return (
-                                  <tr key={hasil.id}>
+                                  <tr key={hasil.id} style={{ background: isPrintSelected ? '#eff6ff' : undefined }}>
+                                    <td>
+                                      <input
+                                        type="checkbox"
+                                        className="form-check-input"
+                                        checked={isPrintSelected}
+                                        onChange={() => togglePrintSelect(hasil.id)}
+                                        title="Pilih untuk dicetak"
+                                      />
+                                    </td>
                                     <td className="text-muted">{getRowNumber(globalIndex)}</td>
                                     <td>
                                       {editingId === hasil.id ? (
@@ -761,21 +1131,11 @@ export default function HasilIndex() {
                                     </td>
                                     <td className="text-end fw-semibold">{formatCurrency(hasil.price || 0)}</td>
                                     <td className="text-center">
-                                      {editingId === hasil.id ? (
-                                        <label className="form-check form-switch d-inline-block">
-                                          <input
-                                            className="form-check-input"
-                                            type="checkbox"
-                                            name="status"
-                                            checked={editForm.status}
-                                            onChange={handleInputChange}
-                                          />
-                                          <span className={`ms-2 small fw-semibold ${editForm.status ? "text-success" : "text-warning"}`}>
-                                            {editForm.status ? "Selesai" : "Proses"}
-                                          </span>
-                                        </label>
-                                      ) : (
-                                        getStatusBadge(hasil.status)
+                                      {getVerifikasiBadge(hasil.status_verifikasi)}
+                                      {hasil.catatan_revisi && (
+                                        <div className="text-danger small fst-italic mt-1" title={hasil.catatan_revisi}>
+                                          Catatan: {hasil.catatan_revisi.substring(0, 25)}...
+                                        </div>
                                       )}
                                     </td>
                                     <td>
@@ -808,17 +1168,81 @@ export default function HasilIndex() {
                                             <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>
                                           </button>
                                           <button className="btn btn-sm btn-secondary" onClick={handleCancelEdit} title="Batal">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12" /><path d="M6 6l12 12" /></svg>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12" /></svg>
                                           </button>
                                         </div>
                                       ) : (
-                                        <div className="btn-group">
-                                          <button className="btn btn-sm btn-outline-primary" onClick={() => handleEdit(hasil)} title="Edit">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.097 2.097 0 0 0 -2.955 -2.955l-8.56 8.56l-1.37 3.89l3.89 -1.37l8.56 -8.56z" /><path d="M16 4l4 4" /></svg>
+                                        <div className="d-flex flex-wrap gap-1 justify-content-center">
+                                          {/* Edit Hasil Uji */}
+                                          <button className="btn btn-sm btn-outline-primary" onClick={() => handleEdit(hasil)} title="Edit Hasil Uji">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none"><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.097 2.097 0 0 0 -2.955 -2.955l-8.56 8.56l-1.37 3.89l3.89 -1.37l8.56 -8.56z" /></svg>
                                           </button>
-                                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(hasil.id)} title="Hapus">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
-                                          </button>
+
+                                          {/* 1. Kirim ke Verifikator (Analis / Admin) */}
+                                          {(userRoleId === 2 || userRoleId === 3) && (!hasil.status_verifikasi || hasil.status_verifikasi === "DRAFT" || hasil.status_verifikasi === "REVISI_ANALIS") && (
+                                            <button
+                                              className="btn btn-sm btn-warning text-dark fw-bold"
+                                              onClick={() => handleVerifikasiAction(hasil.id, "SUBMIT_VERIFIKASI")}
+                                              title="Kirim ke Verifikator"
+                                            >
+                                              📤 Verifikator
+                                            </button>
+                                          )}
+
+                                          {/* 2. Tombol Verifikasi (Verifikator / Admin) */}
+                                          {(userRoleId === 2 || userRoleId === 4) && hasil.status_verifikasi === "MENUNGGU_VERIFIKASI" && (
+                                            <div className="btn-group btn-group-sm">
+                                              <button
+                                                className="btn btn-success fw-bold"
+                                                onClick={() => handleVerifikasiAction(hasil.id, "VERIFY_APPROVE")}
+                                                title="Setujui Verifikasi"
+                                              >
+                                                ✓ ACC
+                                              </button>
+                                              <button
+                                                className="btn btn-danger"
+                                                onClick={() => handleVerifikasiAction(hasil.id, "VERIFY_REJECT")}
+                                                title="Minta Revisi"
+                                              >
+                                                ✕ Revisi
+                                              </button>
+                                            </div>
+                                          )}
+
+                                          {/* 3. Tombol Persetujuan Kepala Labkesda (Kepala / Admin) */}
+                                          {(userRoleId === 2 || userRoleId === 5) && hasil.status_verifikasi === "DIVERIFIKASI" && (
+                                            <div className="btn-group btn-group-sm">
+                                              <button
+                                                className="btn btn-success fw-bold"
+                                                onClick={() => handleVerifikasiAction(hasil.id, "KEPALA_APPROVE")}
+                                                title="Persetujuan Kepala & TTD QR"
+                                              >
+                                                🔏 TTD
+                                              </button>
+                                              <button
+                                                className="btn btn-danger"
+                                                onClick={() => handleVerifikasiAction(hasil.id, "KEPALA_REJECT")}
+                                                title="Revisi Kepala"
+                                              >
+                                                ✕ Revisi
+                                              </button>
+                                            </div>
+                                          )}
+
+                                          {/* 4. Cetak Laporan PDF */}
+                                          <Link
+                                            to={`/hasil/print/${hasil.id}`}
+                                            className="btn btn-sm btn-outline-dark fw-bold"
+                                            title="Cetak Laporan Hasil Pengujian"
+                                          >
+                                            🖨️ Cetak
+                                          </Link>
+
+                                          {userRoleId === 2 && (
+                                            <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(hasil.id)} title="Hapus">
+                                              <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none"><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /></svg>
+                                            </button>
+                                          )}
                                         </div>
                                       )}
                                     </td>
@@ -829,7 +1253,7 @@ export default function HasilIndex() {
                             <tfoot>
                               <tr>
                                 <td colSpan="8" className="text-end fw-bold text-muted">
-                                  Subtotal {catName}
+                                  Subtotal {displayInvoice}
                                 </td>
                                 <td className="text-end">
                                   <span className="fw-bold text-primary">
@@ -844,7 +1268,8 @@ export default function HasilIndex() {
                       )}
                     </div>
                   );
-                })}
+                  });
+                })()}
 
                 {/* Grand Total Card */}
                 <div className="card mb-3">

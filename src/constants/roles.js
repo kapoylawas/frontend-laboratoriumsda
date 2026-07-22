@@ -19,15 +19,18 @@ export const ROLES = {
   ANALISIS: {
     id: 3,
     name: 'Analisis',
-    description: 'Staff analisis dengan akses ke menu Hasil saja'
+    description: 'Staff analisis dengan akses ke menu Hasil'
+  },
+  VERIFIKATOR: {
+    id: 4,
+    name: 'Verifikator',
+    description: 'Verifikator hasil laboratorium'
+  },
+  KEPALA_LABKESDA: {
+    id: 5,
+    name: 'Kepala Labkesda',
+    description: 'Kepala Labkesda untuk persetujuan akhir & TTD elektronik'
   }
-  // Tambahkan role lainnya di sini jika ada
-  // Example:
-  // STAFF: {
-  //   id: 4,
-  //   name: 'Staff Labkesda',
-  //   description: 'Staff dengan akses terbatas'
-  // }
 };
 
 /**
@@ -77,14 +80,22 @@ export const isAnalisis = (user) => {
   return hasRoleId(user, ROLES.ANALISIS.id);
 };
 
+export const isVerifikator = (user) => {
+  return hasRoleId(user, ROLES.VERIFIKATOR.id);
+};
+
+export const isKepala = (user) => {
+  return hasRoleId(user, ROLES.KEPALA_LABKESDA.id);
+};
+
 /**
  * Helper function to check if user can access Hasil menu
- * (Admin Labkesda or Analisis role)
+ * (Admin Labkesda, Analisis, Verifikator, or Kepala role)
  * @param {Object} user - User object from store
  * @returns {Boolean}
  */
 export const canAccessHasil = (user) => {
-  return isAdmin(user) || isAnalisis(user);
+  return isAdmin(user) || isAnalisis(user) || isVerifikator(user) || isKepala(user);
 };
 
 /**
