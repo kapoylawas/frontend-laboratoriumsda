@@ -13,6 +13,18 @@ export default function Header() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMobileView, setIsMobileView] = useState(false);
     const [isMasterDataOpen, setIsMasterDataOpen] = useState(false);
+    const [isDesktopMasterOpen, setIsDesktopMasterOpen] = useState(false);
+
+    // Close desktop dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (!e.target.closest('.master-dropdown-container')) {
+                setIsDesktopMasterOpen(false);
+            }
+        };
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
 
     // Check user roles using helper functions
     const userIsAdmin = isAdmin(user);
@@ -204,23 +216,6 @@ export default function Header() {
                     </div>
 
                     <div className="mobile-sidebar-content">
-                        {/* Mobile Search */}
-                        {/* <div className="mobile-search">
-                            <div className="search-wrapper cashier-search">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                    <path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />
-                                    <path d="M21 21l-6 -6" />
-                                </svg>
-                                <input
-                                    type="text"
-                                    className="search-input cashier-search-input"
-                                    placeholder="Search…"
-                                    aria-label="Search in website"
-                                />
-                            </div>
-                        </div> */}
-
                         {/* Mobile Navigation */}
                         <nav className="mobile-nav">
                             <ul className="mobile-nav-list">
@@ -381,7 +376,6 @@ export default function Header() {
                                     </li>
                                 )}
 
-
                                 {userIsAdmin && (
                                     <li className={`mobile-nav-item mobile-nav-dropdown ${isMasterDataOpen ? 'open' : ''} ${isActivePath('/categories') || isActivePath('/sampels') || isActivePath('/users') ? 'active' : ''}`}>
                                         <div
@@ -399,7 +393,6 @@ export default function Header() {
                                                 </svg>
                                             </div>
                                             <span className="nav-label">MASTER DATA</span>
-
                                         </div>
                                         <ul className={`mobile-submenu ${isMasterDataOpen ? 'active' : ''}`}>
                                             <li>
@@ -635,8 +628,16 @@ export default function Header() {
 
                                     {/* Master Data Dropdown - Admin Only */}
                                     {userIsAdmin && (
-                                        <li className={`nav-item dropdown ${isActivePath('/categories') || isActivePath('/sampels') || isActivePath('/users') ? 'active' : ''}`}>
-                                            <button className="nav-link cashier-nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                                        <li className={`nav-item dropdown master-dropdown-container ${isActivePath('/categories') || isActivePath('/sampels') || isActivePath('/users') ? 'active' : ''}`}>
+                                            <button 
+                                                type="button"
+                                                className="nav-link cashier-nav-link dropdown-toggle" 
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setIsDesktopMasterOpen(!isDesktopMasterOpen);
+                                                }}
+                                            >
                                                 <div className="nav-icon">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icon">
                                                         <path stroke="none" d="M0 0h24v24H0z" fill="none" />
@@ -648,14 +649,14 @@ export default function Header() {
                                                 </div>
                                                 <span className="nav-label">MASTER</span>
                                             </button>
-                                            <div className="dropdown-menu dropdown-menu-end cashier-dropdown">
-                                                <Link className="dropdown-item" to="/categories">
+                                            <div className={`dropdown-menu dropdown-menu-end cashier-dropdown ${isDesktopMasterOpen ? 'show' : ''}`} style={{ position: 'absolute', right: 0, top: '100%', zIndex: 1060 }}>
+                                                <Link className="dropdown-item" to="/categories" onClick={() => setIsDesktopMasterOpen(false)}>
                                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                                         <path fillRule="evenodd" d="M9.661 2.237a.531.531 0 01.678 0 11.947 11.947 0 007.078 2.749.5.5 0 01.479.425c.069.52.104 1.05.104 1.59 0 5.162-3.26 9.563-7.834 11.256a.48.48 0 01-.332 0C5.26 16.564 2 12.163 2 7c0-.538.035-1.069.104-1.589a.5.5 0 01.48-.425 11.947 11.947 0 007.077-2.75zm4.196 5.954a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
                                                     </svg>
                                                     Categories
                                                 </Link>
-                                                <Link className="dropdown-item" to="/sampels">
+                                                <Link className="dropdown-item" to="/sampels" onClick={() => setIsDesktopMasterOpen(false)}>
                                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                                         <path d="M3.196 12.87l-.825.483a.75.75 0 000 1.294l7.25 4.25a.75.75 0 00.758 0l7.25-4.25a.75.75 0 000-1.294l-.825-.483-5.666 3.322a2.25 2.25 0 01-2.276 0L3.196 12.87z" />
                                                         <path d="M3.196 8.87l-.825.483a.75.75 0 000 1.294l7.25 4.25a.75.75 0 00.758 0l7.25-4.25a.75.75 0 000-1.294l-.825-.483-5.666 3.322a2.25 2.25 0 01-2.276 0L3.196 8.87z" />
@@ -663,14 +664,14 @@ export default function Header() {
                                                     </svg>
                                                     Sampel
                                                 </Link>
-                                                <Link className="dropdown-item" to="/users">
+                                                <Link className="dropdown-item" to="/users" onClick={() => setIsDesktopMasterOpen(false)}>
                                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                                         <path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" />
                                                     </svg>
                                                     User
                                                 </Link>
                                                 <div className="dropdown-divider"></div>
-                                                <Link className="dropdown-item" to="/semua-penawaran">
+                                                <Link className="dropdown-item" to="/semua-penawaran" onClick={() => setIsDesktopMasterOpen(false)}>
                                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                                         <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
                                                     </svg>
@@ -680,23 +681,6 @@ export default function Header() {
                                         </li>
                                     )}
                                 </ul>
-
-                                {/* Desktop Search */}
-                                {/* <div className="nav-search">
-                                    <div className="search-wrapper cashier-search">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                            <path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />
-                                            <path d="M21 21l-6 -6" />
-                                        </svg>
-                                        <input
-                                            type="text"
-                                            className="search-input cashier-search-input"
-                                            placeholder="Search…"
-                                            aria-label="Search in website"
-                                        />
-                                    </div>
-                                </div> */}
                             </div>
                         </div>
                     </div>
