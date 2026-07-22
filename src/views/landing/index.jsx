@@ -857,7 +857,7 @@ export default function LandingPage() {
                     <div className="card-3d p-3 bg-white text-center mt-auto">
                       <span className="small text-secondary d-block fw-bold mb-1">📍 Tatap Muka:</span>
                       <span className="small text-dark font-monospace d-block">
-                        Jl. Pasir Lingkar Timur, Bluru Kidul, Sidoarjo
+                        Jl. Ahmad Yani No.42, Megersari, Gedangan, Kec. Gedangan, Kabupaten Sidoarjo, Jawa Timur 61254
                       </span>
                     </div>
                   </div>
@@ -907,7 +907,7 @@ export default function LandingPage() {
                 <li className="mb-2"><a href="#beranda" className="text-white-75 text-decoration-none">Beranda</a></li>
                 <li className="mb-2"><a href="#survei-ikm" className="text-warning text-decoration-none fw-bold">Survei IKM</a></li>
                 <li className="mb-2"><a href="#layanan" className="text-white-75 text-decoration-none">Layanan Uji</a></li>
-                <li className="mb-2"><a href="#akreditasi" className="text-white-75 text-decoration-none">Akreditasi</a></li>
+                <li className="mb-2"><a href="#pengaduan" className="text-white-75 text-decoration-none">Form Pengaduan</a></li>
               </ul>
             </div>
 
@@ -916,7 +916,7 @@ export default function LandingPage() {
               <ul className="footer-links list-unstyled small text-white-75">
                 <li className="d-flex align-items-start gap-2 mb-2">
                   <IconMapPin size={18} className="text-danger flex-shrink-0 mt-1" />
-                  <span>Jl. Raya Magersari No. 12, Sidoarjo, Jawa Timur, Indonesia</span>
+                  <span>Jl. Ahmad Yani No.42, Megersari, Gedangan, Kec. Gedangan, Kabupaten Sidoarjo, Jawa Timur 61254</span>
                 </li>
                 <li className="d-flex align-items-center gap-2 mb-2">
                   <IconPhone size={18} className="text-danger flex-shrink-0" />
