@@ -391,18 +391,101 @@ export default function HasilIndex() {
 
   return (
     <LayoutAdmin>
+      <style>{`
+        .card-3d {
+          background: #ffffff !important;
+          border: 2.5px solid #000000 !important;
+          box-shadow: 6px 6px 0px #000000 !important;
+          border-radius: 18px !important;
+          overflow: hidden !important;
+          transition: all 0.15s ease-in-out !important;
+        }
+        .card-3d:hover {
+          box-shadow: 8px 8px 0px #000000 !important;
+          transform: translateY(-2px);
+        }
+        .badge-3d {
+          border: 1.5px solid #000000 !important;
+          box-shadow: 2px 2px 0px #000000 !important;
+          border-radius: 8px !important;
+          font-weight: 800 !important;
+        }
+        .btn-3d-primary {
+          background: #2563eb !important;
+          color: #ffffff !important;
+          border: 2px solid #000000 !important;
+          box-shadow: 3px 3px 0px #000000 !important;
+          border-radius: 10px !important;
+          font-weight: 800 !important;
+          transition: all 0.1s ease-in-out !important;
+        }
+        .btn-3d-primary:hover {
+          background: #1d4ed8 !important;
+          color: #ffffff !important;
+          transform: translate(-1px, -1px);
+          box-shadow: 4px 4px 0px #000000 !important;
+        }
+        .btn-3d-success {
+          background: #16a34a !important;
+          color: #ffffff !important;
+          border: 2px solid #000000 !important;
+          box-shadow: 3px 3px 0px #000000 !important;
+          border-radius: 10px !important;
+          font-weight: 800 !important;
+          transition: all 0.1s ease-in-out !important;
+        }
+        .btn-3d-success:hover {
+          background: #15803d !important;
+          color: #ffffff !important;
+          transform: translate(-1px, -1px);
+          box-shadow: 4px 4px 0px #000000 !important;
+        }
+        .btn-3d-secondary {
+          background: #f1f5f9 !important;
+          color: #334155 !important;
+          border: 2px solid #000000 !important;
+          box-shadow: 3px 3px 0px #000000 !important;
+          border-radius: 10px !important;
+          font-weight: 700 !important;
+        }
+        .banner-3d {
+          border: 2.5px solid #000000 !important;
+          box-shadow: 6px 6px 0px #000000 !important;
+          border-radius: 18px !important;
+          background: #ffffff !important;
+        }
+        .modal-content-3d {
+          border: 3.5px solid #000000 !important;
+          box-shadow: 10px 10px 0px #000000 !important;
+          border-radius: 24px !important;
+          overflow: hidden;
+        }
+        .form-control-3d {
+          border: 2px solid #000000 !important;
+          box-shadow: 3px 3px 0px #000000 !important;
+          border-radius: 10px !important;
+          font-weight: 600;
+        }
+        .form-control-3d:focus {
+          box-shadow: 5px 5px 0px #000000 !important;
+          background-color: #fffdf0 !important;
+          outline: none;
+        }
+      `}</style>
       <div className="page-wrapper">
         <div className="page-header d-print-none">
           <div className="container-fluid px-3 px-lg-4">
             <div className="row g-2 align-items-center">
               <div className="col">
-                <h2 className="page-title">Hasil Pemeriksaan</h2>
-                <div className="text-muted mt-1">Kelola hasil pemeriksaan laboratorium</div>
+                <h2 className="page-title fw-extrabold text-dark" style={{ fontSize: '1.8rem', letterSpacing: '-0.5px' }}>
+                  🧪 Hasil Pemeriksaan Laboratorium
+                </h2>
+                <div className="text-muted mt-1 fw-semibold">Kelola dan atur parameter hasil uji laboratorium</div>
               </div>
               <div className="col-auto ms-auto d-print-none">
                 <div className="d-flex gap-2">
-                  <button className="btn btn-outline-secondary" onClick={handleClearFilters}>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2" /><path d="M4 5v4h4" /><path d="M4 13a8.1 8.1 0 0 0 15.5 2" /><path d="M20 19v-4h-4" /></svg>
+                  <button className="btn btn-3d-secondary" onClick={handleClearFilters}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2" /><path d="M4 5v4h4" /><path d="M4 13a8.1 8.1 0 0 0 15.5 2" /><path d="M20 19v-4h-4" /></svg>
                     Reset Filter
                   </button>
                 </div>
@@ -413,69 +496,67 @@ export default function HasilIndex() {
 
         <div className="page-body">
           <div className="container-fluid px-3 px-lg-4">
-            {/* Workflow Step Banner */}
-            <div className="card mb-3 border-0 shadow-sm" style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', borderRadius: '12px', borderLeft: '5px solid #2fb344' }}>
-              <div className="card-body p-3">
-                <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 text-start">
-                  <div className="d-flex align-items-center gap-3">
-                    <div className="badge bg-success fs-6 p-2 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
-                      2
-                    </div>
-                    <div>
-                      <h5 className="fw-bold mb-0 text-dark">Langkah 2 dari 3: Pengisian Hasil Uji Laboratorium</h5>
-                      <small className="text-muted">Setelah Penjadwalan Selesai ➜ <strong>Isi Hasil Uji & Satuan</strong> ➜ Lalu lanjut ke Berita Acara</small>
-                    </div>
+            {/* 3D Step 2 Banner */}
+            <div className="card mb-4 banner-3d p-3" style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' }}>
+              <div className="d-flex align-items-center justify-content-between flex-wrap gap-3 text-start">
+                <div className="d-flex align-items-center gap-3">
+                  <div className="badge-3d bg-success text-white fs-5 d-flex align-items-center justify-content-center" style={{ width: '48px', height: '48px', borderRadius: '14px' }}>
+                    2
                   </div>
-                  <Link to="/berita-acara" className="btn btn-sm btn-success fw-bold text-white px-3 py-2 rounded-pill shadow-sm">
-                    Lanjut ke Langkah 3: Berita Acara ➔
-                  </Link>
+                  <div>
+                    <h5 className="fw-extrabold mb-1 text-dark" style={{ fontSize: '1.05rem' }}>Langkah 2 dari 3: Pengisian Hasil Uji Laboratorium</h5>
+                    <small className="text-muted fw-semibold">Setelah Penjadwalan Selesai ➜ <strong>Isi Hasil Uji & Satuan</strong> ➜ Lalu lanjut ke Berita Acara</small>
+                  </div>
                 </div>
+                <Link to="/berita-acara" className="btn btn-3d-success px-3 py-2">
+                  Lanjut ke Langkah 3: Berita Acara ➔
+                </Link>
               </div>
             </div>
-
-            {/* Search Card */}
-            <div className="card mb-3">
-              <div className="card-body">
+            {/* 3D Search & Filter Card */}
+            <div className="card mb-4 card-3d">
+              <div className="card-body p-3">
                 <form onSubmit={handleSearch}>
                   <div className="row g-2 align-items-center">
                     <div className="col-md">
                       <div className="input-icon">
                         <span className="input-icon-addon">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>
                         </span>
                         <input
                           type="text"
-                          className="form-control"
+                          className="form-control form-control-3d"
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
-                          placeholder="Cari hasil pemeriksaan..."
+                          placeholder="🔍 Cari hasil pemeriksaan atau sampel..."
+                          style={{ paddingLeft: '42px' }}
                         />
                       </div>
                     </div>
                     <div className="col-auto">
                       <div className="input-icon">
                         <span className="input-icon-addon">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 5h6" /><path d="M4 11h6" /><path d="M4 17h6" /><path d="M14 5l6 0" /><path d="M14 11l6 0" /><path d="M14 17l6 0" /></svg>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 5h6" /><path d="M4 11h6" /><path d="M4 17h6" /><path d="M14 5l6 0" /><path d="M14 11l6 0" /><path d="M14 17l6 0" /></svg>
                         </span>
                         <input
                           type="date"
-                          className="form-control"
+                          className="form-control form-control-3d"
                           value={filterDate}
                           onChange={handleDateChange}
-                          style={{ minWidth: "180px" }}
+                          style={{ minWidth: "180px", paddingLeft: '42px' }}
                         />
                       </div>
                     </div>
                     <div className="col-auto">
-                      <button type="submit" className="btn btn-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="icon me-1" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>
+                      <button type="submit" className="btn btn-3d-primary px-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="icon me-1" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>
                         Cari
                       </button>
                     </div>
                     {filterDate && (
                       <div className="col-auto">
-                        <button type="button" className="btn btn-outline-warning" onClick={() => { setFilterDate(""); fetchData(1, search, ""); }}>
-                          <svg xmlns="http://www.w3.org/2000/svg" className="icon me-1" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12" /><path d="M6 6l12 12" /></svg>
+                        <button type="button" className="btn btn-3d-secondary px-3" onClick={() => { setFilterDate(""); fetchData(1, search, ""); }}>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="icon me-1" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12" /><path d="M6 6l12 12" /></svg>
                           Hapus Tanggal
                         </button>
                       </div>
@@ -486,14 +567,14 @@ export default function HasilIndex() {
             </div>
 
             {isLoading ? (
-              <div className="card">
+              <div className="card card-3d">
                 <div className="card-body text-center py-5">
-                  <div className="spinner-border text-primary" style={{ width: "3rem", height: "3rem" }}></div>
-                  <p className="mt-3 text-muted">Memuat data hasil...</p>
+                  <div className="spinner-border text-primary" style={{ width: '3rem', height: '3rem' }}></div>
+                  <p className="mt-3 text-muted fw-bold">Memuat data hasil...</p>
                 </div>
               </div>
-            ) : hasils.length === 0 ? (
-              <div className="card">
+            ) : Object.keys(getGroupedByCategory()).length === 0 ? (
+              <div className="card card-3d">
                 <div className="card-body text-center py-5">
                   <div style={{ opacity: 0.4 }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" className="mb-3">
@@ -502,7 +583,7 @@ export default function HasilIndex() {
                       <path d="M7 21h10" />
                       <path d="M9 14h6v3h-6z" />
                     </svg>
-                    <p className="text-muted mb-0">Belum ada data hasil</p>
+                    <p className="text-muted mb-0 fw-bold">Belum ada data hasil</p>
                     <small className="text-muted">Hasil akan muncul setelah pemohonan disetujui</small>
                   </div>
                 </div>
@@ -517,16 +598,16 @@ export default function HasilIndex() {
                   const totalCount = items.length;
 
                   return (
-                    <div className="card mb-3" key={catName}>
+                    <div className="card mb-4 card-3d" key={catName}>
                       <div
-                        className="card-header cursor-pointer"
+                        className="card-header cursor-pointer py-3"
                         onClick={() => toggleCategory(catName)}
-                        style={{ cursor: "pointer" }}
+                        style={{ cursor: "pointer", background: '#fafafa', borderBottom: '2px solid #000' }}
                       >
                         <div className="d-flex justify-content-between align-items-center">
                           <div className="d-flex align-items-center gap-2">
-                            <span className={`badge bg-${color} me-2`} style={{ fontSize: "0.85rem", padding: "6px 12px" }}>
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "4px", verticalAlign: "text-bottom" }}>
+                            <span className={`badge-3d bg-${color} text-white me-2`} style={{ fontSize: "0.85rem", padding: "6px 12px" }}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "4px", verticalAlign: "text-bottom" }}>
                                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                                 <path d="M9 3h6v11l-3 3l-3 -3v-11z" />
                                 <path d="M7 21h10" />
@@ -534,16 +615,16 @@ export default function HasilIndex() {
                               </svg>
                               {catName}
                             </span>
-                            <span className="text-muted small">{totalCount} parameter</span>
+                            <span className="text-muted small fw-bold">{totalCount} parameter</span>
                           </div>
                           <div className="d-flex align-items-center gap-3">
-                            <div className="progress" style={{ width: "120px", height: "6px" }}>
+                            <div className="progress banner-3d" style={{ width: "120px", height: "10px" }}>
                               <div
                                 className="progress-bar bg-success"
                                 style={{ width: totalCount > 0 ? `${(completedCount / totalCount) * 100}%` : "0%" }}
                               ></div>
                             </div>
-                            <span className="text-muted small">
+                            <span className="text-muted small fw-bold">
                               {completedCount}/{totalCount} selesai
                             </span>
                             <svg
@@ -551,7 +632,7 @@ export default function HasilIndex() {
                               width="20"
                               height="20"
                               viewBox="0 0 24 24"
-                              strokeWidth="2"
+                              strokeWidth="2.5"
                               stroke="currentColor"
                               fill="none"
                               strokeLinecap="round"
@@ -819,7 +900,8 @@ export default function HasilIndex() {
             maxHeight: '92vh',
             backgroundColor: '#fff',
             borderRadius: '24px',
-            boxShadow: '0 32px 80px rgba(0,0,0,0.4)',
+            border: '3.5px solid #000000',
+            boxShadow: '10px 10px 0px #000000',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',

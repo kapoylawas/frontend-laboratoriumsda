@@ -221,7 +221,22 @@ export default function Penjadwalan() {
 
     const openCreateModal = (transaction) => {
         setSelectedTransaction(transaction);
-        setFormData({ tanggal_pengambilan: '', jam_pengambilan: '', lokasi: '', petugas: '', catatan: '' });
+
+        // Prefill from the first existing schedule if present
+        const paidDetails = (transaction?.transaction_details || []).filter((d) => d.status_bayar);
+        const firstScheduled = paidDetails.find((d) => d.JadwalPengambilan && d.JadwalPengambilan.length > 0);
+        if (firstScheduled && firstScheduled.JadwalPengambilan.length > 0) {
+            const existing = firstScheduled.JadwalPengambilan[0];
+            setFormData({
+                tanggal_pengambilan: existing.tanggal_pengambilan ? existing.tanggal_pengambilan.slice(0, 10) : '',
+                jam_pengambilan: existing.jam_pengambilan || '',
+                lokasi: existing.lokasi || '',
+                petugas: existing.petugas || '',
+                catatan: existing.catatan || '',
+            });
+        } else {
+            setFormData({ tanggal_pengambilan: '', jam_pengambilan: '', lokasi: '', petugas: '', catatan: '' });
+        }
         setShowCreateModal(true);
     };
 
@@ -347,6 +362,30 @@ export default function Penjadwalan() {
         );
     };
 
+    const getScheduleInfo = (transaction) => {
+        const details = transaction?.transaction_details || [];
+        const paidDetails = details.filter((d) => d.status_bayar);
+        // Prisma returns the relation as 'JadwalPengambilan' (PascalCase array)
+        const scheduledDetails = paidDetails.filter((d) =>
+            d.JadwalPengambilan && d.JadwalPengambilan.length > 0
+        );
+        const count = scheduledDetails.length;
+        const totalPaid = paidDetails.length;
+        const hasSchedule = count > 0;
+        const isComplete = totalPaid > 0 && count >= totalPaid;
+        const isPartial = hasSchedule && !isComplete;
+
+        return {
+            count,
+            totalPaid,
+            hasSchedule,
+            isComplete,
+            isPartial,
+            scheduledDetails,
+            paidDetails
+        };
+    };
+
     const getDetailsGroupedByCategory = (details) => {
         const grouped = {};
         (details || []).forEach((detail) => {
@@ -386,13 +425,146 @@ export default function Penjadwalan() {
 
     return (
         <LayoutAdmin>
+            <style>{`
+                .card-3d {
+                    background: #ffffff !important;
+                    border: 2.5px solid #000000 !important;
+                    box-shadow: 6px 6px 0px #000000 !important;
+                    border-radius: 18px !important;
+                    overflow: hidden !important;
+                    transition: all 0.15s ease-in-out !important;
+                }
+                .card-3d:hover {
+                    box-shadow: 8px 8px 0px #000000 !important;
+                    transform: translateY(-2px);
+                }
+                .badge-3d {
+                    border: 1.5px solid #000000 !important;
+                    box-shadow: 2px 2px 0px #000000 !important;
+                    border-radius: 8px !important;
+                    font-weight: 800 !important;
+                }
+                .btn-3d-primary {
+                    background: #2563eb !important;
+                    color: #ffffff !important;
+                    border: 2px solid #000000 !important;
+                    box-shadow: 3px 3px 0px #000000 !important;
+                    border-radius: 10px !important;
+                    font-weight: 800 !important;
+                    transition: all 0.1s ease-in-out !important;
+                }
+                .btn-3d-primary:hover {
+                    background: #1d4ed8 !important;
+                    color: #ffffff !important;
+                    transform: translate(-1px, -1px);
+                    box-shadow: 4px 4px 0px #000000 !important;
+                }
+                .btn-3d-primary:active {
+                    transform: translate(2px, 2px);
+                    box-shadow: 1px 1px 0px #000000 !important;
+                }
+                .btn-3d-success {
+                    background: #16a34a !important;
+                    color: #ffffff !important;
+                    border: 2px solid #000000 !important;
+                    box-shadow: 3px 3px 0px #000000 !important;
+                    border-radius: 10px !important;
+                    font-weight: 800 !important;
+                    transition: all 0.1s ease-in-out !important;
+                }
+                .btn-3d-success:hover {
+                    background: #15803d !important;
+                    color: #ffffff !important;
+                    transform: translate(-1px, -1px);
+                    box-shadow: 4px 4px 0px #000000 !important;
+                }
+                .btn-3d-warning {
+                    background: #eab308 !important;
+                    color: #000000 !important;
+                    border: 2px solid #000000 !important;
+                    box-shadow: 3px 3px 0px #000000 !important;
+                    border-radius: 10px !important;
+                    font-weight: 800 !important;
+                    transition: all 0.1s ease-in-out !important;
+                }
+                .btn-3d-danger {
+                    background: #dc2626 !important;
+                    color: #ffffff !important;
+                    border: 2px solid #000000 !important;
+                    box-shadow: 3px 3px 0px #000000 !important;
+                    border-radius: 10px !important;
+                    font-weight: 800 !important;
+                    transition: all 0.1s ease-in-out !important;
+                }
+                .btn-3d-outline-danger {
+                    background: #ffffff !important;
+                    color: #dc2626 !important;
+                    border: 2px solid #000000 !important;
+                    box-shadow: 3px 3px 0px #000000 !important;
+                    border-radius: 10px !important;
+                    font-weight: 800 !important;
+                }
+                .btn-3d-outline-danger:hover {
+                    background: #fef2f2 !important;
+                    color: #b91c1c !important;
+                    transform: translate(-1px, -1px);
+                    box-shadow: 4px 4px 0px #000000 !important;
+                }
+                .btn-3d-outline-success {
+                    background: #ffffff !important;
+                    color: #16a34a !important;
+                    border: 2px solid #000000 !important;
+                    box-shadow: 3px 3px 0px #000000 !important;
+                    border-radius: 10px !important;
+                    font-weight: 800 !important;
+                }
+                .btn-3d-outline-success:hover {
+                    background: #f0fdf4 !important;
+                    color: #15803d !important;
+                    transform: translate(-1px, -1px);
+                    box-shadow: 4px 4px 0px #000000 !important;
+                }
+                .btn-3d-secondary {
+                    background: #f1f5f9 !important;
+                    color: #334155 !important;
+                    border: 2px solid #000000 !important;
+                    box-shadow: 3px 3px 0px #000000 !important;
+                    border-radius: 10px !important;
+                    font-weight: 700 !important;
+                }
+                .banner-3d {
+                    border: 2.5px solid #000000 !important;
+                    box-shadow: 6px 6px 0px #000000 !important;
+                    border-radius: 18px !important;
+                    background: #ffffff !important;
+                }
+                .modal-content-3d {
+                    border: 3.5px solid #000000 !important;
+                    box-shadow: 10px 10px 0px #000000 !important;
+                    border-radius: 24px !important;
+                    overflow: hidden;
+                }
+                .form-control-3d {
+                    border: 2px solid #000000 !important;
+                    box-shadow: 3px 3px 0px #000000 !important;
+                    border-radius: 10px !important;
+                    font-weight: 600;
+                }
+                .form-control-3d:focus {
+                    box-shadow: 5px 5px 0px #000000 !important;
+                    background-color: #fffdf0 !important;
+                    outline: none;
+                }
+            `}</style>
             <div className="page-wrapper">
                 <div className="page-header d-print-none">
                     <div className="container-fluid px-3 px-lg-4">
                         <div className="row g-2 align-items-center">
                             <div className="col">
-                                <h2 className="page-title">Penjadwalan</h2>
-                                <div className="text-muted mt-1">Kelola jadwal pengambilan sampel</div>
+                                <h2 className="page-title fw-extrabold text-dark" style={{ fontSize: '1.8rem', letterSpacing: '-0.5px' }}>
+                                    ✨ Penjadwalan Laboratorium
+                                </h2>
+                                <div className="text-muted mt-1 fw-semibold">Kelola jadwal pengambilan sampel uji dengan tampilan 3D</div>
                             </div>
                         </div>
                     </div>
@@ -400,99 +572,97 @@ export default function Penjadwalan() {
 
                 <div className="page-body">
                     <div className="container-fluid px-3 px-lg-4">
-                        {/* Workflow Step Banner */}
-                        <div className="card mb-3 border-0 shadow-sm" style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', borderRadius: '12px', borderLeft: '5px solid #206bc4' }}>
-                            <div className="card-body p-3">
-                                <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 text-start">
-                                    <div className="d-flex align-items-center gap-3">
-                                        <div className="badge bg-primary fs-6 p-2 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
-                                            1
-                                        </div>
-                                        <div>
-                                            <h5 className="fw-bold mb-0 text-dark">Langkah 1 dari 3: Penjadwalan Sampel & Pengambilan</h5>
-                                            <small className="text-muted">Setelah transaksi LUNAS BAYAR ➜ <strong>Buat Jadwal terlebih dahulu</strong> ➜ Lalu lanjut ke Isi Hasil Uji</small>
-                                        </div>
+                        {/* 3D Workflow Step Banner */}
+                        <div className="card mb-4 banner-3d p-3" style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%)' }}>
+                            <div className="d-flex align-items-center justify-content-between flex-wrap gap-3 text-start">
+                                <div className="d-flex align-items-center gap-3">
+                                    <div className="badge-3d bg-primary text-white fs-5 d-flex align-items-center justify-content-center" style={{ width: '48px', height: '48px', borderRadius: '14px' }}>
+                                        1
                                     </div>
-                                    <Link to="/hasil" className="btn btn-sm btn-primary fw-bold text-white px-3 py-2 rounded-pill shadow-sm">
-                                        Lanjut ke Langkah 2: Isi Hasil ➔
-                                    </Link>
+                                    <div>
+                                        <h5 className="fw-extrabold mb-1 text-dark" style={{ fontSize: '1.05rem' }}>Langkah 1 dari 3: Penjadwalan Sampel & Pengambilan</h5>
+                                        <small className="text-muted fw-semibold">Setelah transaksi LUNAS BAYAR ➜ <strong>Buat Jadwal terlebih dahulu</strong> ➜ Lalu lanjut ke Isi Hasil Uji</small>
+                                    </div>
                                 </div>
+                                <Link to="/hasil" className="btn btn-3d-primary px-3 py-2">
+                                    Lanjut ke Langkah 2: Isi Hasil ➔
+                                </Link>
                             </div>
                         </div>
 
-                        {/* Tab Navigation */}
-                        <div className="card mb-3">
-                            <div className="card-body p-0">
-                                <ul className="nav nav-tabs nav-fill card-tabs" style={{ borderBottom: 'none' }}>
-                                    <li className="nav-item">
-                                        <button
-                                            className={`nav-link ${activeTab === 'jadwal' ? 'active' : ''}`}
-                                            onClick={() => { setActiveTab('jadwal'); fetchJadwal(jadwalPagination.currentPage); }}
-                                            style={{ borderBottom: activeTab === 'jadwal' ? '3px solid var(--tblr-primary)' : 'none', fontWeight: activeTab === 'jadwal' ? 600 : 400 }}
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 5h6" /><path d="M4 11h6" /><path d="M4 17h6" /><path d="M14 5l6 0" /><path d="M14 11l6 0" /><path d="M14 17l6 0" /></svg>
-                                            Daftar Jadwal
-                                        </button>
-                                    </li>
-                                    <li className="nav-item">
-                                        <button
-                                            className={`nav-link ${activeTab === 'transaksi' ? 'active' : ''}`}
-                                            onClick={() => { setActiveTab('transaksi'); fetchTransactions(txPagination.currentPage, search, filterStatus); }}
-                                            style={{ borderBottom: activeTab === 'transaksi' ? '3px solid var(--tblr-primary)' : 'none', fontWeight: activeTab === 'transaksi' ? 600 : 400 }}
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 8v-3a1 1 0 0 0 -1 -1h-10a2 2 0 0 0 0 4h12a1 1 0 0 1 1 1v3m0 4v3a1 1 0 0 1 -1 1h-12a2 2 0 0 1 -2 -2v-12" /><path d="M20 8v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2v-2" /></svg>
-                                            Buat dari Transaksi
-                                        </button>
-                                    </li>
-                                </ul>
+                        {/* 3D Segmented Tab Control */}
+                        <div className="card mb-4 card-3d p-2">
+                            <div className="row g-2">
+                                <div className="col-md-6">
+                                    <button
+                                        type="button"
+                                        className={`btn w-100 py-3 ${activeTab === 'jadwal' ? 'btn-3d-primary' : 'btn-3d-secondary'}`}
+                                        onClick={() => { setActiveTab('jadwal'); fetchJadwal(jadwalPagination.currentPage); }}
+                                        style={{ fontSize: '0.95rem' }}
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 5h6" /><path d="M4 11h6" /><path d="M4 17h6" /><path d="M14 5l6 0" /><path d="M14 11l6 0" /><path d="M14 17l6 0" /></svg>
+                                        📋 Daftar Jadwal Pengambilan
+                                    </button>
+                                </div>
+                                <div className="col-md-6">
+                                    <button
+                                        type="button"
+                                        className={`btn w-100 py-3 ${activeTab === 'transaksi' ? 'btn-3d-primary' : 'btn-3d-secondary'}`}
+                                        onClick={() => { setActiveTab('transaksi'); fetchTransactions(txPagination.currentPage, search, filterStatus); }}
+                                        style={{ fontSize: '0.95rem' }}
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 8v-3a1 1 0 0 0 -1 -1h-10a2 2 0 0 0 0 4h12a1 1 0 0 1 1 1v3m0 4v3a1 1 0 0 1 -1 1h-12a2 2 0 0 1 -2 -2v-12" /><path d="M20 8v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2v-2" /></svg>
+                                        ➕ Buat Jadwal dari Transaksi
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
                         {/* ========== TAB 1: JADWAL LIST ========== */}
                         {activeTab === 'jadwal' && (
                             <>
-                                {/* Summary Cards */}
-                                <div className="row row-cards mb-3">
+                                {/* 3D Summary Cards */}
+                                <div className="row row-cards mb-4">
                                     <div className="col-md-4">
-                                        <div className="card">
+                                        <div className="card card-3d p-2">
                                             <div className="card-body p-3">
                                                 <div className="d-flex align-items-center">
-                                                    <div className="avatar me-3" style={{ backgroundColor: 'rgba(32,107,196,0.1)', color: '#206ba4', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 5h6" /><path d="M4 11h6" /><path d="M4 17h6" /><path d="M14 5l6 0" /><path d="M14 11l6 0" /><path d="M14 17l6 0" /></svg>
+                                                    <div className="badge-3d bg-primary text-white me-3 d-flex align-items-center justify-content-center" style={{ width: '48px', height: '48px' }}>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 5h6" /><path d="M4 11h6" /><path d="M4 17h6" /><path d="M14 5l6 0" /><path d="M14 11l6 0" /><path d="M14 17l6 0" /></svg>
                                                     </div>
                                                     <div>
-                                                        <div className="text-muted small">Total Jadwal</div>
-                                                        <div className="fs-3 fw-bold">{jadwalPagination.total}</div>
+                                                        <div className="text-muted small fw-bold uppercase">Total Jadwal</div>
+                                                        <div className="fs-2 fw-extrabold text-dark">{jadwalPagination.total}</div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="col-md-4">
-                                        <div className="card">
+                                        <div className="card card-3d p-2">
                                             <div className="card-body p-3">
                                                 <div className="d-flex align-items-center">
-                                                    <div className="avatar me-3" style={{ backgroundColor: 'rgba(47,179,68,0.1)', color: '#2fb344', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>
+                                                    <div className="badge-3d bg-success text-white me-3 d-flex align-items-center justify-content-center" style={{ width: '48px', height: '48px' }}>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>
                                                     </div>
                                                     <div>
-                                                        <div className="text-muted small">Akan Datang</div>
-                                                        <div className="fs-3 fw-bold text-success">{jadwalList.filter(j => !isDatePast(j.tanggal_pengambilan)).length}</div>
+                                                        <div className="text-muted small fw-bold uppercase">Akan Datang</div>
+                                                        <div className="fs-2 fw-extrabold text-success">{jadwalList.filter(j => !isDatePast(j.tanggal_pengambilan)).length}</div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="col-md-4">
-                                        <div className="card">
+                                        <div className="card card-3d p-2">
                                             <div className="card-body p-3">
                                                 <div className="d-flex align-items-center">
-                                                    <div className="avatar me-3" style={{ backgroundColor: 'rgba(251,182,6,0.1)', color: '#fbb606', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 8l0 4l2 2" /><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" /></svg>
+                                                    <div className="badge-3d bg-warning text-dark me-3 d-flex align-items-center justify-content-center" style={{ width: '48px', height: '48px' }}>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 8l0 4l2 2" /><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" /></svg>
                                                     </div>
                                                     <div>
-                                                        <div className="text-muted small">Sudah Lewat</div>
-                                                        <div className="fs-3 fw-bold text-warning">{jadwalList.filter(j => isDatePast(j.tanggal_pengambilan)).length}</div>
+                                                        <div className="text-muted small fw-bold uppercase">Sudah Lewat</div>
+                                                        <div className="fs-2 fw-extrabold text-warning">{jadwalList.filter(j => isDatePast(j.tanggal_pengambilan)).length}</div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -534,34 +704,34 @@ export default function Penjadwalan() {
                                                 const past = group.items.length - upcoming;
 
                                                 return (
-                                                    <div className="card mb-3" key={key}>
-                                                        <div className="card-header">
-                                                            <div className="d-flex justify-content-between align-items-center">
+                                                    <div className="card mb-4 card-3d" key={key}>
+                                                        <div className="card-header py-3" style={{ background: '#fafafa', borderBottom: '2px solid #000' }}>
+                                                            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
                                                                 <div className="d-flex align-items-center gap-3">
-                                                                    <span className="badge bg-primary-lt" style={{ fontSize: '0.9rem', padding: '6px 12px' }}>{group.invoice}</span>
+                                                                    <span className="badge-3d bg-primary text-white" style={{ fontSize: '0.9rem', padding: '6px 12px' }}>{group.invoice}</span>
                                                                     <div>
-                                                                        <div className="fw-semibold small">{group.user?.name || '-'}</div>
-                                                                        <div className="text-muted" style={{ fontSize: '0.75rem' }}>{group.user?.email || '-'}</div>
+                                                                        <div className="fw-extrabold text-dark" style={{ fontSize: '0.95rem' }}>{group.user?.name || '-'}</div>
+                                                                        <div className="text-muted small" style={{ fontSize: '0.75rem' }}>{group.user?.email || '-'}</div>
                                                                     </div>
                                                                 </div>
                                                                 <div className="d-flex align-items-center gap-2">
                                                                     <div className="d-flex gap-1">
-                                                                        {upcoming > 0 && <span className="badge bg-success">{upcoming} Akan Datang</span>}
-                                                                        {past > 0 && <span className="badge bg-warning text-dark">{past} Sudah Lewat</span>}
+                                                                        {upcoming > 0 && <span className="badge-3d bg-success text-white" style={{ fontSize: '0.75rem', padding: '4px 8px' }}>{upcoming} Akan Datang</span>}
+                                                                        {past > 0 && <span className="badge-3d bg-warning text-dark" style={{ fontSize: '0.75rem', padding: '4px 8px' }}>{past} Sudah Lewat</span>}
                                                                     </div>
                                                                     {(() => {
                                                                         const existingBA = group.items.find(j => j.berita_acara)?.berita_acara;
                                                                         if (existingBA) {
                                                                             return (
-                                                                                <button className="btn btn-sm btn-success d-flex align-items-center gap-1" onClick={() => navigate(`/berita-acara/${existingBA.id}`)}>
-                                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /></svg>
+                                                                                <button className="btn btn-3d-success btn-sm d-flex align-items-center gap-1" onClick={() => navigate(`/berita-acara/${existingBA.id}`)}>
+                                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /></svg>
                                                                                     Lihat Berita Acara ({existingBA.no_berita_acara})
                                                                                 </button>
                                                                             );
                                                                         }
                                                                         return (
-                                                                            <button className="btn btn-sm btn-primary d-flex align-items-center gap-1" onClick={() => handleViewDetail(group.items)}>
-                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /></svg>
+                                                                            <button className="btn btn-3d-primary btn-sm d-flex align-items-center gap-1" onClick={() => handleViewDetail(group.items)}>
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /></svg>
                                                                                 Pratinjau Berita Acara
                                                                             </button>
                                                                         );
@@ -639,30 +809,52 @@ export default function Penjadwalan() {
                         {activeTab === 'transaksi' && (
                             <>
                                 {/* Search & Filter */}
-                                <div className="card mb-3">
-                                    <div className="card-body">
+                                {/* 3D Search & Filter Card */}
+                                <div className="card mb-4 card-3d">
+                                    <div className="card-body p-3">
                                         <form onSubmit={handleSearch}>
                                             <div className="row g-2 align-items-center">
                                                 <div className="col-md">
                                                     <div className="input-icon">
                                                         <span className="input-icon-addon">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>
                                                         </span>
-                                                        <input type="text" className="form-control" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari invoice atau nama..." />
+                                                        <input type="text" className="form-control form-control-3d" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Cari invoice, NIK, atau nama pemohon..." style={{ paddingLeft: '42px' }} />
+                                                    </div>
+                                                </div>
+                                                <div className="col-12 col-md-auto">
+                                                    <div className="d-flex gap-2 flex-wrap">
+                                                        <button
+                                                            type="button"
+                                                            className={`btn btn-sm fw-bold ${filterStatus === '' ? 'btn-3d-primary' : 'btn-3d-secondary'}`}
+                                                            onClick={() => handleStatusFilter('')}
+                                                            style={{ minWidth: '110px' }}
+                                                        >
+                                                            🗂️ Semua Status
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className={`btn btn-sm fw-bold ${filterStatus === 'false' ? 'btn-3d-warning' : 'btn-3d-secondary'}`}
+                                                            onClick={() => handleStatusFilter('false')}
+                                                            style={{ minWidth: '110px' }}
+                                                        >
+                                                            ⏳ Belum Lunas
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className={`btn btn-sm fw-bold ${filterStatus === 'true' ? 'btn-3d-success' : 'btn-3d-secondary'}`}
+                                                            onClick={() => handleStatusFilter('true')}
+                                                            style={{ minWidth: '110px' }}
+                                                        >
+                                                            ✅ Lunas Bayar
+                                                        </button>
                                                     </div>
                                                 </div>
                                                 <div className="col-auto">
-                                                    <div className="btn-group">
-                                                        <button type="button" className={`btn ${filterStatus === '' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => handleStatusFilter('')}>Semua Status</button>
-                                                        <button type="button" className={`btn ${filterStatus === 'false' ? 'btn-warning' : 'btn-outline-warning'}`} onClick={() => handleStatusFilter('false')}>Belum Lunas</button>
-                                                        <button type="button" className={`btn ${filterStatus === 'true' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => handleStatusFilter('true')}>Lunas Bayar</button>
-                                                    </div>
+                                                    <button type="submit" className="btn btn-sm btn-3d-primary px-3">🔍 Cari</button>
                                                 </div>
                                                 <div className="col-auto">
-                                                    <button type="submit" className="btn btn-primary">Cari</button>
-                                                </div>
-                                                <div className="col-auto">
-                                                    <button type="button" className="btn btn-outline-secondary" onClick={handleClearFilters}>Reset</button>
+                                                    <button type="button" className="btn btn-sm btn-3d-secondary px-3" onClick={handleClearFilters}>🔄 Reset</button>
                                                 </div>
                                             </div>
                                         </form>
@@ -696,25 +888,25 @@ export default function Penjadwalan() {
                                             const groupedDetails = getDetailsGroupedByCategory(details);
 
                                             return (
-                                                <div className="card mb-3" key={transaction.id}>
-                                                    <div className="card-header cursor-pointer" onClick={() => toggleRow(transaction.id)} style={{ cursor: 'pointer' }}>
+                                                <div className="card mb-4 card-3d" key={transaction.id}>
+                                                    <div className="card-header cursor-pointer py-3" onClick={() => toggleRow(transaction.id)} style={{ cursor: 'pointer', background: '#fafafa', borderBottom: '2px solid #000' }}>
                                                         <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
                                                             <div className="d-flex align-items-center gap-3">
-                                                                <span className="badge bg-primary-lt" style={{ fontSize: '0.9rem', padding: '6px 12px' }}>#{getRowNumber(index)}</span>
+                                                                <span className="badge-3d bg-primary text-white" style={{ fontSize: '0.9rem', padding: '6px 12px' }}>#{getRowNumber(index)}</span>
                                                                 <div>
-                                                                    <div className="fw-bold">{transaction.invoice || `INV-${transaction.id}`}</div>
+                                                                    <div className="fw-extrabold text-dark" style={{ fontSize: '1.05rem' }}>{transaction.invoice || `INV-${transaction.id}`}</div>
                                                                     <div className="text-muted small d-flex flex-wrap align-items-center gap-2 mt-1">
-                                                                        <span className="fw-semibold text-dark">
+                                                                        <span className="fw-bold text-dark">
                                                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '3px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>
                                                                             {transaction.user?.name || '-'}
                                                                         </span>
                                                                         {transaction.user?.phone && (
-                                                                            <span className="badge bg-secondary-lt" style={{ fontSize: '0.75rem' }}>
+                                                                            <span className="badge-3d bg-light text-dark" style={{ fontSize: '0.75rem', padding: '2px 8px' }}>
                                                                                 📞 {transaction.user.phone}
                                                                             </span>
                                                                         )}
                                                                         {transaction.user?.nik && (
-                                                                            <span className="badge bg-outline text-muted" style={{ fontSize: '0.75rem' }}>
+                                                                            <span className="badge-3d bg-light text-muted" style={{ fontSize: '0.75rem', padding: '2px 8px' }}>
                                                                                 NIK: {transaction.user.nik}
                                                                             </span>
                                                                         )}
@@ -728,27 +920,96 @@ export default function Penjadwalan() {
                                                             <div className="d-flex align-items-center gap-2">
                                                                 <button 
                                                                     type="button" 
-                                                                    className="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 font-weight-semibold" 
+                                                                    className="btn btn-3d-outline-danger btn-sm d-flex align-items-center gap-1" 
                                                                     onClick={(e) => { 
                                                                         e.stopPropagation(); 
                                                                         window.open(`/invoice/${encodeId(transaction.id)}`, '_blank');
                                                                     }}
                                                                     title="Download PDF Invoice untuk SPJ"
                                                                 >
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><path d="M12 17v-6" /><path d="M9 14l3 3l3 -3" /></svg>
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><path d="M12 17v-6" /><path d="M9 14l3 3l3 -3" /></svg>
                                                                     PDF SPJ
                                                                 </button>
-                                                                {somePaid && (
-                                                                    <button className="btn btn-primary btn-sm" onClick={(e) => { e.stopPropagation(); openCreateModal(transaction); }}>
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
-                                                                        Buat Jadwal
-                                                                    </button>
-                                                                )}
+
+                                                                {/* Dynamic Schedule 3D Action Button */}
+                                                                {(() => {
+                                                                    const schedInfo = getScheduleInfo(transaction);
+                                                                    if (schedInfo.isComplete) {
+                                                                        return (
+                                                                            <button
+                                                                                type="button"
+                                                                                className="btn btn-3d-outline-success btn-sm d-flex align-items-center gap-1"
+                                                                                onClick={(e) => { e.stopPropagation(); openCreateModal(transaction); }}
+                                                                                title="Edit / Ubah Jadwal Pengambilan"
+                                                                            >
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" /><path d="M13.5 6.5l4 4" /></svg>
+                                                                                ✏️ Edit / Ubah Jadwal
+                                                                            </button>
+                                                                        );
+                                                                    }
+                                                                    if (schedInfo.isPartial) {
+                                                                        return (
+                                                                            <button
+                                                                                type="button"
+                                                                                className="btn btn-3d-warning btn-sm d-flex align-items-center gap-1"
+                                                                                onClick={(e) => { e.stopPropagation(); openCreateModal(transaction); }}
+                                                                                title="Lengkapi Jadwal"
+                                                                            >
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+                                                                                ➕ Lengkapi Jadwal ({schedInfo.count}/{schedInfo.totalPaid})
+                                                                            </button>
+                                                                        );
+                                                                    }
+                                                                    if (somePaid) {
+                                                                        return (
+                                                                            <button
+                                                                                type="button"
+                                                                                className="btn btn-3d-primary btn-sm d-flex align-items-center gap-1"
+                                                                                onClick={(e) => { e.stopPropagation(); openCreateModal(transaction); }}
+                                                                                title="Buat Jadwal Pengambilan Sampel Baru"
+                                                                            >
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+                                                                                📅 Buat Jadwal
+                                                                            </button>
+                                                                        );
+                                                                    }
+                                                                    return (
+                                                                        <button type="button" className="btn btn-3d-secondary btn-sm text-muted" disabled>
+                                                                            🔒 Belum Lunas
+                                                                        </button>
+                                                                    );
+                                                                })()}
+
                                                                 <div className="text-end">
-                                                                    <div className="fw-bold text-primary fs-5">{formatCurrency(transaction.grand_total)}</div>
+                                                                    <div className="fw-extrabold text-primary fs-5">{formatCurrency(transaction.grand_total)}</div>
                                                                     <div className="d-flex gap-1 justify-content-end align-items-center">
-                                                                        <span className="badge bg-info-lt">{details.length} item</span>
+                                                                        <span className="badge-3d bg-info text-white" style={{ fontSize: '0.75rem' }}>{details.length} item</span>
                                                                         {getOverallPaymentBadge(details)}
+                                                                        {(() => {
+                                                                            const schedInfo = getScheduleInfo(transaction);
+                                                                            if (schedInfo.isComplete) {
+                                                                                return (
+                                                                                    <span className="badge-3d bg-success text-white" style={{ fontSize: '0.75rem' }}>
+                                                                                        ✅ Terjadwal ({schedInfo.count}/{schedInfo.totalPaid})
+                                                                                    </span>
+                                                                                );
+                                                                            }
+                                                                            if (schedInfo.isPartial) {
+                                                                                return (
+                                                                                    <span className="badge-3d bg-warning text-dark" style={{ fontSize: '0.75rem' }}>
+                                                                                        ⏳ Sebagian ({schedInfo.count}/{schedInfo.totalPaid})
+                                                                                    </span>
+                                                                                );
+                                                                            }
+                                                                            if (schedInfo.totalPaid > 0) {
+                                                                                return (
+                                                                                    <span className="badge-3d bg-danger text-white" style={{ fontSize: '0.75rem' }}>
+                                                                                        ⚠️ Belum Ada Jadwal
+                                                                                    </span>
+                                                                                );
+                                                                            }
+                                                                            return null;
+                                                                        })()}
                                                                     </div>
                                                                 </div>
                                                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'transform 0.2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 9l6 6l6 -6" /></svg>

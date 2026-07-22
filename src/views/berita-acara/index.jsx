@@ -48,26 +48,88 @@ export default function BeritaAcara() {
             FINAL: { class: 'bg-success', icon: '✅' }
         };
         const s = statusMap[status] || { class: 'bg-secondary', icon: '❓' };
-        return <span className={`badge ${s.class}`}>{s.icon} {status}</span>;
+        return <span className={`badge-3d ${s.class} text-white px-2 py-1`}>{s.icon} {status}</span>;
     };
 
     return (
         <LayoutAdmin>
+            <style>{`
+                .card-3d {
+                    background: #ffffff !important;
+                    border: 2.5px solid #000000 !important;
+                    box-shadow: 6px 6px 0px #000000 !important;
+                    border-radius: 18px !important;
+                    overflow: hidden !important;
+                    transition: all 0.15s ease-in-out !important;
+                }
+                .card-3d:hover {
+                    box-shadow: 8px 8px 0px #000000 !important;
+                    transform: translateY(-2px);
+                }
+                .badge-3d {
+                    border: 1.5px solid #000000 !important;
+                    box-shadow: 2px 2px 0px #000000 !important;
+                    border-radius: 8px !important;
+                    font-weight: 800 !important;
+                }
+                .btn-3d-primary {
+                    background: #2563eb !important;
+                    color: #ffffff !important;
+                    border: 2px solid #000000 !important;
+                    box-shadow: 3px 3px 0px #000000 !important;
+                    border-radius: 10px !important;
+                    font-weight: 800 !important;
+                    transition: all 0.1s ease-in-out !important;
+                }
+                .btn-3d-primary:hover {
+                    background: #1d4ed8 !important;
+                    color: #ffffff !important;
+                    transform: translate(-1px, -1px);
+                    box-shadow: 4px 4px 0px #000000 !important;
+                }
+                .btn-3d-secondary {
+                    background: #f1f5f9 !important;
+                    color: #334155 !important;
+                    border: 2px solid #000000 !important;
+                    box-shadow: 3px 3px 0px #000000 !important;
+                    border-radius: 10px !important;
+                    font-weight: 700 !important;
+                }
+                .banner-3d {
+                    border: 2.5px solid #000000 !important;
+                    box-shadow: 6px 6px 0px #000000 !important;
+                    border-radius: 18px !important;
+                    background: #ffffff !important;
+                }
+                .form-control-3d {
+                    border: 2px solid #000000 !important;
+                    box-shadow: 3px 3px 0px #000000 !important;
+                    border-radius: 10px !important;
+                    font-weight: 600;
+                }
+                .form-control-3d:focus {
+                    box-shadow: 5px 5px 0px #000000 !important;
+                    background-color: #fffdf0 !important;
+                    outline: none;
+                }
+            `}</style>
 
             <div className="page-wrapper">
                 <div className="page-header d-print-none">
                     <div className="container-fluid px-3 px-lg-4">
                         <div className="row g-2 align-items-center">
                             <div className="col">
-                                <h2 className="page-title">Berita Acara</h2>
-                                <div className="text-muted mt-1">Laporan pengambilan sampel</div>
+                                <h2 className="page-title fw-extrabold text-dark" style={{ fontSize: '1.8rem', letterSpacing: '-0.5px' }}>
+                                    📜 Berita Acara Pemeriksaan
+                                </h2>
+                                <div className="text-muted mt-1 fw-semibold">Kelola dan unduh laporan Berita Acara hasil uji</div>
                             </div>
                             {isStaffOrAdmin && (
                                 <div className="col-auto ms-auto d-print-none">
                                     <div className="d-flex">
-                                        <Link to="/berita-acara/create" className="btn btn-primary">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
-                                            Buat Berita Acara
+                                        <Link to="/berita-acara/create" className="btn btn-3d-primary">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+                                            Buat Berita Acara Baru
                                         </Link>
                                     </div>
                                 </div>
@@ -78,49 +140,48 @@ export default function BeritaAcara() {
 
                 <div className="page-body">
                     <div className="container-fluid px-3 px-lg-4">
-                        {/* Workflow Step Banner */}
-                        <div className="card mb-3 border-0 shadow-sm" style={{ background: 'linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%)', borderRadius: '12px', borderLeft: '5px solid #a855f7' }}>
-                            <div className="card-body p-3">
-                                <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 text-start">
-                                    <div className="d-flex align-items-center gap-3">
-                                        <div className="badge bg-purple fs-6 p-2 rounded-circle text-white d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px', backgroundColor: '#a855f7' }}>
-                                            3
-                                        </div>
-                                        <div>
-                                            <h5 className="fw-bold mb-0 text-dark">Langkah 3 dari 3: Berita Acara Pemeriksaan</h5>
-                                            <small className="text-muted">Tahap Akhir: Pembuatan Berita Acara Pengambilan Sampel & Hasil Uji Laboratorium</small>
-                                        </div>
+                        {/* 3D Step 3 Banner */}
+                        <div className="card mb-4 banner-3d p-3" style={{ background: 'linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%)' }}>
+                            <div className="d-flex align-items-center justify-content-between flex-wrap gap-3 text-start">
+                                <div className="d-flex align-items-center gap-3">
+                                    <div className="badge-3d bg-purple text-white fs-5 d-flex align-items-center justify-content-center" style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: '#9333ea' }}>
+                                        3
                                     </div>
-                                    <div className="d-flex gap-2">
-                                        <Link to="/penjadwalan" className="btn btn-xs btn-outline-secondary rounded-pill me-1" style={{ fontSize: '0.8rem' }}>
-                                            1. Jadwal
-                                        </Link>
-                                        <Link to="/hasil" className="btn btn-xs btn-outline-secondary rounded-pill" style={{ fontSize: '0.8rem' }}>
-                                            2. Hasil
-                                        </Link>
+                                    <div>
+                                        <h5 className="fw-extrabold mb-1 text-dark" style={{ fontSize: '1.05rem' }}>Langkah 3 dari 3: Berita Acara Pemeriksaan</h5>
+                                        <small className="text-muted fw-semibold">Tahap Akhir: Pembuatan & Cetak Berita Acara Pengambilan Sampel & Hasil Uji</small>
                                     </div>
+                                </div>
+                                <div className="d-flex gap-2">
+                                    <Link to="/penjadwalan" className="btn btn-3d-secondary btn-sm me-1" style={{ fontSize: '0.85rem' }}>
+                                        1. Jadwal
+                                    </Link>
+                                    <Link to="/hasil" className="btn btn-3d-secondary btn-sm" style={{ fontSize: '0.85rem' }}>
+                                        2. Hasil
+                                    </Link>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="card">
-                            <div className="card-header">
+                        <div className="card card-3d">
+                            <div className="card-header py-3" style={{ background: '#fafafa', borderBottom: '2px solid #000' }}>
                                 <div className="row g-2 align-items-center">
                                     <div className="col">
-                                        <h3 className="card-title">Daftar Berita Acara</h3>
+                                        <h3 className="card-title fw-extrabold text-dark" style={{ fontSize: '1.1rem' }}>📋 Daftar Berita Acara</h3>
                                     </div>
                                     <div className="col-auto">
                                         <form onSubmit={handleSearch}>
                                             <div className="input-icon">
                                                 <span className="input-icon-addon">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>
                                                 </span>
                                                 <input
                                                     type="text"
-                                                    className="form-control"
-                                                    placeholder="Cari berita acara..."
+                                                    className="form-control form-control-3d"
+                                                    placeholder="🔍 Cari nomor BA or petugas..."
                                                     value={keywords}
                                                     onChange={(e) => setKeywords(e.target.value)}
+                                                    style={{ paddingLeft: '42px' }}
                                                 />
                                             </div>
                                         </form>
