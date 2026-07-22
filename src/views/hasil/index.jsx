@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import LayoutAdmin from "../../layouts/admin";
 import PaginationComponent from "../../components/Pagination";
 import Cookies from "js-cookie";
@@ -11,10 +12,15 @@ export default function HasilIndex() {
   const [search, setSearch] = useState("");
   const [filterDate, setFilterDate] = useState("");
   const [editingId, setEditingId] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedHasil, setSelectedHasil] = useState(null);
   const [editForm, setEditForm] = useState({
     hasil: "",
     metode: "",
     status: false,
+    satuan: "",
+    kode_sampel: "",
+    kadar_maksimal: "",
   });
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -120,18 +126,108 @@ export default function HasilIndex() {
     return (pagination.currentPage - 1) * pagination.perPage + globalIndex + 1;
   };
 
-  const handleEdit = (hasil) => {
-    setEditingId(hasil.id);
+  const presetSatuanList = ['mg/L', 'mg/dL', 'MPN/100ml', 'CFU/ml', '°C', '%', 'NTU', '-'];
+  const presetMetodeList = ['SNI 06-6989.11-2004', 'SNI 6989.2:2019', 'APHA 23rd Ed.'];
+
+  const handleOpenEditModal = (hasil) => {
+    setSelectedHasil(hasil);
     setEditForm({
       hasil: hasil.hasil || "",
       metode: hasil.metode || "",
       status: hasil.status || false,
+      satuan: hasil.satuan || "",
+      kode_sampel: hasil.kode_sampel || "",
+      kadar_maksimal: hasil.kadar_maksimal || "",
     });
+    setShowEditModal(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setSelectedHasil(null);
+    setEditForm({ hasil: "", metode: "", status: false, satuan: "", kode_sampel: "", kadar_maksimal: "" });
+  };
+
+  const handleModalSave = async (e) => {
+    e.preventDefault();
+    if (!selectedHasil) return;
+
+    try {
+      if (!editForm.hasil.trim()) {
+        Swal.fire({ icon: "warning", title: "Peringatan", text: "Hasil Uji harus diisi!", customClass: { container: 'swal-over-modal' } });
+        return;
+      }
+      if (!editForm.metode.trim()) {
+        Swal.fire({ icon: "warning", title: "Peringatan", text: "Metode harus diisi!", customClass: { container: 'swal-over-modal' } });
+        return;
+      }
+
+      Swal.fire({
+        title: "Mengupdate data...",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+          // Force Swal above modal overlay (zIndex 9999)
+          const swalContainer = document.querySelector('.swal2-container');
+          if (swalContainer) swalContainer.style.zIndex = '99999';
+        },
+      });
+
+      const token = Cookies.get("token");
+      if (!token) {
+        Swal.fire({ icon: "error", title: "Error", text: "Token tidak ditemukan!" });
+        return;
+      }
+
+      Api.defaults.headers.common["Authorization"] = token;
+      const updateData = {
+        hasil: editForm.hasil.trim(),
+        metode: editForm.metode.trim(),
+        satuan: editForm.satuan.trim(),
+        kode_sampel: editForm.kode_sampel.trim(),
+        kadar_maksimal: editForm.kadar_maksimal.trim(),
+        status: editForm.status,
+      };
+
+      await Api.put(`/api/hasils/${selectedHasil.id}`, updateData);
+
+      // Tutup modal dulu, lalu tampilkan notif sukses
+      handleCloseEditModal();
+      await fetchData(pagination.currentPage, search, filterDate);
+
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil!",
+        text: "Data hasil pemeriksaan berhasil disimpan.",
+        showConfirmButton: false,
+        timer: 2000,
+        position: "top-end",
+        toast: true,
+        didOpen: () => {
+          const swalContainer = document.querySelector('.swal2-container');
+          if (swalContainer) swalContainer.style.zIndex = '99999';
+        },
+      });
+
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || "Gagal mengupdate data!";
+      Swal.fire({
+        icon: "error", title: "Gagal Update", text: errorMessage,
+        didOpen: () => {
+          const swalContainer = document.querySelector('.swal2-container');
+          if (swalContainer) swalContainer.style.zIndex = '99999';
+        },
+      });
+    }
+  };
+
+  const handleEdit = (hasil) => {
+    handleOpenEditModal(hasil);
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setEditForm({ hasil: "", metode: "", status: false });
+    setEditForm({ hasil: "", metode: "", status: false, satuan: "", kode_sampel: "", kadar_maksimal: "" });
   };
 
   const handleInputChange = (e) => {
@@ -181,6 +277,9 @@ export default function HasilIndex() {
       const updateData = {
         hasil: editForm.hasil.trim(),
         metode: editForm.metode.trim(),
+        satuan: editForm.satuan.trim(),
+        kode_sampel: editForm.kode_sampel.trim(),
+        kadar_maksimal: editForm.kadar_maksimal.trim(),
         status: editForm.status,
       };
 
@@ -198,7 +297,7 @@ export default function HasilIndex() {
 
       await fetchData(pagination.currentPage, search, filterDate);
       setEditingId(null);
-      setEditForm({ hasil: "", metode: "", status: false });
+      setEditForm({ hasil: "", metode: "", status: false, satuan: "", kode_sampel: "", kadar_maksimal: "" });
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || "Gagal mengupdate data!";
       Swal.fire({ icon: "error", title: "Gagal Update", text: errorMessage });
@@ -294,7 +393,7 @@ export default function HasilIndex() {
     <LayoutAdmin>
       <div className="page-wrapper">
         <div className="page-header d-print-none">
-          <div className="container-xl">
+          <div className="container-fluid px-3 px-lg-4">
             <div className="row g-2 align-items-center">
               <div className="col">
                 <h2 className="page-title">Hasil Pemeriksaan</h2>
@@ -313,7 +412,27 @@ export default function HasilIndex() {
         </div>
 
         <div className="page-body">
-          <div className="container-xl">
+          <div className="container-fluid px-3 px-lg-4">
+            {/* Workflow Step Banner */}
+            <div className="card mb-3 border-0 shadow-sm" style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', borderRadius: '12px', borderLeft: '5px solid #2fb344' }}>
+              <div className="card-body p-3">
+                <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 text-start">
+                  <div className="d-flex align-items-center gap-3">
+                    <div className="badge bg-success fs-6 p-2 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                      2
+                    </div>
+                    <div>
+                      <h5 className="fw-bold mb-0 text-dark">Langkah 2 dari 3: Pengisian Hasil Uji Laboratorium</h5>
+                      <small className="text-muted">Setelah Penjadwalan Selesai ➜ <strong>Isi Hasil Uji & Satuan</strong> ➜ Lalu lanjut ke Berita Acara</small>
+                    </div>
+                  </div>
+                  <Link to="/berita-acara" className="btn btn-sm btn-success fw-bold text-white px-3 py-2 rounded-pill shadow-sm">
+                    Lanjut ke Langkah 3: Berita Acara ➔
+                  </Link>
+                </div>
+              </div>
+            </div>
+
             {/* Search Card */}
             <div className="card mb-3">
               <div className="card-body">
@@ -452,8 +571,11 @@ export default function HasilIndex() {
                             <thead>
                               <tr>
                                 <th style={{ width: "50px" }}>No</th>
+                                <th>Kode Sampel</th>
                                 <th>Parameter</th>
                                 <th>Hasil</th>
+                                <th>Satuan</th>
+                                <th>Kadar Maksimal</th>
                                 <th>Metode</th>
                                 <th className="text-center">Qty</th>
                                 <th className="text-end">Harga</th>
@@ -470,6 +592,22 @@ export default function HasilIndex() {
                                   <tr key={hasil.id}>
                                     <td className="text-muted">{getRowNumber(globalIndex)}</td>
                                     <td>
+                                      {editingId === hasil.id ? (
+                                        <input
+                                          type="text"
+                                          className="form-control form-control-sm"
+                                          name="kode_sampel"
+                                          value={editForm.kode_sampel}
+                                          onChange={handleInputChange}
+                                          placeholder="Kode Sampel"
+                                        />
+                                      ) : hasil.kode_sampel ? (
+                                        <span className="badge bg-secondary-lt font-monospace">{hasil.kode_sampel}</span>
+                                      ) : (
+                                        <span className="text-muted fst-italic">-</span>
+                                      )}
+                                    </td>
+                                    <td>
                                       <span className="badge bg-primary-lt">{hasil.sampel?.parameter || "-"}</span>
                                     </td>
                                     <td>
@@ -484,9 +622,41 @@ export default function HasilIndex() {
                                           autoFocus
                                         />
                                       ) : (
-                                        <span className={hasil.hasil && hasil.hasil !== "-" ? "fw-semibold" : "text-muted fst-italic"}>
+                                        <span className={hasil.hasil && hasil.hasil !== "-" ? "fw-bold text-dark" : "text-muted fst-italic"}>
                                           {hasil.hasil || "-"}
                                         </span>
+                                      )}
+                                    </td>
+                                    <td>
+                                      {editingId === hasil.id ? (
+                                        <input
+                                          type="text"
+                                          className="form-control form-control-sm"
+                                          name="satuan"
+                                          value={editForm.satuan}
+                                          onChange={handleInputChange}
+                                          placeholder="Satuan"
+                                        />
+                                      ) : hasil.satuan ? (
+                                        <span className="badge bg-info-lt">{hasil.satuan}</span>
+                                      ) : (
+                                        <span className="text-muted fst-italic">-</span>
+                                      )}
+                                    </td>
+                                    <td>
+                                      {editingId === hasil.id ? (
+                                        <input
+                                          type="text"
+                                          className="form-control form-control-sm"
+                                          name="kadar_maksimal"
+                                          value={editForm.kadar_maksimal}
+                                          onChange={handleInputChange}
+                                          placeholder="Kadar Maksimal"
+                                        />
+                                      ) : hasil.kadar_maksimal ? (
+                                        <span className="badge bg-warning-lt text-dark">{hasil.kadar_maksimal}</span>
+                                      ) : (
+                                        <span className="text-muted fst-italic">-</span>
                                       )}
                                     </td>
                                     <td>
@@ -500,7 +670,7 @@ export default function HasilIndex() {
                                           placeholder="Masukkan metode"
                                         />
                                       ) : hasil.metode && hasil.metode !== "-" ? (
-                                        <span className="badge bg-info-lt">{hasil.metode}</span>
+                                        <span className="badge bg-purple-lt">{hasil.metode}</span>
                                       ) : (
                                         <span className="text-muted fst-italic">-</span>
                                       )}
@@ -577,7 +747,7 @@ export default function HasilIndex() {
                             </tbody>
                             <tfoot>
                               <tr>
-                                <td colSpan="5" className="text-end fw-bold text-muted">
+                                <td colSpan="8" className="text-end fw-bold text-muted">
                                   Subtotal {catName}
                                 </td>
                                 <td className="text-end">
@@ -585,7 +755,7 @@ export default function HasilIndex() {
                                     {formatCurrency(items.reduce((sum, i) => sum + (i.price || 0) * (i.qty || 0), 0))}
                                   </span>
                                 </td>
-                                <td colSpan="3"></td>
+                                <td colSpan="4"></td>
                               </tr>
                             </tfoot>
                           </table>
@@ -631,6 +801,324 @@ export default function HasilIndex() {
           </div>
         </div>
       </div>
+
+      {/* ================= EDIT HASIL MODAL ================= */}
+      {showEditModal && selectedHasil && (
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) handleCloseEditModal(); }}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            backgroundColor: 'rgba(10,17,40,0.8)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <div style={{
+            width: '100%', maxWidth: '680px',
+            maxHeight: '92vh',
+            backgroundColor: '#fff',
+            borderRadius: '24px',
+            boxShadow: '0 32px 80px rgba(0,0,0,0.4)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}>
+
+            {/* ══ HEADER ══ */}
+            <div style={{ background: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)', padding: '22px 24px 18px', flexShrink: 0 }}>
+              {/* Title Row */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '18px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: 42, height: 42, borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" strokeWidth="2" stroke="#fff" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 3l6 0"/><path d="M10 9l4 0"/><path d="M10 3v6l-4 11a.7 .7 0 0 0 .5 1h11.5a.7 .7 0 0 0 .5 -1l-4 -11v-6"/></svg>
+                  </div>
+                  <div>
+                    <div style={{ color: '#fff', fontWeight: 700, fontSize: '1.05rem', lineHeight: 1.3, marginBottom: '2px' }}>Input & Edit Hasil Pemeriksaan</div>
+                    <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem' }}>Laboratorium SDA — Kelola data hasil uji</div>
+                  </div>
+                </div>
+                <button
+                  onClick={handleCloseEditModal}
+                  type="button"
+                  style={{ background: 'rgba(255,255,255,0.15)', border: 'none', cursor: 'pointer', width: 32, height: 32, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2.5" stroke="#fff" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
+                </button>
+              </div>
+
+              {/* Info Pills */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: '8px', padding: '6px 12px' }}>
+                  <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.62rem', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '2px' }}>Parameter Uji</div>
+                  <div style={{ color: '#fff', fontWeight: 700, fontSize: '0.85rem' }}>{selectedHasil.sampel?.parameter || '-'}</div>
+                </div>
+                <div style={{ backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: '8px', padding: '6px 12px' }}>
+                  <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.62rem', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '2px' }}>Kategori</div>
+                  <div style={{ color: '#fff', fontWeight: 600, fontSize: '0.82rem' }}>{selectedHasil.sampel?.category?.name || '-'}</div>
+                </div>
+                <div style={{ backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: '8px', padding: '6px 12px' }}>
+                  <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.62rem', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '2px' }}>Pemohon</div>
+                  <div style={{ color: '#fff', fontWeight: 600, fontSize: '0.82rem' }}>{selectedHasil.user?.name || '-'}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* ══ BODY ══ */}
+            <form onSubmit={handleModalSave} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 8px', backgroundColor: '#f8fafc' }}>
+
+                {/* Row 1: Kode Sampel + Hasil Uji */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+
+                  {/* Kode Sampel */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '6px' }}>
+                      🏷️ Kode Sampel
+                    </label>
+                    <input
+                      type="text"
+                      name="kode_sampel"
+                      value={editForm.kode_sampel}
+                      onChange={handleInputChange}
+                      placeholder="Contoh: SMP-001, S-123"
+                      style={{
+                        width: '100%', boxSizing: 'border-box',
+                        padding: '11px 14px', borderRadius: '10px',
+                        border: '1.5px solid #e2e8f0',
+                        backgroundColor: '#fff', fontSize: '0.9rem',
+                        color: '#1e293b', outline: 'none',
+                        transition: 'border-color 0.15s',
+                      }}
+                      onFocus={e => e.target.style.borderColor = '#3b82f6'}
+                      onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                    />
+                    <div style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: '4px' }}>Kode identifikasi fisik sampel uji</div>
+                  </div>
+
+                  {/* Hasil Uji */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '6px' }}>
+                      🧪 Hasil Uji <span style={{ color: '#ef4444' }}>*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="hasil"
+                      value={editForm.hasil}
+                      onChange={handleInputChange}
+                      placeholder="Contoh: 7.2,  < 0.01, Negatif"
+                      required
+                      autoFocus
+                      style={{
+                        width: '100%', boxSizing: 'border-box',
+                        padding: '11px 14px', borderRadius: '10px',
+                        border: '2px solid #3b82f6',
+                        backgroundColor: '#eff6ff', fontSize: '0.92rem',
+                        fontWeight: 700, color: '#1d4ed8', outline: 'none',
+                      }}
+                    />
+                    <div style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: '4px' }}>Nilai hasil pengujian laboratorium</div>
+                  </div>
+                </div>
+
+                {/* Row 2: Satuan + Kadar Maksimal */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+
+                  {/* Satuan */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '6px' }}>
+                      📏 Satuan
+                    </label>
+                    <input
+                      type="text"
+                      name="satuan"
+                      value={editForm.satuan}
+                      onChange={handleInputChange}
+                      placeholder="Contoh: mg/L, MPN/100ml"
+                      style={{
+                        width: '100%', boxSizing: 'border-box',
+                        padding: '11px 14px', borderRadius: '10px',
+                        border: '1.5px solid #e2e8f0',
+                        backgroundColor: '#fff', fontSize: '0.9rem',
+                        color: '#1e293b', outline: 'none',
+                        marginBottom: '8px',
+                      }}
+                      onFocus={e => e.target.style.borderColor = '#3b82f6'}
+                      onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                    />
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                      <span style={{ fontSize: '0.65rem', color: '#94a3b8', alignSelf: 'center', marginRight: '2px', fontStyle: 'italic' }}>Pilih cepat:</span>
+                      {presetSatuanList.map((unit) => (
+                        <button
+                          key={unit} type="button"
+                          onClick={() => setEditForm(prev => ({ ...prev, satuan: unit }))}
+                          style={{
+                            fontSize: '0.68rem', padding: '3px 9px', borderRadius: '999px', cursor: 'pointer',
+                            border: '1px solid', lineHeight: 1.4,
+                            backgroundColor: editForm.satuan === unit ? '#1d4ed8' : '#fff',
+                            color: editForm.satuan === unit ? '#fff' : '#475569',
+                            borderColor: editForm.satuan === unit ? '#1d4ed8' : '#cbd5e1',
+                            fontWeight: editForm.satuan === unit ? 600 : 400,
+                          }}
+                        >{unit}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Kadar Maksimal */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '6px' }}>
+                      ⚠️ Kadar Maksimal / Baku Mutu
+                    </label>
+                    <input
+                      type="text"
+                      name="kadar_maksimal"
+                      value={editForm.kadar_maksimal}
+                      onChange={handleInputChange}
+                      placeholder="Contoh: 50 mg/L, 6.0 - 9.0"
+                      style={{
+                        width: '100%', boxSizing: 'border-box',
+                        padding: '11px 14px', borderRadius: '10px',
+                        border: '1.5px solid #e2e8f0',
+                        backgroundColor: '#fff', fontSize: '0.9rem',
+                        color: '#1e293b', outline: 'none',
+                      }}
+                      onFocus={e => e.target.style.borderColor = '#f59e0b'}
+                      onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                    />
+                    <div style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: '4px' }}>Nilai ambang batas baku mutu resmi</div>
+                  </div>
+                </div>
+
+                {/* Row 3: Metode full width */}
+                <div style={{ marginBottom: '14px' }}>
+                  <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '6px' }}>
+                    📖 Metode Pemeriksaan <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="metode"
+                    value={editForm.metode}
+                    onChange={handleInputChange}
+                    placeholder="Contoh: SNI 06-6989.11-2004"
+                    required
+                    style={{
+                      width: '100%', boxSizing: 'border-box',
+                      padding: '11px 14px', borderRadius: '10px',
+                      border: '1.5px solid #e2e8f0',
+                      backgroundColor: '#fff', fontSize: '0.9rem',
+                      color: '#1e293b', outline: 'none',
+                      marginBottom: '8px',
+                    }}
+                    onFocus={e => e.target.style.borderColor = '#3b82f6'}
+                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                  />
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                    <span style={{ fontSize: '0.65rem', color: '#94a3b8', alignSelf: 'center', marginRight: '2px', fontStyle: 'italic' }}>Pilih cepat:</span>
+                    {presetMetodeList.map((met) => (
+                      <button
+                        key={met} type="button"
+                        onClick={() => setEditForm(prev => ({ ...prev, metode: met }))}
+                        style={{
+                          fontSize: '0.68rem', padding: '3px 9px', borderRadius: '999px', cursor: 'pointer',
+                          border: '1px solid', lineHeight: 1.4,
+                          backgroundColor: editForm.metode === met ? '#1d4ed8' : '#fff',
+                          color: editForm.metode === met ? '#fff' : '#1d4ed8',
+                          borderColor: editForm.metode === met ? '#1d4ed8' : '#93c5fd',
+                          fontWeight: editForm.metode === met ? 600 : 400,
+                        }}
+                      >{met}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Row 4: Status */}
+                <div style={{ marginBottom: '8px' }}>
+                  <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '10px' }}>
+                    ⚙️ Status Pemeriksaan
+                  </label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    {/* Toggle: Dalam Proses */}
+                    <button
+                      type="button"
+                      onClick={() => setEditForm(prev => ({ ...prev, status: false }))}
+                      style={{
+                        flex: 1, padding: '14px', borderRadius: '12px',
+                        border: '2px solid', cursor: 'pointer', textAlign: 'center',
+                        backgroundColor: !editForm.status ? '#fff7ed' : '#f8fafc',
+                        borderColor: !editForm.status ? '#f97316' : '#e2e8f0',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      <div style={{ fontSize: '1.5rem', marginBottom: '4px' }}>⏳</div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: !editForm.status ? '#ea580c' : '#94a3b8' }}>Dalam Proses</div>
+                      <div style={{ fontSize: '0.68rem', color: !editForm.status ? '#fb923c' : '#cbd5e1', marginTop: '2px' }}>Belum selesai dianalisa</div>
+                    </button>
+                    {/* Toggle: Selesai */}
+                    <button
+                      type="button"
+                      onClick={() => setEditForm(prev => ({ ...prev, status: true }))}
+                      style={{
+                        flex: 1, padding: '14px', borderRadius: '12px',
+                        border: '2px solid', cursor: 'pointer', textAlign: 'center',
+                        backgroundColor: editForm.status ? '#f0fdf4' : '#f8fafc',
+                        borderColor: editForm.status ? '#16a34a' : '#e2e8f0',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      <div style={{ fontSize: '1.5rem', marginBottom: '4px' }}>✅</div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: editForm.status ? '#15803d' : '#94a3b8' }}>Selesai</div>
+                      <div style={{ fontSize: '0.68rem', color: editForm.status ? '#22c55e' : '#cbd5e1', marginTop: '2px' }}>Hasil sudah final</div>
+                    </button>
+                  </div>
+                  {/* Status controlled via onClick buttons above */}
+                </div>
+
+              </div>
+
+              {/* ══ FOOTER ══ */}
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '16px 24px', borderTop: '1px solid #f1f5f9',
+                backgroundColor: '#fff', flexShrink: 0,
+              }}>
+                <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                  <span style={{ color: '#ef4444' }}>*</span> Field wajib diisi
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={handleCloseEditModal}
+                    style={{
+                      padding: '10px 22px', borderRadius: '10px',
+                      border: '1.5px solid #e2e8f0', backgroundColor: '#fff',
+                      cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem', color: '#64748b',
+                    }}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    style={{
+                      padding: '10px 28px', borderRadius: '10px',
+                      border: 'none', cursor: 'pointer',
+                      fontWeight: 700, fontSize: '0.88rem', color: '#fff',
+                      background: 'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)',
+                      boxShadow: '0 4px 12px rgba(29,78,216,0.35)',
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" strokeWidth="2.5" stroke="#fff" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2"/><path d="M12 14m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M14 4l0 4l-6 0l0 -4"/></svg>
+                    Simpan Hasil
+                  </button>
+                </div>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
+
     </LayoutAdmin>
   );
 }

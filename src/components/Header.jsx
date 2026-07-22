@@ -301,26 +301,7 @@ export default function Header() {
                                     </li>
                                 )}
 
-                                {/* Hasil Menu - Accessible by Admin & Analisis */}
-                                {userCanAccessHasil && (
-                                    <li className={`mobile-nav-item ${isActivePath('/hasil') ? 'active' : ''}`}>
-                                        <Link className="mobile-nav-link" to="/hasil" onClick={closeMobileMenu}>
-                                            <div className="nav-icon">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                                    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-                                                    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
-                                                    <path d="M9 15h6" />
-                                                    <path d="M9 11h6" />
-                                                    <path d="M9 7h4" />
-                                                </svg>
-                                            </div>
-                                            <span className="nav-label">HASIL</span>
-                                        </Link>
-                                    </li>
-                                )}
-
-                                {/* Penjadwalan Menu - Admin Only */}
+                                 {/* Penjadwalan Menu - Admin Only (Step 1 setelah Lunas) */}
                                 {userCanAccessPenjadwalan && (
                                     <li className={`mobile-nav-item ${isActivePath('/penjadwalan') ? 'active' : ''}`}>
                                         <Link className="mobile-nav-link" to="/penjadwalan" onClick={closeMobileMenu}>
@@ -335,7 +316,26 @@ export default function Header() {
                                                     <path d="M14 17l6 0" />
                                                 </svg>
                                             </div>
-                                            <span className="nav-label">JADWAL</span>
+                                            <span className="nav-label">1. JADWAL</span>
+                                        </Link>
+                                    </li>
+                                )}
+
+                                {/* Hasil Menu - Accessible by Admin & Analisis (Step 2) */}
+                                {userCanAccessHasil && (
+                                    <li className={`mobile-nav-item ${isActivePath('/hasil') ? 'active' : ''}`}>
+                                        <Link className="mobile-nav-link" to="/hasil" onClick={closeMobileMenu}>
+                                            <div className="nav-icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                                                    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+                                                    <path d="M9 15h6" />
+                                                    <path d="M9 11h6" />
+                                                    <path d="M9 7h4" />
+                                                </svg>
+                                            </div>
+                                            <span className="nav-label">2. HASIL</span>
                                         </Link>
                                     </li>
                                 )}
@@ -360,7 +360,7 @@ export default function Header() {
                                     </li>
                                 )}
 
-                                {/* Berita Acara Menu - Admin & Pemohon */}
+                                {/* Berita Acara Menu - Admin & Pemohon (Step 3) */}
                                 {userCanAccessOperationalMenus && (
                                     <li className={`mobile-nav-item ${isActivePath('/berita-acara') ? 'active' : ''}`}>
                                         <Link className="mobile-nav-link" to="/berita-acara" onClick={closeMobileMenu}>
@@ -371,7 +371,7 @@ export default function Header() {
                                                     <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
                                                 </svg>
                                             </div>
-                                            <span className="nav-label">BERITA ACARA</span>
+                                            <span className="nav-label">3. BERITA ACARA</span>
                                         </Link>
                                     </li>
                                 )}
@@ -551,26 +551,7 @@ export default function Header() {
                                         </li>
                                     )}
 
-                                    {/* Hasil Menu - Accessible by Admin & Analisis */}
-                                    {userCanAccessHasil && (
-                                        <li className={`nav-item ${isActivePath('/hasil') ? 'active' : ''}`}>
-                                            <Link className="nav-link cashier-nav-link" to="/hasil">
-                                                <div className="nav-icon">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                                        <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-                                                        <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
-                                                        <path d="M9 15h6" />
-                                                        <path d="M9 11h6" />
-                                                        <path d="M9 7h4" />
-                                                    </svg>
-                                                </div>
-                                                <span className="nav-label">HASIL</span>
-                                            </Link>
-                                        </li>
-                                    )}
-
-                                    {/* Penjadwalan Menu - Admin Only */}
+                                     {/* Penjadwalan Menu - Admin Only (Step 1 setelah Lunas) */}
                                     {userCanAccessPenjadwalan && (
                                         <li className={`nav-item ${isActivePath('/penjadwalan') ? 'active' : ''}`}>
                                             <Link className="nav-link cashier-nav-link" to="/penjadwalan">
@@ -585,7 +566,26 @@ export default function Header() {
                                                         <path d="M14 17l6 0" />
                                                     </svg>
                                                 </div>
-                                                <span className="nav-label">JADWAL</span>
+                                                <span className="nav-label">1. JADWAL</span>
+                                            </Link>
+                                        </li>
+                                    )}
+
+                                    {/* Hasil Menu - Accessible by Admin & Analisis (Step 2) */}
+                                    {userCanAccessHasil && (
+                                        <li className={`nav-item ${isActivePath('/hasil') ? 'active' : ''}`}>
+                                            <Link className="nav-link cashier-nav-link" to="/hasil">
+                                                <div className="nav-icon">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                        <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                                                        <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+                                                        <path d="M9 15h6" />
+                                                        <path d="M9 11h6" />
+                                                        <path d="M9 7h4" />
+                                                    </svg>
+                                                </div>
+                                                <span className="nav-label">2. HASIL</span>
                                             </Link>
                                         </li>
                                     )}
@@ -610,7 +610,7 @@ export default function Header() {
                                         </li>
                                     )}
 
-                                    {/* Berita Acara Menu - Admin & Pemohon */}
+                                    {/* Berita Acara Menu - Admin & Pemohon (Step 3) */}
                                     {userCanAccessOperationalMenus && (
                                         <li className={`nav-item ${isActivePath('/berita-acara') ? 'active' : ''}`}>
                                             <Link className="nav-link cashier-nav-link" to="/berita-acara">
@@ -621,7 +621,7 @@ export default function Header() {
                                                         <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
                                                     </svg>
                                                 </div>
-                                                <span className="nav-label">BERITA ACARA</span>
+                                                <span className="nav-label">3. BERITA ACARA</span>
                                             </Link>
                                         </li>
                                     )}

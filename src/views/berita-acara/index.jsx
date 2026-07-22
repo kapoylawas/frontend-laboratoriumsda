@@ -56,7 +56,7 @@ export default function BeritaAcara() {
 
             <div className="page-wrapper">
                 <div className="page-header d-print-none">
-                    <div className="container-xl">
+                    <div className="container-fluid px-3 px-lg-4">
                         <div className="row g-2 align-items-center">
                             <div className="col">
                                 <h2 className="page-title">Berita Acara</h2>
@@ -77,7 +77,32 @@ export default function BeritaAcara() {
                 </div>
 
                 <div className="page-body">
-                    <div className="container-xl">
+                    <div className="container-fluid px-3 px-lg-4">
+                        {/* Workflow Step Banner */}
+                        <div className="card mb-3 border-0 shadow-sm" style={{ background: 'linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%)', borderRadius: '12px', borderLeft: '5px solid #a855f7' }}>
+                            <div className="card-body p-3">
+                                <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 text-start">
+                                    <div className="d-flex align-items-center gap-3">
+                                        <div className="badge bg-purple fs-6 p-2 rounded-circle text-white d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px', backgroundColor: '#a855f7' }}>
+                                            3
+                                        </div>
+                                        <div>
+                                            <h5 className="fw-bold mb-0 text-dark">Langkah 3 dari 3: Berita Acara Pemeriksaan</h5>
+                                            <small className="text-muted">Tahap Akhir: Pembuatan Berita Acara Pengambilan Sampel & Hasil Uji Laboratorium</small>
+                                        </div>
+                                    </div>
+                                    <div className="d-flex gap-2">
+                                        <Link to="/penjadwalan" className="btn btn-xs btn-outline-secondary rounded-pill me-1" style={{ fontSize: '0.8rem' }}>
+                                            1. Jadwal
+                                        </Link>
+                                        <Link to="/hasil" className="btn btn-xs btn-outline-secondary rounded-pill" style={{ fontSize: '0.8rem' }}>
+                                            2. Hasil
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="card">
                             <div className="card-header">
                                 <div className="row g-2 align-items-center">

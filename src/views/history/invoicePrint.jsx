@@ -8,10 +8,14 @@ import {
     FaPrint,
     FaDownload,
     FaArrowLeft,
-    FaFilePdf
+    FaFilePdf,
+    FaCheckCircle,
+    FaClock,
+    FaUser,
+    FaHashtag
 } from 'react-icons/fa';
 import LayoutAdmin from '../../layouts/admin';
-import { decodeId } from '../../utils/hashids'; // Import fungsi decode
+import { decodeId } from '../../utils/hashids';
 
 export default function InvoicePrint() {
     const [transaction, setTransaction] = useState(null);
@@ -37,7 +41,6 @@ export default function InvoicePrint() {
         if (token) {
             Api.defaults.headers.common["Authorization"] = token;
             try {
-                // Decode ID yang di-encode dari URL
                 const decodedId = decodeId(id);
 
                 if (!decodedId) {
@@ -46,15 +49,11 @@ export default function InvoicePrint() {
                     return;
                 }
 
-                // console.log('Encoded ID:', id);
-                // console.log('Decoded ID:', decodedId);
-
                 const response = await Api.get(`/api/transaction-by-id/${decodedId}`);
 
                 if (response.data.data) {
                     setTransaction(response.data.data);
 
-                    // Get user data from cookie
                     const userCookie = Cookies.get("user");
                     if (userCookie) {
                         setUserData(JSON.parse(userCookie));
@@ -85,10 +84,11 @@ export default function InvoicePrint() {
             style: 'currency',
             currency: 'IDR',
             minimumFractionDigits: 0
-        }).format(amount);
+        }).format(amount || 0);
     };
 
     const formatDate = (dateString) => {
+        if (!dateString) return '-';
         const options = {
             weekday: 'long',
             year: 'numeric',
@@ -98,378 +98,8 @@ export default function InvoicePrint() {
         return new Date(dateString).toLocaleDateString('id-ID', options);
     };
 
-    // Fungsi untuk generate PDF yang rapi dengan spasi yang benar
-    const generateInvoicePDF = async () => {
-        if (!invoiceRef.current || !transaction) return;
-
-        setIsGeneratingPDF(true);
-
-        try {
-            // Buat elemen temporary untuk PDF generation
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = generateInvoiceHTML();
-            document.body.appendChild(tempDiv);
-
-            const opt = {
-                margin: [10, 10, 10, 10],
-                filename: `invoice-${transaction.invoice}.pdf`,
-                image: {
-                    type: 'jpeg',
-                    quality: 1.0
-                },
-                html2canvas: {
-                    scale: 3,
-                    useCORS: true,
-                    logging: false,
-                    letterRendering: true,
-                    backgroundColor: '#ffffff',
-                    width: 794,
-                    height: 1123
-                },
-                jsPDF: {
-                    unit: 'mm',
-                    format: 'a4',
-                    orientation: 'portrait'
-                }
-            };
-
-            await html2pdf()
-                .set(opt)
-                .from(tempDiv)
-                .save();
-
-            // Clean up
-            document.body.removeChild(tempDiv);
-
-        } catch (error) {
-            console.error('Error generating PDF:', error);
-            alert('Terjadi kesalahan saat menggenerate PDF: ' + error.message);
-        } finally {
-            setIsGeneratingPDF(false);
-        }
-    };
-
-    const generateInvoiceHTML = () => {
-        if (!transaction) return '';
-
-        const subtotal = transaction.transaction_details.reduce((sum, detail) => sum + detail.price, 0);
-
-        return `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="utf-8">
-                <title>Invoice ${transaction.invoice}</title>
-                <style>
-                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-                    
-                    * {
-                        margin: 0;
-                        padding: 0;
-                        box-sizing: border-box;
-                    }
-                    
-                    body {
-                        font-family: 'Inter', sans-serif;
-                        line-height: 1.4;
-                        color: #000000;
-                        background: #ffffff;
-                        padding: 15mm;
-                        font-size: 11pt;
-                    }
-                    
-                    .invoice-container {
-                        width: 100%;
-                        max-width: 170mm;
-                        margin: 0 auto;
-                        background: white;
-                    }
-                    
-                    .header-section {
-                        text-align: center;
-                        margin-bottom: 8mm;
-                        padding-bottom: 4mm;
-                        border-bottom: 1px solid #000;
-                    }
-                    
-                    .clinic-name {
-                        color: #000;
-                        font-size: 14pt;
-                        font-weight: 700;
-                        margin-bottom: 2mm;
-                        text-transform: uppercase;
-                        letter-spacing: 0.5px;
-                    }
-                    
-                    .clinic-address {
-                        color: #000;
-                        font-size: 9pt;
-                        font-weight: 400;
-                        margin-bottom: 1mm;
-                        line-height: 1.3;
-                    }
-                    
-                    .clinic-address span {
-                        display: inline-block;
-                        margin: 0 2px;
-                    }
-                    
-                    .invoice-title {
-                        margin-top: 4mm;
-                    }
-                    
-                    .invoice-title h1 {
-                        color: #000;
-                        font-size: 16pt;
-                        font-weight: 700;
-                        margin-bottom: 2mm;
-                        text-transform: uppercase;
-                    }
-                    
-                    .info-sections {
-                        display: flex;
-                        justify-content: space-between;
-                        margin-bottom: 6mm;
-                        gap: 10mm;
-                    }
-                    
-                    .invoice-info, .client-info {
-                        flex: 1;
-                    }
-                    
-                    .section-title {
-                        color: #000;
-                        font-size: 10pt;
-                        font-weight: 600;
-                        margin-bottom: 2mm;
-                        text-transform: uppercase;
-                        border-bottom: 1px solid #000;
-                        padding-bottom: 1mm;
-                    }
-                    
-                    .detail-item {
-                        font-size: 9pt;
-                        margin-bottom: 1mm;
-                        line-height: 1.3;
-                    }
-                    
-                    .detail-item strong {
-                        font-weight: 600;
-                    }
-                    
-                    .client-name {
-                        font-weight: 600;
-                        margin-bottom: 1mm;
-                        font-size: 10pt;
-                    }
-                    
-                    .items-section {
-                        margin-bottom: 6mm;
-                    }
-                    
-                    .items-table {
-                        width: 100%;
-                        border-collapse: collapse;
-                        font-size: 9pt;
-                    }
-                    
-                    .items-table th {
-                        background: #f5f5f5;
-                        color: #000;
-                        padding: 2mm 1mm;
-                        text-align: left;
-                        font-weight: 600;
-                        border: 1px solid #000;
-                        text-transform: uppercase;
-                    }
-                    
-                    .items-table td {
-                        padding: 2mm 1mm;
-                        border: 1px solid #000;
-                        vertical-align: top;
-                    }
-                    
-                    .text-center { 
-                        text-align: center; 
-                    }
-                    
-                    .text-right { 
-                        text-align: right; 
-                    }
-                    
-                    .total-section {
-                        margin-bottom: 6mm;
-                    }
-                    
-                    .total-table {
-                        width: 60mm;
-                        margin-left: auto;
-                        border-collapse: collapse;
-                        font-size: 9pt;
-                    }
-                    
-                    .total-table td {
-                        padding: 1.5mm 2mm;
-                        border: 1px solid #000;
-                    }
-                    
-                    .total-label {
-                        font-weight: 600;
-                        background: #f5f5f5;
-                    }
-                    
-                    .footer-section {
-                        margin-top: 6mm;
-                        padding-top: 4mm;
-                        border-top: 1px solid #000;
-                    }
-                    
-                    .terbilang-section {
-                        margin-bottom: 4mm;
-                    }
-                    
-                    .terbilang-text {
-                        font-size: 9pt;
-                        font-weight: 600;
-                        color: #000;
-                        line-height: 1.3;
-                    }
-                    
-                    .payment-info h4 {
-                        color: #000;
-                        font-size: 10pt;
-                        font-weight: 600;
-                        margin-bottom: 2mm;
-                        text-transform: uppercase;
-                    }
-                    
-                    .payment-info p {
-                        font-size: 9pt;
-                        color: #000;
-                        line-height: 1.4;
-                    }
-                    
-                    .spacer {
-                        height: 2mm;
-                    }
-                    
-                    @media print {
-                        body {
-                            margin: 0;
-                            padding: 15mm;
-                            background: white !important;
-                        }
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="invoice-container">
-                    <!-- Header Section -->
-                    <div class="header-section">
-                        <div class="clinic-name">Laboratorium Kesehatan Daerah Kabupaten Sidoarjo</div>
-                        <div class="clinic-address">
-                            <span>Jalan.</span> <span>A. Yani</span> <span>Gedangan</span> <span>Nomer.</span> <span>330</span> <span>Kab.Sidoarjo</span>
-                        </div>
-                        <div class="clinic-address">
-                            <span>Kecamatan Gedangan</span> <span>Telp.</span> <span>0859</span> <span>4634</span> <span>5774</span>
-                        </div>
-                        <div class="clinic-address">
-                            <span>Kabupaten</span> <span>Sidoarjo</span>
-                        </div>
-                        <div class="invoice-title">
-                            <h1>INVOICE</h1>
-                        </div>
-                    </div>
-
-                    <!-- Info Sections -->
-                    <div class="info-sections">
-                        <div class="invoice-info">
-                            <div class="section-title">INVOICE</div>
-                            <div class="detail-item">
-                                <strong>Tanggal:</strong> ${formatDate(transaction.created_at)}
-                            </div>
-                            <div class="detail-item">
-                                <strong>Invoice:</strong> ${transaction.invoice}
-                            </div>
-                        </div>
-                        <div class="client-info">
-                            <div class="section-title">KEPADA</div>
-                            <div class="client-name">${userData?.name || 'ariefsanggautama'}</div>
-                            <div class="detail-item">${formatAddress(userData?.alamat)}</div>
-                        </div>
-                    </div>
-
-                    <div class="spacer"></div>
-
-                    <!-- Items Table -->
-                    <div class="items-section">
-                        <table class="items-table">
-                            <thead>
-                                <tr>
-                                    <th width="8%">NO.</th>
-                                    <th width="47%">JENIS PEMERIKSAAN</th>
-                                    <th width="15%">JUMLAH</th>
-                                    <th width="15%">HARGA / ITEM</th>
-                                    <th width="15%">TOTAL</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${transaction.transaction_details.map((detail, index) => `
-                                    <tr>
-                                        <td class="text-center">${index + 1}.</td>
-                                        <td>${detail.sampel?.parameter || `Jenis Pemeriksaan ${index + 1}`}</td>
-                                        <td class="text-center">1 (satu)</td>
-                                        <td class="text-right">${formatCurrency(detail.price)}</td>
-                                        <td class="text-right">${formatCurrency(detail.price)}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Total Section -->
-                    <div class="total-section">
-                        <table class="total-table">
-                            <tr>
-                                <td class="total-label" width="60%">Total</td>
-                                <td class="text-right" width="40%">${formatCurrency(subtotal)}</td>
-                            </tr>
-                        </table>
-                    </div>
-
-                    <!-- Footer Section -->
-                    <div class="footer-section">
-                        <div class="terbilang-section">
-                            <p class="terbilang-text"><strong>Terbilang:</strong> ${convertToWords(subtotal)}</p>
-                        </div>
-                        <div class="payment-info">
-                            <h4>KETERANGAN:</h4>
-                            <p>
-                                Lakukan pembayaran ke nomor rekening:<br />
-                                BCA 4760219661<br />
-                                Labpesda
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </body>
-            </html>
-        `;
-    };
-
-    // Fungsi untuk memformat alamat dengan spasi
-    const formatAddress = (address) => {
-        if (!address) return '';
-        return address
-            .replace(/([a-z])([A-Z])/g, '$1 $2')
-            .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
-            .replace(/([0-9])([A-Za-z])/g, '$1 $2')
-            .replace(/([A-Za-z])([0-9])/g, '$1 $2');
-    };
-
-    // Fungsi untuk mengkonversi angka ke terbilang (dalam bahasa Indonesia)
     const convertToWords = (number) => {
-        if (number === 0) return 'nol rupiah';
+        if (!number || number === 0) return 'nol rupiah';
 
         const units = ['', 'ribu', 'juta', 'miliar', 'triliun'];
         const numbers = [
@@ -504,17 +134,209 @@ export default function InvoicePrint() {
         };
 
         const words = convert(number).trim();
-        return words + ' rupiah';
+        return words.charAt(0).toUpperCase() + words.slice(1) + ' rupiah';
+    };
+
+    const generateInvoicePDF = async () => {
+        if (!invoiceRef.current || !transaction) return;
+
+        setIsGeneratingPDF(true);
+
+        try {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = generateInvoiceHTML();
+            document.body.appendChild(tempDiv);
+
+            const opt = {
+                margin: [8, 8, 8, 8],
+                filename: `Invoice-${transaction.invoice || 'SPJ'}.pdf`,
+                image: {
+                    type: 'jpeg',
+                    quality: 0.98
+                },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#ffffff'
+                },
+                jsPDF: {
+                    unit: 'mm',
+                    format: 'a4',
+                    orientation: 'portrait'
+                }
+            };
+
+            await html2pdf()
+                .set(opt)
+                .from(tempDiv)
+                .save();
+
+            document.body.removeChild(tempDiv);
+
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Terjadi kesalahan saat menggenerate PDF: ' + error.message);
+        } finally {
+            setIsGeneratingPDF(false);
+        }
+    };
+
+    const generateInvoiceHTML = () => {
+        if (!transaction) return '';
+
+        const subtotal = transaction.transaction_details ? transaction.transaction_details.reduce((sum, detail) => sum + (detail.price || 0), 0) : 0;
+        const allPaid = transaction.transaction_details && transaction.transaction_details.length > 0 && transaction.transaction_details.every(d => d.status_bayar);
+        const customerName = transaction.user?.name || userData?.name || 'Pemohon Umum';
+        const customerPhone = transaction.user?.phone || userData?.phone || '-';
+        const customerNik = transaction.user?.nik || userData?.nik || '-';
+        const customerEmail = transaction.user?.email || userData?.email || '-';
+
+        return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>Invoice ${transaction.invoice}</title>
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+                    
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    body { font-family: 'Inter', sans-serif; color: #1e293b; background: #ffffff; padding: 12mm 15mm; font-size: 10pt; line-height: 1.5; }
+                    .pdf-header { text-align: center; border-bottom: 3px double #0f172a; padding-bottom: 10px; margin-bottom: 15px; }
+                    .pdf-header h2 { font-size: 13pt; font-weight: 800; text-transform: uppercase; color: #0f172a; margin-bottom: 2px; }
+                    .pdf-header h3 { font-size: 11pt; font-weight: 700; text-transform: uppercase; color: #1e3a8a; margin-bottom: 4px; }
+                    .pdf-header p { font-size: 8.5pt; color: #475569; }
+                    
+                    .pdf-title-banner { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; }
+                    .pdf-title-banner h1 { font-size: 14pt; font-weight: 800; color: #0f172a; letter-spacing: 0.5px; }
+                    .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 8.5pt; font-weight: 700; text-transform: uppercase; }
+                    .status-lunas { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+                    .status-belum { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+
+                    .info-grid { display: table; width: 100%; margin-bottom: 16px; table-layout: fixed; }
+                    .info-col { display: table-cell; width: 50%; vertical-align: top; padding-right: 10px; }
+                    .info-col:last-child { padding-right: 0; padding-left: 10px; }
+                    .info-box { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; height: 100%; }
+                    .info-box-title { font-size: 9pt; font-weight: 700; text-transform: uppercase; color: #1e3a8a; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 8px; }
+                    .info-row { font-size: 8.5pt; margin-bottom: 4px; display: flex; justify-content: space-between; }
+                    .info-label { font-weight: 600; color: #64748b; }
+                    .info-val { font-weight: 700; color: #0f172a; text-align: right; }
+
+                    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 8.5pt; }
+                    .items-table th { background: #1e3a8a; color: #ffffff; padding: 8px 10px; font-weight: 700; text-align: left; text-transform: uppercase; border: 1px solid #1e3a8a; }
+                    .items-table td { padding: 8px 10px; border: 1px solid #cbd5e1; vertical-align: middle; }
+                    .items-table tr:nth-child(even) td { background: #f8fafc; }
+                    .text-center { text-align: center; }
+                    .text-right { text-align: right; }
+
+                    .summary-container { margin-bottom: 20px; }
+                    .total-card { background: #f0f6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; }
+                    .terbilang-card { background: #ffffff; border: 1px dashed #94a3b8; border-radius: 6px; padding: 10px 14px; font-size: 8.5pt; color: #334155; }
+
+                    .signature-section { margin-top: 30px; display: table; width: 100%; table-layout: fixed; }
+                    .sig-col { display: table-cell; width: 50%; text-align: center; vertical-align: top; }
+                    .sig-title { font-size: 8.5pt; color: #475569; margin-bottom: 50px; }
+                    .sig-name { font-size: 9.5pt; font-weight: 700; color: #0f172a; text-decoration: underline; }
+                </style>
+            </head>
+            <body>
+                <div class="pdf-header">
+                    <h2>Pemerintah Kabupaten Sidoarjo</h2>
+                    <h3>Dinas Kesehatan - UPT Laboratorium Kesehatan Daerah</h3>
+                    <p>Jl. A. Yani Gedangan No. 330, Kecamatan Gedangan, Kab. Sidoarjo | Telp: 0859 4634 5774</p>
+                </div>
+
+                <div class="pdf-title-banner">
+                    <div>
+                        <h1>INVOICE / BUKTI SPJ</h1>
+                        <p style="font-size: 8.5pt; color: #64748b; margin-top: 2px;">Dokumen Pembayaran Resmi Pengujian Laboratorium</p>
+                    </div>
+                    <div>
+                        ${allPaid ? 
+                            `<span class="status-badge status-lunas">LUNAS BAYAR</span>` : 
+                            `<span class="status-badge status-belum">BELUM LUNAS</span>`
+                        }
+                    </div>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-col">
+                        <div class="info-box">
+                            <div class="info-box-title">Pemohon / Pelanggan</div>
+                            <div class="info-row"><span class="info-label">Nama:</span> <span class="info-val">${customerName}</span></div>
+                            <div class="info-row"><span class="info-label">NIK:</span> <span class="info-val">${customerNik}</span></div>
+                            <div class="info-row"><span class="info-label">No. Telepon / WA:</span> <span class="info-val">${customerPhone}</span></div>
+                            <div class="info-row"><span class="info-label">Email:</span> <span class="info-val">${customerEmail}</span></div>
+                        </div>
+                    </div>
+                    <div class="info-col">
+                        <div class="info-box">
+                            <div class="info-box-title">Rincian Transaksi</div>
+                            <div class="info-row"><span class="info-label">No. Invoice:</span> <span class="info-val">${transaction.invoice || '-'}</span></div>
+                            <div class="info-row"><span class="info-label">Tanggal:</span> <span class="info-val">${formatDate(transaction.created_at)}</span></div>
+                            <div class="info-row"><span class="info-label">No. FA / VA:</span> <span class="info-val">${transaction.no_fa || '-'}</span></div>
+                            <div class="info-row"><span class="info-label">Metode Pembayaran:</span> <span class="info-val">${transaction.no_fa ? 'Virtual Account' : transaction.qris ? 'QRIS' : 'Kasir / Manual'}</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th width="6%" class="text-center">NO.</th>
+                            <th width="54%">JENIS PEMERIKSAAN / PARAMETER SAMPEL</th>
+                            <th width="12%" class="text-center">JUMLAH</th>
+                            <th width="14%" class="text-right">HARGA SATUAN</th>
+                            <th width="14%" class="text-right">SUBTOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${transaction.transaction_details.map((detail, idx) => `
+                            <tr>
+                                <td class="text-center">${idx + 1}</td>
+                                <td><strong>${detail.sampel?.parameter || 'Pemeriksaan Sampel'}</strong></td>
+                                <td class="text-center">1 Sampel</td>
+                                <td class="text-right">${formatCurrency(detail.price)}</td>
+                                <td class="text-right"><strong>${formatCurrency(detail.price)}</strong></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <div class="summary-container">
+                    <div class="total-card" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 11pt; font-weight: 700; color: #1e3a8a;">GRAND TOTAL PEMBAYARAN:</span>
+                        <span style="font-size: 14pt; font-weight: 800; color: #1e3a8a;">${formatCurrency(subtotal)}</span>
+                    </div>
+                    <div class="terbilang-card">
+                        <strong>Terbilang:</strong> <em># ${convertToWords(subtotal)} #</em>
+                    </div>
+                </div>
+
+                <div class="signature-section">
+                    <div class="sig-col">
+                        <div class="sig-title">Pemohon / Pelanggan</div>
+                        <div class="sig-name">${customerName}</div>
+                    </div>
+                    <div class="sig-col">
+                        <div class="sig-title">Sidoarjo, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>Petugas Admin UPT Labkesda</div>
+                        <div class="sig-name">Petugas Kasir & Verifikasi</div>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
     };
 
     if (isLoading) {
         return (
             <LayoutAdmin>
-                <div className="loading-container">
-                    <div className="loading-spinner">
-                        <FaSpinner className="spinner-icon" />
+                <div className="d-flex flex-column align-items-center justify-content-center py-5" style={{ minHeight: '60vh' }}>
+                    <div className="spinner-border text-primary mb-3" role="status" style={{ width: '3rem', height: '3rem' }}>
+                        <span className="visually-hidden">Loading...</span>
                     </div>
-                    <p className="loading-text">Memuat data invoice...</p>
+                    <h5 className="text-secondary fw-semibold">Memuat Data Invoice & SPJ...</h5>
                 </div>
             </LayoutAdmin>
         );
@@ -523,17 +345,13 @@ export default function InvoicePrint() {
     if (error || !transaction) {
         return (
             <LayoutAdmin>
-                <div className="error-container">
-                    <div className="error-content">
-                        <h2>Data tidak ditemukan</h2>
-                        <p>{error || 'Transaksi tidak ditemukan atau telah dihapus'}</p>
-                        <div className="error-details">
-                            <p><strong>Encoded ID:</strong> {id}</p>
-                            <p><strong>Decoded ID:</strong> {id ? decodeId(id) : 'Tidak valid'}</p>
-                        </div>
-                        <button onClick={() => navigate(-1)} className="btn btn-primary">
-                            <FaArrowLeft className="btn-icon" />
-                            Kembali ke Riwayat
+                <div className="container py-5 text-center">
+                    <div className="card shadow-sm border-0 p-5 mx-auto" style={{ maxWidth: '500px', borderRadius: '16px' }}>
+                        <div className="text-danger mb-3" style={{ fontSize: '3rem' }}>⚠️</div>
+                        <h4 className="fw-bold text-dark mb-2">Data Invoice Tidak Ditemukan</h4>
+                        <p className="text-muted mb-4">{error || 'Transaksi tidak ditemukan atau telah dihapus dari sistem.'}</p>
+                        <button onClick={() => navigate('/penjadwalan')} className="btn btn-primary rounded-pill px-4">
+                            <FaArrowLeft className="me-2" /> Kembali ke Daftar Transaksi
                         </button>
                     </div>
                 </div>
@@ -541,601 +359,251 @@ export default function InvoicePrint() {
         );
     }
 
-    // Calculate totals for display
-    const subtotal = transaction.transaction_details.reduce((sum, detail) => sum + detail.price, 0);
+    const subtotal = transaction.transaction_details ? transaction.transaction_details.reduce((sum, detail) => sum + (detail.price || 0), 0) : 0;
+    const allPaid = transaction.transaction_details && transaction.transaction_details.length > 0 && transaction.transaction_details.every(d => d.status_bayar);
+    const customerName = transaction.user?.name || userData?.name || 'Pemohon Umum';
+    const customerPhone = transaction.user?.phone || userData?.phone || '-';
+    const customerNik = transaction.user?.nik || userData?.nik || '-';
+    const customerEmail = transaction.user?.email || userData?.email || '-';
 
     return (
         <LayoutAdmin>
-            <div className="invoice-print-container">
-                {/* Action Bar - Tidak akan tercetak */}
-                <div className="action-bar no-print">
-                    <div className="action-header">
-                        <h2 className="page-title">
-                            <FaFilePdf className="title-icon" />
-                            Invoice #{transaction.invoice}
-                        </h2>
-                        <p className="page-subtitle">Preview dan download invoice transaksi</p>
-                    </div>
-                    <div className="action-buttons">
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="btn btn-back"
-                        >
-                            <FaArrowLeft className="btn-icon" />
-                            Kembali ke Daftar
-                        </button>
-                        <div className="button-divider"></div>
-                        <button
-                            onClick={generateInvoicePDF}
-                            className="btn btn-download"
-                            disabled={isGeneratingPDF}
-                        >
-                            {isGeneratingPDF ? (
-                                <FaSpinner className="btn-icon spinning" />
-                            ) : (
-                                <FaDownload className="btn-icon" />
-                            )}
-                            {isGeneratingPDF ? 'Sedang Membuat PDF...' : 'Download PDF Invoice'}
-                        </button>
+            <div className="invoice-page-wrapper py-4 px-2 px-md-4" style={{ backgroundColor: '#f1f5f9', minHeight: '100vh' }}>
+                
+                {/* Header Action Bar - Screen Only (no-print) */}
+                <div className="card border-0 shadow-sm mb-4 no-print overflow-hidden" style={{ borderRadius: '16px', background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #206bc4 100%)' }}>
+                    <div className="card-body p-4 text-white">
+                        <div className="row align-items-center g-3">
+                            <div className="col-md-7">
+                                <div className="d-flex align-items-center gap-2 mb-2">
+                                    <span className="badge bg-white text-primary fw-bold px-3 py-2 rounded-pill" style={{ fontSize: '0.8rem' }}>
+                                        DOKUMEN INVOICE & SPJ
+                                    </span>
+                                    {allPaid ? (
+                                        <span className="badge bg-success text-white fw-bold px-3 py-2 rounded-pill d-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
+                                            <FaCheckCircle /> LUNAS BAYAR
+                                        </span>
+                                    ) : (
+                                        <span className="badge bg-warning text-dark fw-bold px-3 py-2 rounded-pill d-flex align-items-center gap-1" style={{ fontSize: '0.8rem' }}>
+                                            <FaClock /> BELUM LUNAS
+                                        </span>
+                                    )}
+                                </div>
+                                <h2 className="fw-extrabold text-white mb-1 d-flex align-items-center gap-2">
+                                    <FaFilePdf className="text-info" /> Invoice #{transaction.invoice}
+                                </h2>
+                                <p className="text-white-50 mb-0 small">
+                                    Dokumen rincian pembayaran resmi UPT Laboratorium Kesehatan Daerah Kabupaten Sidoarjo.
+                                </p>
+                            </div>
+                            <div className="col-md-5 text-md-end text-start">
+                                <div className="d-flex flex-wrap gap-2 justify-content-md-end justify-content-start">
+                                    <button
+                                        onClick={() => navigate('/penjadwalan')}
+                                        className="btn btn-light btn-sm fw-semibold rounded-pill px-3 py-2 d-inline-flex align-items-center gap-1 shadow-sm"
+                                    >
+                                        <FaArrowLeft /> Kembali
+                                    </button>
+                                    <button
+                                        onClick={() => window.print()}
+                                        className="btn btn-outline-light btn-sm fw-semibold rounded-pill px-3 py-2 d-inline-flex align-items-center gap-1 shadow-sm"
+                                    >
+                                        <FaPrint /> Cetak
+                                    </button>
+                                    <button
+                                        onClick={generateInvoicePDF}
+                                        className="btn btn-success btn-sm fw-bold rounded-pill px-4 py-2 d-inline-flex align-items-center gap-2 shadow"
+                                        disabled={isGeneratingPDF}
+                                    >
+                                        {isGeneratingPDF ? (
+                                            <><FaSpinner className="spinner me-1" /> Generating...</>
+                                        ) : (
+                                            <><FaDownload /> Download PDF (SPJ)</>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* Invoice Content untuk tampilan di browser */}
-                <div className="invoice-content" id="invoice-content" ref={invoiceRef}>
-                    <div className="invoice-container-preview">
-                        {/* Header Section */}
-                        <div className="header-section">
-                            <div className="clinic-name">Laboratorium Kesehatan Daerah Kabupaten Sidoarjo</div>
-                            <div className="clinic-address">Jalan A. Yani Gedangan Nomer 330.</div>
-                            <div className="clinic-address">Kecamatan Gedangan Telp. 0859 4634 5774</div>
-                            <div className="clinic-address">Kabupaten Sidoarjo</div>
-                            <div className="invoice-title">
-                                <h1>INVOICE</h1>
+                {/* Printable Invoice Document Container */}
+                <div className="card border-0 shadow-lg mx-auto overflow-hidden printable-card" style={{ maxWidth: '900px', borderRadius: '16px', backgroundColor: '#ffffff' }} ref={invoiceRef}>
+                    <div className="card-body p-4 p-md-5">
+
+                        {/* Kop Surat Header */}
+                        <div className="header-kop text-center pb-3 mb-4" style={{ borderBottom: '3px double #1e293b' }}>
+                            <h5 className="fw-extrabold text-uppercase text-dark mb-1" style={{ letterSpacing: '0.5px' }}>PEMERINTAH KABUPATEN SIDOARJO</h5>
+                            <h4 className="fw-bold text-uppercase text-primary mb-1" style={{ letterSpacing: '0.5px' }}>DINAS KESEHATAN</h4>
+                            <h3 className="fw-black text-uppercase text-dark mb-2" style={{ letterSpacing: '0.8px' }}>UPT LABORATORIUM KESEHATAN DAERAH</h3>
+                            <p className="text-muted small mb-0">
+                                Jalan A. Yani Gedangan Nomer 330, Kecamatan Gedangan | Telp: 0859 4634 5774 | Kabupaten Sidoarjo
+                            </p>
+                        </div>
+
+                        {/* Title Banner */}
+                        <div className="title-banner p-3 rounded-3 mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2" style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                            <div>
+                                <h4 className="fw-bold text-dark mb-0">INVOICE / BUKTI SPJ</h4>
+                                <span className="text-muted small">Rincian Pengajuan Pemeriksaan Laboratorium</span>
+                            </div>
+                            <div>
+                                {allPaid ? (
+                                    <span className="badge bg-success-lt text-success fw-bold fs-6 px-3 py-2 rounded-pill border border-success">
+                                        ✔ LUNAS BAYAR
+                                    </span>
+                                ) : (
+                                    <span className="badge bg-warning-lt text-warning-emphasis fw-bold fs-6 px-3 py-2 rounded-pill border border-warning">
+                                        ⏳ MENUNGGU PEMBAYARAN
+                                    </span>
+                                )}
                             </div>
                         </div>
 
-                        {/* Info Sections */}
-                        <div className="info-sections">
-                            <div className="invoice-info">
-                                <h3 className="section-title">INVOICE</h3>
-                                <div className="detail-item">
-                                    <strong>Tanggal:</strong> {formatDate(transaction.created_at)}
-                                </div>
-                                <div className="detail-item">
-                                    <strong>Invoice:</strong> {transaction.invoice}
+                        {/* Information Grid Cards */}
+                        <div className="row g-3 mb-4">
+                            <div className="col-md-6">
+                                <div className="card h-100 border p-3 rounded-3" style={{ backgroundColor: '#ffffff', borderColor: '#cbd5e1' }}>
+                                    <h6 className="fw-bold text-primary text-uppercase mb-3 d-flex align-items-center gap-2" style={{ fontSize: '0.85rem' }}>
+                                        <FaUser className="text-primary" /> Pemohon / Pelanggan
+                                    </h6>
+                                    <div className="mb-2 d-flex justify-content-between">
+                                        <span className="text-muted small">Nama:</span>
+                                        <strong className="text-dark small">{customerName}</strong>
+                                    </div>
+                                    <div className="mb-2 d-flex justify-content-between">
+                                        <span className="text-muted small">NIK:</span>
+                                        <span className="text-dark small fw-semibold">{customerNik}</span>
+                                    </div>
+                                    <div className="mb-2 d-flex justify-content-between">
+                                        <span className="text-muted small">No. HP / WA:</span>
+                                        <span className="text-dark small fw-semibold">{customerPhone}</span>
+                                    </div>
+                                    <div className="d-flex justify-content-between">
+                                        <span className="text-muted small">Email:</span>
+                                        <span className="text-dark small fw-semibold">{customerEmail}</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="client-info">
-                                <h3 className="section-title">KEPADA</h3>
-                                <div className="client-name">
-                                    <strong>{userData?.name || 'ariefsanggautama'}</strong>
-                                </div>
-                                <div className="detail-item">
-                                    {userData?.alamat}
+                            <div className="col-md-6">
+                                <div className="card h-100 border p-3 rounded-3" style={{ backgroundColor: '#ffffff', borderColor: '#cbd5e1' }}>
+                                    <h6 className="fw-bold text-primary text-uppercase mb-3 d-flex align-items-center gap-2" style={{ fontSize: '0.85rem' }}>
+                                        <FaHashtag className="text-primary" /> Rincian Transaksi
+                                    </h6>
+                                    <div className="mb-2 d-flex justify-content-between">
+                                        <span className="text-muted small">No. Invoice:</span>
+                                        <strong className="text-primary small font-monospace">{transaction.invoice || '-'}</strong>
+                                    </div>
+                                    <div className="mb-2 d-flex justify-content-between">
+                                        <span className="text-muted small">Tanggal:</span>
+                                        <span className="text-dark small fw-semibold">{formatDate(transaction.created_at)}</span>
+                                    </div>
+                                    <div className="mb-2 d-flex justify-content-between">
+                                        <span className="text-muted small">No. FA / VA:</span>
+                                        <span className="text-success small fw-bold font-monospace">{transaction.no_fa || '-'}</span>
+                                    </div>
+                                    <div className="d-flex justify-content-between">
+                                        <span className="text-muted small">Pembayaran via:</span>
+                                        <span className="text-dark small fw-semibold">{transaction.no_fa ? 'Virtual Account' : transaction.qris ? 'QRIS' : 'Kasir / Manual'}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Items Table */}
-                        <div className="items-section">
-                            <table className="items-table">
-                                <thead>
-                                    <tr>
-                                        <th width="8%">NO.</th>
-                                        <th width="47%">JENIS PEMERIKSAAN</th>
-                                        <th width="15%">JUMLAH</th>
-                                        <th width="15%">HARGA / ITEM</th>
-                                        <th width="15%">TOTAL</th>
+                        {/* Itemized Details Table */}
+                        <div className="table-responsive mb-4">
+                            <table className="table table-bordered align-middle mb-0" style={{ borderColor: '#cbd5e1' }}>
+                                <thead className="table-dark" style={{ backgroundColor: '#1e3a8a' }}>
+                                    <tr className="text-uppercase" style={{ fontSize: '0.8rem', letterSpacing: '0.5px' }}>
+                                        <th className="text-center" style={{ width: '50px' }}>No</th>
+                                        <th>Jenis Pemeriksaan / Parameter Sampel</th>
+                                        <th className="text-center" style={{ width: '110px' }}>Jumlah</th>
+                                        <th className="text-end" style={{ width: '140px' }}>Harga Satuan</th>
+                                        <th className="text-end" style={{ width: '150px' }}>Subtotal</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {transaction.transaction_details.map((detail, index) => (
-                                        <tr key={detail.id}>
-                                            <td className="text-center">{index + 1}.</td>
-                                            <td>{detail.sampel?.parameter || `Jenis Pemeriksaan ${index + 1}`}</td>
-                                            <td className="text-center">1 (satu)</td>
-                                            <td className="text-right">{formatCurrency(detail.price)}</td>
-                                            <td className="text-right">{formatCurrency(detail.price)}</td>
+                                    {transaction.transaction_details && transaction.transaction_details.map((detail, idx) => (
+                                        <tr key={detail.id || idx}>
+                                            <td className="text-center fw-semibold" style={{ fontSize: '0.85rem' }}>{idx + 1}</td>
+                                            <td>
+                                                <strong className="text-dark d-block" style={{ fontSize: '0.9rem' }}>{detail.sampel?.parameter || 'Pemeriksaan Sampel'}</strong>
+                                                <span className="text-muted small" style={{ fontSize: '0.78rem' }}>Sampel Uji Laboratorium</span>
+                                            </td>
+                                            <td className="text-center text-muted small">1 Sampel</td>
+                                            <td className="text-end text-secondary small">{formatCurrency(detail.price)}</td>
+                                            <td className="text-end fw-bold text-dark" style={{ fontSize: '0.9rem' }}>{formatCurrency(detail.price)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
 
-                        {/* Total Section */}
-                        <div className="total-section">
-                            <table className="total-table">
-                                <tbody>
-                                    <tr>
-                                        <td className="total-label" width="60%">Total</td>
-                                        <td className="text-right" width="40%">{formatCurrency(subtotal)}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        {/* Total Card & Terbilang */}
+                        <div className="card border-0 p-3 mb-4 rounded-3" style={{ backgroundColor: '#f0f6ff', border: '1px solid #bfdbfe' }}>
+                            <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                                <span className="fw-extrabold text-primary text-uppercase" style={{ fontSize: '1rem' }}>GRAND TOTAL PEMBAYARAN:</span>
+                                <span className="fs-3 fw-black text-primary font-monospace">{formatCurrency(subtotal)}</span>
+                            </div>
+                            <div className="p-2 rounded bg-white border text-secondary" style={{ fontSize: '0.85rem' }}>
+                                <strong>Terbilang:</strong> <em className="text-dark"># {convertToWords(subtotal)} #</em>
+                            </div>
                         </div>
 
-                        {/* Footer Section */}
-                        <div className="footer-section">
-                            <div className="terbilang-section">
-                                <p className="terbilang-text"><strong>Terbilang:</strong> {convertToWords(subtotal)}</p>
+                        {/* Bank Account Info & Signatures */}
+                        <div className="row g-4 align-items-end mt-3">
+                            <div className="col-md-6">
+                                <div className="p-3 rounded border bg-light">
+                                    <h6 className="fw-bold text-dark mb-2" style={{ fontSize: '0.85rem' }}>Catatan Pembayaran:</h6>
+                                    <p className="text-muted small mb-1">
+                                        Pembayaran transfer bank dapat dilakukan ke rekening resmi:<br />
+                                        <strong className="text-dark">Bank BCA: 4760219661</strong> (a.n. Labpesda Sidoarjo)
+                                    </p>
+                                    <small className="text-muted" style={{ fontSize: '0.75rem' }}>Simpan bukti pembayaran/kuitansi ini sebagai lampiran sah SPJ.</small>
+                                </div>
                             </div>
-                            <div className="payment-info">
-                                <h4>KETERANGAN:</h4>
-                                <p>
-                                    Lakukan pembayaran ke nomor rekening:<br />
-                                    BCA 4760219661<br />
-                                    Labpesda
-                                </p>
+                            <div className="col-md-6 text-center">
+                                <div className="d-flex justify-content-around text-center">
+                                    <div>
+                                        <div className="text-muted small mb-5">Pemohon / Pelanggan,</div>
+                                        <strong className="text-dark border-bottom border-dark pb-1 d-inline-block" style={{ fontSize: '0.9rem' }}>
+                                            {customerName}
+                                        </strong>
+                                    </div>
+                                    <div>
+                                        <div className="text-muted small mb-1">Sidoarjo, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                                        <div className="text-muted small mb-4">Petugas Admin Kasir,</div>
+                                        <strong className="text-dark border-bottom border-dark pb-1 d-inline-block" style={{ fontSize: '0.9rem' }}>
+                                            Kasir & Verifikasi UPT Labkesda
+                                        </strong>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
 
-                <style jsx>{`
-                .invoice-print-container {
-                    min-height: 100vh;
-                    background: #f8f9fa;
-                    padding: 20px;
-                    font-family: 'Inter', sans-serif;
-                }
-
-                .action-bar {
-                    background: white;
-                    padding: 2rem;
-                    border-radius: 16px;
-                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-                    margin-bottom: 2rem;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                    gap: 2rem;
-                    border: 1px solid #e9ecef;
-                }
-
-                .action-header {
-                    flex: 1;
-                }
-
-                .page-title {
-                    color: #2c3e50;
-                    font-size: 1.5rem;
-                    font-weight: 700;
-                    margin: 0 0 0.5rem 0;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.75rem;
-                }
-
-                .title-icon {
-                    color: #e74c3c;
-                    font-size: 1.4rem;
-                }
-
-                .page-subtitle {
-                    color: #6c757d;
-                    font-size: 0.95rem;
-                    margin: 0;
-                    font-weight: 400;
-                }
-
-                .action-buttons {
-                    display: flex;
-                    align-items: center;
-                    gap: 1rem;
-                    flex-shrink: 0;
-                }
-
-                .button-divider {
-                    width: 1px;
-                    height: 30px;
-                    background: #e9ecef;
-                    margin: 0 0.5rem;
-                }
-
-                .btn {
-                    padding: 0.875rem 1.5rem;
-                    border-radius: 12px;
-                    font-weight: 600;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.75rem;
-                    border: none;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                    text-decoration: none;
-                    font-size: 0.95rem;
-                    min-width: 180px;
-                    justify-content: center;
-                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                    position: relative;
-                    overflow: hidden;
-                }
-
-                .btn::before {
-                    content: '';
-                    position: absolute;
-                    top: 0;
-                    left: -100%;
-                    width: 100%;
-                    height: 100%;
-                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-                    transition: left 0.5s;
-                }
-
-                .btn:hover::before {
-                    left: 100%;
-                }
-
-                .btn-back {
-                    background: linear-gradient(135deg, #6c757d, #495057);
-                    color: white;
-                    border: 2px solid #495057;
-                }
-
-                .btn-back:hover {
-                    background: linear-gradient(135deg, #5a6268, #3d4348);
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
-                }
-
-                .btn-download {
-                    background: linear-gradient(135deg, #28a745, #1e7e34);
-                    color: white;
-                    border: 2px solid #1e7e34;
-                }
-
-                .btn-download:hover:not(:disabled) {
-                    background: linear-gradient(135deg, #218838, #155724);
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-                }
-
-                .btn:disabled {
-                    opacity: 0.6;
-                    cursor: not-allowed;
-                    transform: none;
-                    box-shadow: none;
-                }
-
-                .btn:disabled:hover::before {
-                    left: -100%;
-                }
-
-                .btn-icon {
-                    font-size: 1rem;
-                    flex-shrink: 0;
-                }
-
-                .invoice-content {
-                    background: white;
-                    border-radius: 12px;
-                    box-shadow: 0 6px 30px rgba(0, 0, 0, 0.1);
-                    padding: 40px;
-                    max-width: 210mm;
-                    margin: 0 auto;
-                    font-size: 12pt;
-                    border: 1px solid #e9ecef;
-                }
-
-                .invoice-container-preview {
-                    max-width: 100%;
-                }
-
-                .header-section {
-                    text-align: center;
-                    margin-bottom: 25px;
-                    padding-bottom: 15px;
-                    border-bottom: 2px solid #000;
-                }
-
-                .clinic-name {
-                    color: #000;
-                    margin: 0 0 10px 0;
-                    font-size: 1.4rem;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
-                }
-
-                .clinic-address {
-                    color: #000;
-                    font-size: 0.9rem;
-                    margin: 3px 0;
-                    font-weight: 400;
-                    line-height: 1.3;
-                }
-
-                .invoice-title h1 {
-                    color: #000;
-                    margin: 15px 0 5px 0;
-                    font-size: 1.6rem;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                }
-
-                .info-sections {
-                    display: flex;
-                    justify-content: space-between;
-                    margin-bottom: 25px;
-                    gap: 40px;
-                }
-
-                .invoice-info, .client-info {
-                    flex: 1;
-                }
-
-                .section-title {
-                    color: #000;
-                    margin-bottom: 10px;
-                    font-size: 0.95rem;
-                    font-weight: 600;
-                    text-transform: uppercase;
-                    border-bottom: 1px solid #000;
-                    padding-bottom: 5px;
-                }
-
-                .detail-item {
-                    color: #000;
-                    font-size: 0.9rem;
-                    margin-bottom: 5px;
-                    line-height: 1.3;
-                }
-
-                .client-name {
-                    font-weight: 600;
-                    margin-bottom: 5px;
-                    color: #000;
-                    font-size: 1rem;
-                }
-
-                .items-section {
-                    margin-bottom: 25px;
-                }
-
-                .items-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    background: white;
-                    border: 1px solid #000;
-                    font-size: 0.9rem;
-                }
-
-                .items-table th {
-                    background: #f5f5f5;
-                    color: #000;
-                    padding: 10px 8px;
-                    text-align: left;
-                    font-weight: 600;
-                    border: 1px solid #000;
-                    text-transform: uppercase;
-                }
-
-                .items-table td {
-                    padding: 10px 8px;
-                    border: 1px solid #000;
-                    vertical-align: top;
-                }
-
-                .text-center {
-                    text-align: center;
-                }
-
-                .text-right {
-                    text-align: right;
-                }
-
-                .total-section {
-                    margin-bottom: 25px;
-                }
-
-                .total-table {
-                    width: 200px;
-                    margin-left: auto;
-                    border-collapse: collapse;
-                    font-size: 0.9rem;
-                    border: 1px solid #000;
-                }
-
-                .total-table td {
-                    padding: 8px 12px;
-                    border: 1px solid #000;
-                }
-
-                .total-label {
-                    font-weight: 600;
-                    background: #f5f5f5;
-                }
-
-                .footer-section {
-                    margin-top: 25px;
-                    padding-top: 15px;
-                    border-top: 2px solid #000;
-                }
-
-                .terbilang-section {
-                    margin-bottom: 15px;
-                }
-
-                .terbilang-text {
-                    font-size: 0.9rem;
-                    font-weight: 600;
-                    color: #000;
-                    line-height: 1.3;
-                }
-
-                .payment-info h4 {
-                    color: #000;
-                    margin-bottom: 8px;
-                    font-size: 0.95rem;
-                    font-weight: 600;
-                    text-transform: uppercase;
-                }
-
-                .payment-info p {
-                    color: #000;
-                    line-height: 1.4;
-                    font-size: 0.9rem;
-                    margin: 0;
-                }
-
-                .loading-container, .error-container {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    min-height: 50vh;
-                    text-align: center;
-                    padding: 2rem;
-                }
-
-                .loading-spinner {
-                    margin-bottom: 1.5rem;
-                }
-
-                .spinner-icon {
-                    font-size: 3.5rem;
-                    color: #007bff;
-                    animation: spin 1s linear infinite;
-                }
-
-                .loading-text {
-                    color: #6c757d;
-                    font-size: 1.3rem;
-                    font-weight: 500;
-                }
-
-                .error-content {
-                    background: white;
-                    padding: 3rem;
-                    border-radius: 16px;
-                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-                    max-width: 500px;
-                    width: 100%;
-                }
-
-                .error-content h2 {
-                    color: #dc3545;
-                    margin-bottom: 1rem;
-                    font-size: 1.8rem;
-                }
-
-                .error-content p {
-                    color: #6c757d;
-                    margin-bottom: 2rem;
-                    font-size: 1.1rem;
-                }
-
-                .error-details {
-                    background: #f8f9fa;
-                    padding: 1rem;
-                    border-radius: 8px;
-                    margin-bottom: 2rem;
-                    text-align: left;
-                }
-
-                .error-details p {
-                    margin-bottom: 0.5rem;
-                    font-size: 0.9rem;
-                }
-
-                @keyframes spin {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
-                }
-
-                .spinning {
-                    animation: spin 1s linear infinite;
-                }
-
-                @media print {
-                    .no-print {
-                        display: none !important;
+                <style>{`
+                    @media print {
+                        .no-print {
+                            display: none !important;
+                        }
+                        body {
+                            background-color: #ffffff !important;
+                        }
+                        .invoice-page-wrapper {
+                            padding: 0 !important;
+                            background: white !important;
+                        }
+                        .printable-card {
+                            box-shadow: none !important;
+                            border: none !important;
+                            max-width: 100% !important;
+                        }
                     }
-                    .invoice-print-container {
-                        background: white;
-                        padding: 0;
-                        margin: 0;
-                    }
-                    .invoice-content {
-                        box-shadow: none;
-                        padding: 0;
-                        margin: 0;
-                        border-radius: 0;
-                    }
-                }
+                `}</style>
 
-                @media (max-width: 1024px) {
-                    .action-bar {
-                        flex-direction: column;
-                        align-items: stretch;
-                        gap: 1.5rem;
-                    }
-                    
-                    .action-buttons {
-                        justify-content: center;
-                    }
-                }
-
-                @media (max-width: 768px) {
-                    .invoice-print-container {
-                        padding: 15px;
-                    }
-                    
-                    .action-bar {
-                        padding: 1.5rem;
-                    }
-                    
-                    .action-buttons {
-                        flex-direction: column;
-                        width: 100%;
-                    }
-                    
-                    .button-divider {
-                        display: none;
-                    }
-                    
-                    .btn {
-                        width: 100%;
-                        min-width: auto;
-                    }
-                    
-                    .invoice-content {
-                        padding: 20px;
-                    }
-                    
-                    .info-sections {
-                        flex-direction: column;
-                        gap: 20px;
-                    }
-                    
-                    .page-title {
-                        font-size: 1.3rem;
-                    }
-                }
-
-                @media (max-width: 480px) {
-                    .invoice-print-container {
-                        padding: 10px;
-                    }
-                    
-                    .action-bar {
-                        padding: 1rem;
-                    }
-                    
-                    .invoice-content {
-                        padding: 15px;
-                    }
-                    
-                    .page-title {
-                        font-size: 1.2rem;
-                    }
-                    
-                    .btn {
-                        padding: 0.75rem 1rem;
-                        font-size: 0.9rem;
-                    }
-                }
-            `}</style>
             </div>
         </LayoutAdmin>
     );

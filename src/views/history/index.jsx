@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Cookies from "js-cookie";
 import Api from "../../services/api";
 import LayoutAdmin from '../../layouts/admin';
 import Hashids from 'hashids';
+import Swal from 'sweetalert2';
 
 // Import icon (gunakan react-icons)
 import {
@@ -31,11 +32,42 @@ export default function History() {
     const [uploadingTxId, setUploadingTxId] = useState(null);
     const navigate = useNavigate();
 
+    const getImageUrl = (filename) => {
+        if (!filename) return '';
+        if (filename.startsWith('http://') || filename.startsWith('https://')) {
+            return filename;
+        }
+        const cleanPath = filename.startsWith('/uploads/') 
+            ? filename.replace('/uploads/', '') 
+            : filename.startsWith('uploads/') 
+                ? filename.replace('uploads/', '') 
+                : filename;
+        return `${import.meta.env.VITE_APP_BASEURL}/uploads/${cleanPath}`;
+    };
+
+    const handleZoomQRIS = (qrisPath) => {
+        const url = getImageUrl(qrisPath);
+        Swal.fire({
+            title: 'Kode QRIS Pembayaran',
+            imageUrl: url,
+            imageWidth: 320,
+            imageAlt: 'QRIS Kode Pembayaran',
+            showCloseButton: true,
+            confirmButtonText: 'Tutup',
+            confirmButtonColor: '#206bc4'
+        });
+    };
+
     const handleUploadProof = async (e, transactionId) => {
         e.preventDefault();
         const fileInput = e.target.elements.payment_proof;
         if (!fileInput || !fileInput.files[0]) {
-            alert("Silakan pilih file gambar bukti transfer terlebih dahulu.");
+            Swal.fire({
+                icon: 'warning',
+                title: 'File Belum Dipilih',
+                text: 'Silakan pilih file gambar bukti transfer terlebih dahulu.',
+                confirmButtonColor: '#206bc4'
+            });
             return;
         }
 
@@ -51,11 +83,24 @@ export default function History() {
                     'Content-Type': 'multipart/form-data'
                 }
             });
-            alert("Bukti pembayaran berhasil diunggah!");
+            
+            await Swal.fire({
+                icon: 'success',
+                title: 'Bukti Pembayaran Terkirim! 🎉',
+                html: '<p class="text-muted mb-0">Bukti pembayaran Anda berhasil diunggah. Tim kami akan segera melakukan verifikasi.</p>',
+                confirmButtonColor: '#2fb344',
+                confirmButtonText: 'OK, Mantap!'
+            });
+            
             fetchData(); // Refresh data transaksi
         } catch (error) {
             console.error("Error uploading payment proof:", error);
-            alert("Gagal mengunggah bukti pembayaran. Silakan coba lagi.");
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal Mengunggah',
+                text: error.response?.data?.message || 'Gagal mengunggah bukti pembayaran. Silakan coba lagi.',
+                confirmButtonColor: '#d63939'
+            });
         } finally {
             setUploadingTxId(null);
         }
@@ -328,19 +373,26 @@ export default function History() {
                                                                     </div>
                                                                 ) : (
                                                                     <div className="row g-3 align-items-stretch text-start">
-                                                                        {/* FA info */}
+                                                                         {/* FA info */}
                                                                         <div className="col-md-6">
-                                                                            <div className="card h-100 border-0 shadow-sm p-3" style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' }}>
+                                                                            <div className="card h-100 border-0 shadow-sm p-3" style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', borderRadius: '12px' }}>
                                                                                 <span className="text-muted small fw-semibold text-uppercase mb-1" style={{ fontSize: '0.75rem' }}>Nomor Virtual Account / FA</span>
                                                                                 <div className="d-flex align-items-center justify-content-between">
-                                                                                    <span className="fs-4 fw-bold text-success">{transaction.no_fa || '-'}</span>
+                                                                                    <span className="fs-3 fw-bold text-success font-monospace">{transaction.no_fa || '-'}</span>
                                                                                     {transaction.no_fa && (
                                                                                         <button 
                                                                                             type="button"
-                                                                                            className="btn btn-sm btn-outline-success border-0 bg-white"
+                                                                                            className="btn btn-sm btn-outline-success border-0 bg-white fw-bold shadow-sm"
                                                                                             onClick={() => {
                                                                                                 navigator.clipboard.writeText(transaction.no_fa);
-                                                                                                alert("Nomor FA disalin ke clipboard!");
+                                                                                                Swal.fire({
+                                                                                                    toast: true,
+                                                                                                    position: 'top-end',
+                                                                                                    icon: 'success',
+                                                                                                    title: 'Nomor FA disalin ke clipboard!',
+                                                                                                    showConfirmButton: false,
+                                                                                                    timer: 2000
+                                                                                                });
                                                                                             }}
                                                                                         >
                                                                                             Salin
@@ -353,26 +405,70 @@ export default function History() {
 
                                                                         {/* QRIS info */}
                                                                         <div className="col-md-6">
-                                                                            <div className="card h-100 border-0 shadow-sm p-3 text-center d-flex flex-column align-items-center justify-content-center" style={{ backgroundColor: '#fff' }}>
-                                                                                <span className="text-muted small fw-semibold text-uppercase mb-2" style={{ fontSize: '0.75rem' }}>QRIS Kode</span>
+                                                                            <div className="card h-100 border-0 shadow-sm p-4 text-center d-flex flex-column align-items-center justify-content-center" style={{ backgroundColor: '#ffffff', borderRadius: '12px' }}>
+                                                                                <span className="text-uppercase fw-bold text-primary mb-3 d-flex align-items-center gap-1" style={{ fontSize: '0.85rem', letterSpacing: '0.5px' }}>
+                                                                                    <FaReceipt /> Kode QRIS Pembayaran
+                                                                                </span>
                                                                                 {transaction.qris ? (
-                                                                                    <div className="d-flex flex-column align-items-center">
-                                                                                        <img 
-                                                                                            src={`${import.meta.env.VITE_APP_BASEURL}/uploads/${transaction.qris}`} 
-                                                                                            alt="QRIS Code" 
-                                                                                            style={{ maxWidth: '160px', height: 'auto', border: '1px solid #e2e8f0', padding: '6px', borderRadius: '8px' }} 
-                                                                                        />
-                                                                                        <small className="text-muted mt-2 d-block" style={{ fontSize: '0.75rem' }}>Pindai kode QR di atas menggunakan aplikasi pembayaran Anda</small>
+                                                                                    <div className="d-flex flex-column align-items-center w-100">
+                                                                                        {/\.(jpg|jpeg|png|webp|svg)$/i.test(transaction.qris) || transaction.qris.startsWith('http') ? (
+                                                                                            <div className="position-relative text-center">
+                                                                                                <img 
+                                                                                                    src={getImageUrl(transaction.qris)} 
+                                                                                                    alt="QRIS Pembayaran" 
+                                                                                                    onClick={() => handleZoomQRIS(transaction.qris)}
+                                                                                                    onError={(e) => {
+                                                                                                        e.target.style.display = 'none';
+                                                                                                        if (e.target.nextSibling) {
+                                                                                                            e.target.nextSibling.style.display = 'inline-block';
+                                                                                                        }
+                                                                                                    }}
+                                                                                                    style={{ 
+                                                                                                        width: '240px', 
+                                                                                                        maxWidth: '100%', 
+                                                                                                        height: 'auto', 
+                                                                                                        border: '2px solid #206bc4', 
+                                                                                                        padding: '10px', 
+                                                                                                        borderRadius: '12px',
+                                                                                                        boxShadow: '0 4px 14px rgba(32, 107, 196, 0.15)',
+                                                                                                        cursor: 'pointer',
+                                                                                                        transition: 'transform 0.2s ease-in-out'
+                                                                                                    }} 
+                                                                                                    className="img-fluid bg-white"
+                                                                                                    title="Klik untuk memperbesar QRIS"
+                                                                                                />
+                                                                                                <span className="badge bg-primary font-monospace mt-2" style={{ display: 'none', fontSize: '0.9rem' }}>
+                                                                                                    {transaction.qris}
+                                                                                                </span>
+                                                                                                <div className="mt-2">
+                                                                                                    <button 
+                                                                                                        type="button" 
+                                                                                                        className="btn btn-sm btn-outline-primary rounded-pill px-3 mt-1 fw-semibold" 
+                                                                                                        onClick={() => handleZoomQRIS(transaction.qris)}
+                                                                                                        style={{ fontSize: '0.78rem' }}
+                                                                                                    >
+                                                                                                        🔍 Klik untuk Memperbesar QRIS
+                                                                                                    </button>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        ) : (
+                                                                                            <span className="badge bg-primary-lt font-monospace fs-4 px-3 py-2">
+                                                                                                {transaction.qris}
+                                                                                            </span>
+                                                                                        )}
+                                                                                        <small className="text-muted mt-3 d-block" style={{ fontSize: '0.78rem' }}>
+                                                                                            Pindai kode QR di atas menggunakan GoPay, OVO, ShopeePay, Dana, atau Mobile Banking Anda.
+                                                                                        </small>
                                                                                     </div>
                                                                                 ) : (
-                                                                                    <span className="text-muted">-</span>
+                                                                                    <span className="text-muted small">Belum ada QRIS dari Admin</span>
                                                                                 )}
                                                                             </div>
                                                                         </div>
 
                                                                         {/* Payment Proof Section */}
                                                                         <div className="col-12 mt-3">
-                                                                            <div className="card border-0 shadow-sm p-3" style={{ backgroundColor: '#fff', border: '1px solid #f1f5f9' }}>
+                                                                            <div className="card border-0 shadow-sm p-3" style={{ backgroundColor: '#fff', border: '1px solid #f1f5f9', borderRadius: '12px' }}>
                                                                                 <h6 className="fw-bold text-gray-900 mb-3" style={{ fontSize: '0.9rem' }}>Bukti Pembayaran</h6>
                                                                                 
                                                                                 {!transaction.payment_proof ? (
@@ -391,7 +487,7 @@ export default function History() {
                                                                                             <div className="col-md-4 col-sm-12">
                                                                                                 <button 
                                                                                                     type="submit" 
-                                                                                                    className="btn btn-success w-100 text-white d-flex align-items-center justify-content-center"
+                                                                                                    className="btn btn-success w-100 text-white d-flex align-items-center justify-content-center fw-bold"
                                                                                                     disabled={uploadingTxId === transaction.id}
                                                                                                 >
                                                                                                     {uploadingTxId === transaction.id ? (
@@ -404,9 +500,9 @@ export default function History() {
                                                                                         </div>
                                                                                     </form>
                                                                                 ) : (
-                                                                                    <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-3 p-3 rounded" style={{ backgroundColor: '#f0fdf4' }}>
+                                                                                    <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-3 p-3 rounded" style={{ backgroundColor: '#f0fdf4', border: '1px solid #b7ebc6' }}>
                                                                                         <div className="text-success d-flex align-items-center">
-                                                                                            <span className="badge bg-success-lt p-2 rounded-circle me-2" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' }}>✔</span>
+                                                                                            <span className="badge bg-success-lt p-2 rounded-circle me-2" style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', fontSize: '1rem' }}>✔</span>
                                                                                             <div>
                                                                                                 <strong className="d-block text-success" style={{ fontSize: '0.9rem' }}>Bukti Pembayaran Terkirim</strong>
                                                                                                 <span className="text-muted small" style={{ fontSize: '0.8rem' }}>Menunggu verifikasi admin untuk mengubah status menjadi Lunas.</span>
@@ -414,10 +510,10 @@ export default function History() {
                                                                                         </div>
                                                                                         <div className="ms-md-auto">
                                                                                             <a 
-                                                                                                href={`${import.meta.env.VITE_APP_BASEURL}/uploads/${transaction.payment_proof}`} 
+                                                                                                href={getImageUrl(transaction.payment_proof)} 
                                                                                                 target="_blank" 
                                                                                                 rel="noopener noreferrer"
-                                                                                                className="btn btn-sm btn-outline-success d-flex align-items-center gap-1"
+                                                                                                className="btn btn-sm btn-outline-success fw-bold d-flex align-items-center gap-1"
                                                                                             >
                                                                                                 <FaEye /> Lihat Bukti
                                                                                             </a>
@@ -431,24 +527,44 @@ export default function History() {
                                                             </div>
                                                         )}
 
-                                                        {/* Actions */}
-                                                        <div className="details-footer">
-                                                            <div className="action-buttons">
-                                                                <button
-                                                                    className="btn btn-primary"
-                                                                    onClick={() => handlePrint(transaction)}
-                                                                >
-                                                                    <FaPrint className="btn-icon" />
-                                                                    Cetak Invoice
-                                                                </button>
-                                                            </div>
-                                                            <div className="total-summary">
-                                                                <div className="total-amount">
-                                                                    Total: {formatCurrency(transaction.grand_total)}
+                                                         {/* Actions */}
+                                                        <div className="details-footer flex-column align-items-stretch gap-3">
+                                                            {transaction.transaction_details[0]?.status_bayar && (
+                                                                <div className="alert border-0 shadow-sm p-3 text-start mb-0" style={{ borderRadius: '12px', background: 'linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%)', borderLeft: '4px solid #0d6efd' }}>
+                                                                    <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                                                        <div>
+                                                                            <strong className="text-success fs-6 d-block">🎉 Status Transaksi: LUNAS BAYAR</strong>
+                                                                            <span className="text-muted small">Langkah berikutnya dalam alur kerja pengujian:</span>
+                                                                            <div className="mt-1 small fw-bold text-dark">
+                                                                                <span className="badge bg-primary me-1">1. Buat Jadwal</span> ➔ 
+                                                                                <span className="badge bg-secondary ms-2 me-1">2. Isi Hasil</span> ➔ 
+                                                                                <span className="badge bg-secondary ms-2 me-1">3. Berita Acara</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <Link to="/penjadwalan" className="btn btn-sm btn-primary text-white fw-bold px-3 py-2 rounded-pill shadow-sm">
+                                                                            📅 Langkah 1: Buat Jadwal ➔
+                                                                        </Link>
+                                                                    </div>
                                                                 </div>
-                                                                <small className="total-note">
-                                                                    Termasuk pajak dan biaya lainnya
-                                                                </small>
+                                                            )}
+                                                            <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 w-100">
+                                                                <div className="action-buttons">
+                                                                    <button
+                                                                        className="btn btn-primary"
+                                                                        onClick={() => handlePrint(transaction)}
+                                                                    >
+                                                                        <FaPrint className="btn-icon" />
+                                                                        Cetak Invoice
+                                                                    </button>
+                                                                </div>
+                                                                <div className="total-summary">
+                                                                    <div className="total-amount">
+                                                                        Total: {formatCurrency(transaction.grand_total)}
+                                                                    </div>
+                                                                    <small className="total-note">
+                                                                        Termasuk pajak dan biaya lainnya
+                                                                    </small>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>

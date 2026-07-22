@@ -340,18 +340,18 @@ export default function BeritaAcaraEdit() {
             <div className="page-wrapper" style={{ minHeight: '100vh', background: '#f1f5f9', padding: '24px 0 80px 0' }}>
                 <div className="container-xl">
                     {/* Header Banner */}
-                    <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: '16px', background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)', color: 'white' }}>
+                    <div className="card border-0 shadow-sm mb-4" style={{ borderRadius: '16px', background: 'linear-gradient(135deg, #991b1b 0%, #881337 50%, #4c0519 100%)', color: 'white' }}>
                         <div className="card-body p-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
                             <div className="d-flex align-items-center gap-3">
-                                <div className="bg-white bg-opacity-20 p-3 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '56px', height: '56px', backdropFilter: 'blur(4px)' }}>
-                                    <FaEdit className="text-white fs-3" />
+                                <div className="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style={{ width: '54px', height: '54px', flexShrink: 0 }}>
+                                    <FaEdit style={{ fontSize: '26px', color: '#991b1b' }} />
                                 </div>
                                 <div>
-                                    <h2 className="fw-bold m-0 text-white" style={{ fontSize: '1.5rem' }}>Edit Berita Acara #{id}</h2>
-                                    <p className="m-0 text-white-50 small">Perbarui rincian berita acara dan tanda tangan digital</p>
+                                    <h2 className="fw-bold m-0 text-white" style={{ fontSize: '1.45rem', letterSpacing: '-0.3px' }}>Edit Berita Acara #{id}</h2>
+                                    <p className="m-0 small mt-1" style={{ color: 'rgba(255, 255, 255, 0.88)' }}>Perbarui rincian berita acara dan tanda tangan digital</p>
                                 </div>
                             </div>
-                            <button className="btn btn-light btn-sm px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2 rounded-3 shadow-sm" onClick={() => navigate('/berita-acara')}>
+                            <button className="btn btn-sm px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2 rounded-3 shadow-sm" style={{ background: '#ffffff', color: '#991b1b', border: 'none' }} onClick={() => navigate('/berita-acara')}>
                                 <FaArrowLeft /> Kembali ke Daftar
                             </button>
                         </div>

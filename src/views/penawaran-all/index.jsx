@@ -270,8 +270,20 @@ export default function SemuaPenawaran() {
                                                         <td className="text-muted fw-semibold">{rowNumber}</td>
                                                         <td>{getJenisBadge(item.jenis)}</td>
                                                         <td>
-                                                            <div className="fw-semibold">{item.user?.name || '-'}</div>
-                                                            <small className="text-muted">{item.user?.email || '-'}</small>
+                                                            <div className="fw-bold text-dark">{item.user?.name || '-'}</div>
+                                                            <div className="d-flex flex-wrap gap-1 mt-1">
+                                                                {item.user?.nik && (
+                                                                    <span className="badge bg-outline text-muted" style={{ fontSize: '0.7rem' }}>
+                                                                        NIK: {item.user.nik}
+                                                                    </span>
+                                                                )}
+                                                                {item.user?.phone && (
+                                                                    <span className="badge bg-secondary-lt" style={{ fontSize: '0.7rem' }}>
+                                                                        📞 {item.user.phone}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-muted small mt-1" style={{ fontSize: '0.75rem' }}>{item.user?.email || '-'}</div>
                                                         </td>
                                                         <td>
                                                             <div>

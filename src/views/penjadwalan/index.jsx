@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import Cookies from 'js-cookie';
 import Api from '../../services/api';
 import LayoutAdmin from '../../layouts/admin';
 import PaginationComponent from '../../components/Pagination';
 import Swal from 'sweetalert2';
+import { encodeId } from '../../utils/hashids';
 
 export default function Penjadwalan() {
     const navigate = useNavigate();
@@ -118,6 +119,19 @@ export default function Penjadwalan() {
     };
 
     const formatTime = (timeStr) => timeStr || '-';
+
+    const getImageUrl = (filename) => {
+        if (!filename) return '';
+        if (filename.startsWith('http://') || filename.startsWith('https://')) {
+            return filename;
+        }
+        const cleanPath = filename.startsWith('/uploads/') 
+            ? filename.replace('/uploads/', '') 
+            : filename.startsWith('uploads/') 
+                ? filename.replace('uploads/', '') 
+                : filename;
+        return `${import.meta.env.VITE_APP_BASEURL}/uploads/${cleanPath}`;
+    };
 
     // Fetch jadwal list
     const fetchJadwal = async (pageNumber = 1) => {
@@ -289,9 +303,48 @@ export default function Penjadwalan() {
 
     const getPaymentBadge = (statusBayar) => {
         if (statusBayar) {
-            return (<span className="badge bg-success"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>Lunas</span>);
+            return (
+                <span className="badge bg-success">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>
+                    Lunas Bayar
+                </span>
+            );
         }
-        return (<span className="badge bg-warning text-dark"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M6.5 7h11" /><path d="M6.5 17h11" /><path d="M6 20v-2a6 6 0 1 1 12 0v2a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1z" /></svg>Belum Bayar</span>);
+        return (
+            <span className="badge bg-warning text-dark">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M6.5 7h11" /><path d="M6.5 17h11" /><path d="M6 20v-2a6 6 0 1 1 12 0v2a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1z" /></svg>
+                Belum Lunas
+            </span>
+        );
+    };
+
+    const getOverallPaymentBadge = (details) => {
+        if (!details || details.length === 0) return getPaymentBadge(false);
+        const allPaid = details.every((d) => d.status_bayar);
+        const somePaid = details.some((d) => d.status_bayar);
+
+        if (allPaid) {
+            return (
+                <span className="badge bg-success">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>
+                    Lunas Bayar
+                </span>
+            );
+        }
+        if (somePaid) {
+            return (
+                <span className="badge bg-info text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>
+                    Sebagian Lunas
+                </span>
+            );
+        }
+        return (
+            <span className="badge bg-warning text-dark">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M6.5 7h11" /><path d="M6.5 17h11" /><path d="M6 20v-2a6 6 0 1 1 12 0v2a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1z" /></svg>
+                Belum Lunas
+            </span>
+        );
     };
 
     const getDetailsGroupedByCategory = (details) => {
@@ -335,7 +388,7 @@ export default function Penjadwalan() {
         <LayoutAdmin>
             <div className="page-wrapper">
                 <div className="page-header d-print-none">
-                    <div className="container-xl">
+                    <div className="container-fluid px-3 px-lg-4">
                         <div className="row g-2 align-items-center">
                             <div className="col">
                                 <h2 className="page-title">Penjadwalan</h2>
@@ -346,7 +399,27 @@ export default function Penjadwalan() {
                 </div>
 
                 <div className="page-body">
-                    <div className="container-xl">
+                    <div className="container-fluid px-3 px-lg-4">
+                        {/* Workflow Step Banner */}
+                        <div className="card mb-3 border-0 shadow-sm" style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', borderRadius: '12px', borderLeft: '5px solid #206bc4' }}>
+                            <div className="card-body p-3">
+                                <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 text-start">
+                                    <div className="d-flex align-items-center gap-3">
+                                        <div className="badge bg-primary fs-6 p-2 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                            1
+                                        </div>
+                                        <div>
+                                            <h5 className="fw-bold mb-0 text-dark">Langkah 1 dari 3: Penjadwalan Sampel & Pengambilan</h5>
+                                            <small className="text-muted">Setelah transaksi LUNAS BAYAR ➜ <strong>Buat Jadwal terlebih dahulu</strong> ➜ Lalu lanjut ke Isi Hasil Uji</small>
+                                        </div>
+                                    </div>
+                                    <Link to="/hasil" className="btn btn-sm btn-primary fw-bold text-white px-3 py-2 rounded-pill shadow-sm">
+                                        Lanjut ke Langkah 2: Isi Hasil ➔
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Tab Navigation */}
                         <div className="card mb-3">
                             <div className="card-body p-0">
@@ -580,9 +653,9 @@ export default function Penjadwalan() {
                                                 </div>
                                                 <div className="col-auto">
                                                     <div className="btn-group">
-                                                        <button type="button" className={`btn ${filterStatus === '' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => handleStatusFilter('')}>Semua</button>
-                                                        <button type="button" className={`btn ${filterStatus === 'true' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => handleStatusFilter('true')}>Lunas</button>
-                                                        <button type="button" className={`btn ${filterStatus === 'false' ? 'btn-warning' : 'btn-outline-warning'}`} onClick={() => handleStatusFilter('false')}>Belum Bayar</button>
+                                                        <button type="button" className={`btn ${filterStatus === '' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => handleStatusFilter('')}>Semua Status</button>
+                                                        <button type="button" className={`btn ${filterStatus === 'false' ? 'btn-warning' : 'btn-outline-warning'}`} onClick={() => handleStatusFilter('false')}>Belum Lunas</button>
+                                                        <button type="button" className={`btn ${filterStatus === 'true' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => handleStatusFilter('true')}>Lunas Bayar</button>
                                                     </div>
                                                 </div>
                                                 <div className="col-auto">
@@ -625,19 +698,46 @@ export default function Penjadwalan() {
                                             return (
                                                 <div className="card mb-3" key={transaction.id}>
                                                     <div className="card-header cursor-pointer" onClick={() => toggleRow(transaction.id)} style={{ cursor: 'pointer' }}>
-                                                        <div className="d-flex justify-content-between align-items-center">
+                                                        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
                                                             <div className="d-flex align-items-center gap-3">
                                                                 <span className="badge bg-primary-lt" style={{ fontSize: '0.9rem', padding: '6px 12px' }}>#{getRowNumber(index)}</span>
                                                                 <div>
                                                                     <div className="fw-bold">{transaction.invoice || `INV-${transaction.id}`}</div>
-                                                                    <div className="text-muted small">
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '3px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>
-                                                                        {transaction.user?.name || '-'}
-                                                                        <span className="ms-2">{formatDateTime(transaction.created_at)}</span>
+                                                                    <div className="text-muted small d-flex flex-wrap align-items-center gap-2 mt-1">
+                                                                        <span className="fw-semibold text-dark">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '3px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>
+                                                                            {transaction.user?.name || '-'}
+                                                                        </span>
+                                                                        {transaction.user?.phone && (
+                                                                            <span className="badge bg-secondary-lt" style={{ fontSize: '0.75rem' }}>
+                                                                                📞 {transaction.user.phone}
+                                                                            </span>
+                                                                        )}
+                                                                        {transaction.user?.nik && (
+                                                                            <span className="badge bg-outline text-muted" style={{ fontSize: '0.75rem' }}>
+                                                                                NIK: {transaction.user.nik}
+                                                                            </span>
+                                                                        )}
+                                                                        <span className="ms-1 text-muted" style={{ fontSize: '0.75rem' }}>
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '3px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 8l0 4l2 2" /><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" /></svg>
+                                                                            {formatDateTime(transaction.created_at)}
+                                                                        </span>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            <div className="d-flex align-items-center gap-3">
+                                                            <div className="d-flex align-items-center gap-2">
+                                                                <button 
+                                                                    type="button" 
+                                                                    className="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 font-weight-semibold" 
+                                                                    onClick={(e) => { 
+                                                                        e.stopPropagation(); 
+                                                                        window.open(`/invoice/${encodeId(transaction.id)}`, '_blank');
+                                                                    }}
+                                                                    title="Download PDF Invoice untuk SPJ"
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><path d="M12 17v-6" /><path d="M9 14l3 3l3 -3" /></svg>
+                                                                    PDF SPJ
+                                                                </button>
                                                                 {somePaid && (
                                                                     <button className="btn btn-primary btn-sm" onClick={(e) => { e.stopPropagation(); openCreateModal(transaction); }}>
                                                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
@@ -646,9 +746,9 @@ export default function Penjadwalan() {
                                                                 )}
                                                                 <div className="text-end">
                                                                     <div className="fw-bold text-primary fs-5">{formatCurrency(transaction.grand_total)}</div>
-                                                                    <div className="d-flex gap-1 justify-content-end">
+                                                                    <div className="d-flex gap-1 justify-content-end align-items-center">
                                                                         <span className="badge bg-info-lt">{details.length} item</span>
-                                                                        {getPaymentBadge(allPaid || (somePaid && details.filter(d => d.status_bayar).length === details.length))}
+                                                                        {getOverallPaymentBadge(details)}
                                                                     </div>
                                                                 </div>
                                                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'transform 0.2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 9l6 6l6 -6" /></svg>
@@ -657,20 +757,35 @@ export default function Penjadwalan() {
                                                     </div>
 
                                                     {isExpanded && (
-                                                        <div className="card-body pt-0">
-                                                            <div className="d-flex justify-content-between align-items-center p-2 mb-3 rounded" style={{ backgroundColor: 'var(--tblr-card-bg, #f8f9fa)' }}>
-                                                                <div className="d-flex align-items-center gap-2">
-                                                                    <div className="avatar avatar-sm" style={{ backgroundColor: 'var(--tblr-primary)', color: 'white', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '600' }}>
-                                                                        {transaction.user?.name ? transaction.user.name.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase() : 'U'}
+                                                        <div className="card-body pt-3">
+                                                            {/* Information Card: Who Ordered */}
+                                                            <div className="card mb-3 border-primary-subtle" style={{ backgroundColor: 'rgba(32,107,196,0.03)', border: '1px solid rgba(32,107,196,0.15)' }}>
+                                                                <div className="card-body p-3">
+                                                                    <div className="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
+                                                                        <h6 className="card-title mb-0 d-flex align-items-center text-primary" style={{ fontSize: '0.88rem', fontWeight: 600 }}>
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" className="me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>
+                                                                            Informasi Pemesan (Orderer Details)
+                                                                        </h6>
+                                                                        <span className="badge bg-primary-lt" style={{ fontSize: '0.75rem' }}>User ID #{transaction.user?.id || '-'}</span>
                                                                     </div>
-                                                                    <div>
-                                                                        <div className="fw-semibold small">{transaction.user?.name || '-'}</div>
-                                                                        <div className="text-muted" style={{ fontSize: '0.75rem' }}>{transaction.user?.email || '-'}</div>
+                                                                    <div className="row g-2">
+                                                                        <div className="col-md-3 col-6">
+                                                                            <div className="text-muted small" style={{ fontSize: '0.75rem' }}>Nama Pemohon</div>
+                                                                            <div className="fw-bold text-dark">{transaction.user?.name || '-'}</div>
+                                                                        </div>
+                                                                        <div className="col-md-3 col-6">
+                                                                            <div className="text-muted small" style={{ fontSize: '0.75rem' }}>NIK</div>
+                                                                            <div className="fw-semibold text-dark">{transaction.user?.nik || '-'}</div>
+                                                                        </div>
+                                                                        <div className="col-md-3 col-6">
+                                                                            <div className="text-muted small" style={{ fontSize: '0.75rem' }}>No. Telepon / WA</div>
+                                                                            <div className="fw-semibold text-dark">{transaction.user?.phone || '-'}</div>
+                                                                        </div>
+                                                                        <div className="col-md-3 col-6">
+                                                                            <div className="text-muted small" style={{ fontSize: '0.75rem' }}>Email</div>
+                                                                            <div className="fw-semibold text-dark">{transaction.user?.email || '-'}</div>
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                                <div className="text-muted small">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '3px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 8l0 4l2 2" /><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" /></svg>
-                                                                    {formatDateTime(transaction.created_at)}
                                                                 </div>
                                                             </div>
 
@@ -718,9 +833,19 @@ export default function Penjadwalan() {
                                                                 );
                                                             })}
 
-                                                            <div className="d-flex justify-content-between align-items-center p-3 rounded" style={{ backgroundColor: 'rgba(32,107,196,0.08)' }}>
-                                                                <span className="fw-bold">Grand Total</span>
-                                                                <span className="fs-4 fw-bold text-primary">{formatCurrency(transaction.grand_total)}</span>
+                                                            <div className="d-flex justify-content-between align-items-center p-3 rounded flex-wrap gap-2" style={{ backgroundColor: 'rgba(32,107,196,0.08)' }}>
+                                                                <div>
+                                                                    <span className="fw-bold me-2">Grand Total:</span>
+                                                                    <span className="fs-4 fw-bold text-primary">{formatCurrency(transaction.grand_total)}</span>
+                                                                </div>
+                                                                <button 
+                                                                    type="button" 
+                                                                    className="btn btn-danger btn-sm fw-bold d-flex align-items-center gap-1 shadow-sm"
+                                                                    onClick={() => window.open(`/invoice/${encodeId(transaction.id)}`, '_blank')}
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><path d="M12 17v-6" /><path d="M9 14l3 3l3 -3" /></svg>
+                                                                    Download PDF Invoice (SPJ)
+                                                                </button>
                                                             </div>
 
                                                             {/* Admin Payment Management Actions */}
@@ -766,7 +891,7 @@ export default function Penjadwalan() {
                                                                                     <div className="small text-success d-flex align-items-center gap-2 justify-content-end w-100" style={{ fontSize: '0.85rem' }}>
                                                                                         <span>✔ Bukti Pembayaran Terkirim</span>
                                                                                         <a 
-                                                                                            href={`${import.meta.env.VITE_APP_BASEURL}/uploads/${transaction.payment_proof}`} 
+                                                                                            href={getImageUrl(transaction.payment_proof)} 
                                                                                             target="_blank" 
                                                                                             rel="noopener noreferrer"
                                                                                             className="btn btn-sm btn-outline-info py-0 px-2"
@@ -828,17 +953,32 @@ export default function Penjadwalan() {
                                                                             {transaction.qris && (
                                                                                 <div>
                                                                                     <span className="text-muted small d-block mb-1" style={{ fontSize: '0.75rem' }}>Kode QRIS:</span>
-                                                                                    <a 
-                                                                                        href={`${import.meta.env.VITE_APP_BASEURL}/uploads/${transaction.qris}`} 
-                                                                                        target="_blank" 
-                                                                                        rel="noopener noreferrer"
-                                                                                    >
-                                                                                        <img 
-                                                                                            src={`${import.meta.env.VITE_APP_BASEURL}/uploads/${transaction.qris}`} 
-                                                                                            alt="QRIS" 
-                                                                                            style={{ maxWidth: '80px', maxHeight: '80px', objectFit: 'contain', border: '1px solid #b7ebc6', borderRadius: '4px' }} 
-                                                                                        />
-                                                                                    </a>
+                                                                                    {/\.(jpg|jpeg|png|webp|svg)$/i.test(transaction.qris) || transaction.qris.startsWith('http') ? (
+                                                                                        <a 
+                                                                                            href={getImageUrl(transaction.qris)} 
+                                                                                            target="_blank" 
+                                                                                            rel="noopener noreferrer"
+                                                                                        >
+                                                                                            <img 
+                                                                                                src={getImageUrl(transaction.qris)} 
+                                                                                                alt="QRIS" 
+                                                                                                onError={(e) => {
+                                                                                                    e.target.style.display = 'none';
+                                                                                                    if (e.target.nextSibling) {
+                                                                                                        e.target.nextSibling.style.display = 'inline-block';
+                                                                                                    }
+                                                                                                }}
+                                                                                                style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'contain', border: '1px solid #b7ebc6', borderRadius: '4px', padding: '2px', backgroundColor: '#fff' }} 
+                                                                                            />
+                                                                                            <span className="badge bg-success-lt font-monospace" style={{ display: 'none', fontSize: '0.8rem' }}>
+                                                                                                {transaction.qris}
+                                                                                            </span>
+                                                                                        </a>
+                                                                                    ) : (
+                                                                                        <span className="badge bg-success-lt font-monospace" style={{ fontSize: '0.85rem', padding: '5px 8px' }}>
+                                                                                            {transaction.qris}
+                                                                                        </span>
+                                                                                    )}
                                                                                 </div>
                                                                             )}
                                                                         </div>
@@ -847,7 +987,7 @@ export default function Penjadwalan() {
                                                                                 <div className="d-flex align-items-center justify-content-md-end gap-2">
                                                                                     <span className="text-muted small" style={{ fontSize: '0.8rem' }}>Bukti Transfer:</span>
                                                                                     <a 
-                                                                                        href={`${import.meta.env.VITE_APP_BASEURL}/uploads/${transaction.payment_proof}`} 
+                                                                                        href={getImageUrl(transaction.payment_proof)} 
                                                                                         target="_blank" 
                                                                                         rel="noopener noreferrer"
                                                                                         className="btn btn-sm btn-success text-white d-flex align-items-center gap-1"
