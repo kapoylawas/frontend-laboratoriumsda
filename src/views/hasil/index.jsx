@@ -232,7 +232,10 @@ export default function HasilIndex() {
     if (token) {
       Api.defaults.headers.common["Authorization"] = token;
       try {
-        const params = [`page=${page}`, `search=${keywords}`];
+        const params = [`page=${page}`];
+        if (keywords && keywords.trim()) {
+          params.push(`search=${encodeURIComponent(keywords.trim())}`);
+        }
         if (date) params.push(`date=${date}`);
         const response = await Api.get(`/api/hasils?${params.join("&")}`);
         setHasils(response.data.data);
