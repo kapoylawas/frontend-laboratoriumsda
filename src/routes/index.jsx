@@ -7,6 +7,8 @@ import AdminRoute from '../components/AdminRoute.jsx';
 import OperationalRoute from '../components/OperationalRoute.jsx';
 import HasilRoute from '../components/HasilRoute.jsx';
 import JadwalPengambilanRoute from '../components/JadwalPengambilanRoute.jsx';
+import PenawaranRoute from '../components/PenawaranRoute.jsx';
+import BeritaAcaraRoute from '../components/BeritaAcaraRoute.jsx';
 
 //import view login
 import Login from "../views/auth/login.jsx";
@@ -68,21 +70,21 @@ export default function AppRoutes() {
         </ProtectedRoute>
       } />
 
-      {/* Penawaran (Quotation) Routes - Accessible by authenticated users */}
+      {/* Penawaran (Quotation) Routes - Accessible by authenticated users except Verifikator */}
       <Route path="/penawaran" element={
-        <ProtectedRoute>
+        <PenawaranRoute>
           <Pengajuan />
-        </ProtectedRoute>
+        </PenawaranRoute>
       } />
       <Route path="/penawaran/create" element={
-        <ProtectedRoute>
+        <PenawaranRoute>
           <PengajuanCreate />
-        </ProtectedRoute>
+        </PenawaranRoute>
       } />
       <Route path="/penawaran/:id" element={
-        <ProtectedRoute>
+        <PenawaranRoute>
           <PengajuanDetail />
-        </ProtectedRoute>
+        </PenawaranRoute>
       } />
 
       {/* Operational Routes - Admin & Pemohon (Orders, Cart, History) */}
@@ -179,24 +181,24 @@ export default function AppRoutes() {
 
       {/* Berita Acara Routes */}
       <Route path="/berita-acara" element={
-        <ProtectedRoute>
+        <BeritaAcaraRoute>
           <BeritaAcara />
-        </ProtectedRoute>
+        </BeritaAcaraRoute>
       } />
       <Route path="/berita-acara/create" element={
-        <ProtectedRoute>
+        <BeritaAcaraRoute>
           <BeritaAcaraCreate />
-        </ProtectedRoute>
+        </BeritaAcaraRoute>
       } />
       <Route path="/berita-acara/:id" element={
-        <ProtectedRoute>
+        <BeritaAcaraRoute>
           <BeritaAcaraDetail />
-        </ProtectedRoute>
+        </BeritaAcaraRoute>
       } />
       <Route path="/berita-acara/:id/edit" element={
-        <ProtectedRoute>
+        <BeritaAcaraRoute>
           <BeritaAcaraEdit />
-        </ProtectedRoute>
+        </BeritaAcaraRoute>
       } />
     </Routes>
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import LayoutAdmin from "../../layouts/admin";
 import PaginationComponent from "../../components/Pagination";
@@ -151,7 +151,15 @@ export default function HasilIndex() {
   };
 
   const handleBatchVerifikasi = async (items, action) => {
-    const ids = items.map((i) => i.id);
+    let targetItems = items;
+    if (action === "SUBMIT_VERIFIKASI") {
+      targetItems = items.filter((i) => !i.status_verifikasi || i.status_verifikasi === "DRAFT" || i.status_verifikasi === "REVISI_ANALIS");
+    } else if (action === "VERIFY_APPROVE" || action === "VERIFY_REJECT") {
+      targetItems = items.filter((i) => i.status_verifikasi === "MENUNGGU_VERIFIKASI");
+    } else if (action === "KEPALA_APPROVE" || action === "KEPALA_REJECT") {
+      targetItems = items.filter((i) => i.status_verifikasi === "DIVERIFIKASI");
+    }
+    const ids = targetItems.map((i) => i.id);
     if (ids.length === 0) return;
 
     try {
@@ -224,8 +232,8 @@ export default function HasilIndex() {
     }).format(value || 0);
   };
 
-  const fetchData = async (pageNumber, keywords = "", date = "") => {
-    setIsLoading(true);
+  const fetchData = async (pageNumber, keywords = "", date = "", silent = false) => {
+    if (!silent) setIsLoading(true);
     const page = pageNumber ? pageNumber : pagination.currentPage;
     const token = Cookies.get("token");
 
@@ -250,27 +258,98 @@ export default function HasilIndex() {
         }
       } catch (error) {
         console.error("Error fetching data:", error);
-        Swal.fire({
-          icon: "error",
-          title: "Gagal",
-          text: "Gagal mengambil data hasil!",
-        });
+        if (!silent) {
+          Swal.fire({
+            icon: "error",
+            title: "Gagal",
+            text: "Gagal mengambil data hasil!",
+          });
+        }
       } finally {
-        setIsLoading(false);
+        if (!silent) setIsLoading(false);
       }
     } else {
-      setIsLoading(false);
-      Swal.fire({
-        icon: "warning",
-        title: "Tidak Ada Token",
-        text: "Silahkan login ulang!",
-        timer: 2000,
-      });
+      if (!silent) {
+        setIsLoading(false);
+        Swal.fire({
+          icon: "warning",
+          title: "Tidak Ada Token",
+          text: "Silahkan login ulang!",
+          timer: 2000,
+        });
+      }
     }
   };
 
+  const searchRef = useRef(search);
+  const filterDateRef = useRef(filterDate);
+  const currentPageRef = useRef(pagination.currentPage);
+  const editingIdRef = useRef(editingId);
+  const showEditModalRef = useRef(showEditModal);
+
+  useEffect(() => { searchRef.current = search; }, [search]);
+  useEffect(() => { filterDateRef.current = filterDate; }, [filterDate]);
+  useEffect(() => { currentPageRef.current = pagination.currentPage; }, [pagination.currentPage]);
+  useEffect(() => { editingIdRef.current = editingId; }, [editingId]);
+  useEffect(() => { showEditModalRef.current = showEditModal; }, [showEditModal]);
+
+  const prevPendingCountRef = useRef(null);
+
+  // Realtime Toast Alert when new pending items arrive
+  useEffect(() => {
+    let currentPendingCount = 0;
+    if (userRoleId === 4) {
+      currentPendingCount = hasils.filter((i) => i.status_verifikasi === "MENUNGGU_VERIFIKASI").length;
+    } else if (userRoleId === 5) {
+      currentPendingCount = hasils.filter((i) => i.status_verifikasi === "DIVERIFIKASI").length;
+    }
+
+    if (prevPendingCountRef.current !== null && currentPendingCount > prevPendingCountRef.current) {
+      const diff = currentPendingCount - prevPendingCountRef.current;
+      const roleText = userRoleId === 4 ? "perlu Anda verifikasi!" : "membutuhkan TTD Anda!";
+      
+      const Toast = Swal.mixin({
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 4000,
+        timerProgressBar: true,
+      });
+      Toast.fire({
+        icon: "info",
+        title: `🔔 Ada ${diff} sampel baru masuk yang ${roleText}`,
+      });
+    }
+
+    prevPendingCountRef.current = currentPendingCount;
+  }, [hasils, userRoleId]);
+
   useEffect(() => {
     fetchData();
+
+    // Auto-refresh silent polling setiap 3 detik untuk real-time sync lintas komputer
+    const interval = setInterval(() => {
+      if (
+        document.visibilityState === "visible" &&
+        !editingIdRef.current &&
+        !showEditModalRef.current &&
+        !Swal.isVisible()
+      ) {
+        fetchData(currentPageRef.current, searchRef.current, filterDateRef.current, true);
+      }
+    }, 3000);
+
+    const handleFocus = () => {
+      if (!editingIdRef.current && !showEditModalRef.current && !Swal.isVisible()) {
+        fetchData(currentPageRef.current, searchRef.current, filterDateRef.current, true);
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+    };
   }, []);
 
   const handleSearch = (e) => {
@@ -437,6 +516,7 @@ export default function HasilIndex() {
   };
 
   const handleEdit = (hasil) => {
+    if (userRoleId === 4) return; // Verifikator cannot edit
     handleOpenEditModal(hasil);
   };
 
@@ -669,6 +749,40 @@ export default function HasilIndex() {
           border-radius: 18px !important;
           background: #ffffff !important;
         }
+        .toggle-3d-group {
+          display: inline-flex;
+          align-items: center;
+          background: #f1f5f9 !important;
+          border: 2.5px solid #000000 !important;
+          box-shadow: 4px 4px 0px #000000 !important;
+          border-radius: 14px !important;
+          padding: 4px !important;
+          gap: 4px;
+        }
+        .toggle-3d-btn {
+          border: 1.5px solid transparent !important;
+          border-radius: 10px !important;
+          padding: 6px 14px !important;
+          font-size: 0.85rem !important;
+          font-weight: 700 !important;
+          color: #475569 !important;
+          background: transparent !important;
+          transition: all 0.15s ease-in-out !important;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .toggle-3d-btn:hover {
+          color: #0f172a !important;
+          background: rgba(255, 255, 255, 0.7) !important;
+        }
+        .toggle-3d-btn.active {
+          background: #2563eb !important;
+          color: #ffffff !important;
+          border: 1.5px solid #000000 !important;
+          box-shadow: 2px 2px 0px #000000 !important;
+        }
         .modal-content-3d {
           border: 3.5px solid #000000 !important;
           box-shadow: 10px 10px 0px #000000 !important;
@@ -692,25 +806,29 @@ export default function HasilIndex() {
           <div className="container-fluid px-3 px-lg-4">
             <div className="row g-2 align-items-center">
               <div className="col">
-                <h2 className="page-title fw-extrabold text-dark" style={{ fontSize: '1.8rem', letterSpacing: '-0.5px' }}>
+                <h2 className="page-title fw-extrabold text-dark d-flex align-items-center gap-2 flex-wrap" style={{ fontSize: '1.8rem', letterSpacing: '-0.5px' }}>
                   🧪 Hasil Pemeriksaan Laboratorium
+                  <span className="badge bg-success-lt text-success fs-6 border border-success-subtle rounded-pill px-2 py-1 ms-1 d-inline-flex align-items-center gap-1" style={{ fontSize: '0.75rem', fontWeight: 600 }}>
+                    <span className="spinner-grow spinner-grow-sm text-success" style={{ width: '8px', height: '8px' }} role="status"></span>
+                    Realtime Auto-Sync
+                  </span>
                 </h2>
                 <div className="text-muted mt-1 fw-semibold">Kelola dan atur parameter hasil uji laboratorium</div>
               </div>
               <div className="col-auto ms-auto d-print-none">
                 <div className="d-flex align-items-center gap-2">
                   {/* View Mode Toggle: Per Invoice vs Per Kategori */}
-                  <div className="btn-group banner-3d p-1" style={{ backgroundColor: '#f1f5f9' }}>
+                  <div className="toggle-3d-group">
                     <button
                       type="button"
-                      className={`btn btn-sm ${groupByMode === 'invoice' ? 'btn-primary fw-bold' : 'btn-ghost-secondary text-dark'}`}
+                      className={`toggle-3d-btn ${groupByMode === 'invoice' ? 'active' : ''}`}
                       onClick={() => setGroupByMode('invoice')}
                     >
                       📄 Per Invoice / Pemohon
                     </button>
                     <button
                       type="button"
-                      className={`btn btn-sm ${groupByMode === 'category' ? 'btn-primary fw-bold' : 'btn-ghost-secondary text-dark'}`}
+                      className={`toggle-3d-btn ${groupByMode === 'category' ? 'active' : ''}`}
                       onClick={() => setGroupByMode('category')}
                     >
                       🧪 Per Kategori Sampel
@@ -746,23 +864,93 @@ export default function HasilIndex() {
 
         <div className="page-body">
           <div className="container-fluid px-3 px-lg-4">
-            {/* 3D Step 2 Banner */}
-            <div className="card mb-4 banner-3d p-3" style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' }}>
-              <div className="d-flex align-items-center justify-content-between flex-wrap gap-3 text-start">
-                <div className="d-flex align-items-center gap-3">
-                  <div className="badge-3d bg-success text-white fs-5 d-flex align-items-center justify-content-center" style={{ width: '48px', height: '48px', borderRadius: '14px' }}>
-                    2
-                  </div>
-                  <div>
-                    <h5 className="fw-extrabold mb-1 text-dark" style={{ fontSize: '1.05rem' }}>Langkah 2 dari 3: Pengisian Hasil Uji Laboratorium</h5>
-                    <small className="text-muted fw-semibold">Setelah Penjadwalan Selesai ➜ <strong>Isi Hasil Uji & Satuan</strong> ➜ Lalu lanjut ke Berita Acara</small>
+            {/* Realtime Notification Banner per Role */}
+            {userRoleId === 4 && (() => {
+              const pendingVerifItems = hasils.filter((i) => i.status_verifikasi === "MENUNGGU_VERIFIKASI");
+              const count = pendingVerifItems.length;
+              return (
+                <div className="card mb-4 banner-3d p-3" style={{ background: count > 0 ? 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)' : 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', borderColor: count > 0 ? '#ea580c !important' : '#16a34a !important' }}>
+                  <div className="d-flex align-items-center justify-content-between flex-wrap gap-3 text-start">
+                    <div className="d-flex align-items-center gap-3">
+                      <div className={`badge-3d ${count > 0 ? 'bg-danger' : 'bg-success'} text-white fs-4 d-flex align-items-center justify-content-center`} style={{ width: '48px', height: '48px', borderRadius: '14px' }}>
+                        {count > 0 ? '🔔' : '✅'}
+                      </div>
+                      <div>
+                        <h5 className="fw-extrabold mb-1 text-dark" style={{ fontSize: '1.05rem' }}>
+                          {count > 0 ? `🔔 ${count} Parameter Hasil Uji MENUNGGU VERIFIKASI Anda!` : '✅ Semua Tugas Verifikasi Hasil Uji Selesai'}
+                        </h5>
+                        <small className="text-muted fw-semibold">
+                          {count > 0
+                            ? 'Silakan periksa item hasil uji di bawah ini dan klik tombol Setujui (ACC) atau Revisi.'
+                            : 'Tidak ada sampel yang menunggu verifikasi saat ini. Data baru akan otomatis muncul secara realtime.'}
+                        </small>
+                      </div>
+                    </div>
+                    {count > 0 && (
+                      <button
+                        className="btn btn-3d-primary px-3 py-2 fw-bold"
+                        onClick={() => handleBatchVerifikasi(pendingVerifItems, "VERIFY_APPROVE")}
+                      >
+                        ✓ Verifikasi Semua ({count})
+                      </button>
+                    )}
                   </div>
                 </div>
-                <Link to="/berita-acara" className="btn btn-3d-success px-3 py-2">
-                  Lanjut ke Langkah 3: Berita Acara ➔
-                </Link>
+              );
+            })()}
+
+            {userRoleId === 5 && (() => {
+              const pendingKepalaItems = hasils.filter((i) => i.status_verifikasi === "DIVERIFIKASI");
+              const count = pendingKepalaItems.length;
+              return (
+                <div className="card mb-4 banner-3d p-3" style={{ background: count > 0 ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)' : 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', borderColor: count > 0 ? '#2563eb !important' : '#16a34a !important' }}>
+                  <div className="d-flex align-items-center justify-content-between flex-wrap gap-3 text-start">
+                    <div className="d-flex align-items-center gap-3">
+                      <div className={`badge-3d ${count > 0 ? 'bg-primary' : 'bg-success'} text-white fs-4 d-flex align-items-center justify-content-center`} style={{ width: '48px', height: '48px', borderRadius: '14px' }}>
+                        {count > 0 ? '🔏' : '✅'}
+                      </div>
+                      <div>
+                        <h5 className="fw-extrabold mb-1 text-dark" style={{ fontSize: '1.05rem' }}>
+                          {count > 0 ? `🔏 ${count} Parameter Hasil Uji MENUNGGU TTD & PERSETUJUAN Anda!` : '✅ Semua Persetujuan & TTD Selesai'}
+                        </h5>
+                        <small className="text-muted fw-semibold">
+                          {count > 0
+                            ? 'Hasil uji telah lolos verifikasi dan memerlukan persetujuan TTD Kepala Labkesda.'
+                            : 'Tidak ada sampel yang menunggu persetujuan TTD saat ini.'}
+                        </small>
+                      </div>
+                    </div>
+                    {count > 0 && (
+                      <button
+                        className="btn btn-3d-success px-3 py-2 fw-bold"
+                        onClick={() => handleBatchVerifikasi(pendingKepalaItems, "KEPALA_APPROVE")}
+                      >
+                        🔏 ACC TTD Semua ({count})
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {(userRoleId !== 4 && userRoleId !== 5) && (
+              <div className="card mb-4 banner-3d p-3" style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' }}>
+                <div className="d-flex align-items-center justify-content-between flex-wrap gap-3 text-start">
+                  <div className="d-flex align-items-center gap-3">
+                    <div className="badge-3d bg-success text-white fs-5 d-flex align-items-center justify-content-center" style={{ width: '48px', height: '48px', borderRadius: '14px' }}>
+                      2
+                    </div>
+                    <div>
+                      <h5 className="fw-extrabold mb-1 text-dark" style={{ fontSize: '1.05rem' }}>Langkah 2 dari 3: Pengisian Hasil Uji Laboratorium</h5>
+                      <small className="text-muted fw-semibold">Setelah Penjadwalan Selesai ➜ <strong>Isi Hasil Uji & Satuan</strong> ➜ Lalu lanjut ke Berita Acara</small>
+                    </div>
+                  </div>
+                  <Link to="/berita-acara" className="btn btn-3d-success px-3 py-2">
+                    Lanjut ke Langkah 3: Berita Acara ➔
+                  </Link>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Mode Indicator Bar */}
             {(() => { const { grouped: _g } = getGroupedData(); return (
@@ -935,8 +1123,8 @@ export default function HasilIndex() {
                               );
                             })()}
 
-                            {/* Tombol Batch Verifikasi berdasarkan Role */}
-                            {(userRoleId === 2 || userRoleId === 3) && (
+                            {/* Tombol Batch Verifikasi berdasarkan Role & Status Item */}
+                            {(userRoleId === 2 || userRoleId === 3) && items.some((i) => !i.status_verifikasi || i.status_verifikasi === "DRAFT" || i.status_verifikasi === "REVISI_ANALIS") && (
                               <button
                                 className="btn btn-sm btn-warning text-dark fw-bold"
                                 onClick={(e) => {
@@ -944,11 +1132,11 @@ export default function HasilIndex() {
                                   handleBatchVerifikasi(items, "SUBMIT_VERIFIKASI");
                                 }}
                               >
-                                📤 Kirim Verifikasi All
+                                📤 Kirim Verifikasi All ({items.filter((i) => !i.status_verifikasi || i.status_verifikasi === "DRAFT" || i.status_verifikasi === "REVISI_ANALIS").length})
                               </button>
                             )}
 
-                            {(userRoleId === 2 || userRoleId === 4) && (
+                            {(userRoleId === 2 || userRoleId === 4) && items.some((i) => i.status_verifikasi === "MENUNGGU_VERIFIKASI") && (
                               <button
                                 className="btn btn-sm btn-success fw-bold"
                                 onClick={(e) => {
@@ -956,11 +1144,11 @@ export default function HasilIndex() {
                                   handleBatchVerifikasi(items, "VERIFY_APPROVE");
                                 }}
                               >
-                                ✓ Verifikasi All
+                                ✓ Verifikasi All ({items.filter((i) => i.status_verifikasi === "MENUNGGU_VERIFIKASI").length})
                               </button>
                             )}
 
-                            {(userRoleId === 2 || userRoleId === 5) && (
+                            {(userRoleId === 2 || userRoleId === 5) && items.some((i) => i.status_verifikasi === "DIVERIFIKASI") && (
                               <button
                                 className="btn btn-sm btn-success fw-bold"
                                 onClick={(e) => {
@@ -968,7 +1156,7 @@ export default function HasilIndex() {
                                   handleBatchVerifikasi(items, "KEPALA_APPROVE");
                                 }}
                               >
-                                🔏 ACC TTD All
+                                🔏 ACC TTD All ({items.filter((i) => i.status_verifikasi === "DIVERIFIKASI").length})
                               </button>
                             )}
 
@@ -1176,10 +1364,12 @@ export default function HasilIndex() {
                                         </div>
                                       ) : (
                                         <div className="d-flex flex-wrap gap-1 justify-content-center">
-                                          {/* Edit Hasil Uji */}
-                                          <button className="btn btn-sm btn-outline-primary" onClick={() => handleEdit(hasil)} title="Edit Hasil Uji">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none"><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.097 2.097 0 0 0 -2.955 -2.955l-8.56 8.56l-1.37 3.89l3.89 -1.37l8.56 -8.56z" /></svg>
-                                          </button>
+                                          {/* Edit Hasil Uji (Admin & Analis only) */}
+                                          {(userRoleId === 2 || userRoleId === 3) && (
+                                            <button className="btn btn-sm btn-outline-primary" onClick={() => handleEdit(hasil)} title="Edit Hasil Uji">
+                                              <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none"><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.097 2.097 0 0 0 -2.955 -2.955l-8.56 8.56l-1.37 3.89l3.89 -1.37l8.56 -8.56z" /></svg>
+                                            </button>
+                                          )}
 
                                           {/* 1. Kirim ke Verifikator (Analis / Admin) */}
                                           {(userRoleId === 2 || userRoleId === 3) && (!hasil.status_verifikasi || hasil.status_verifikasi === "DRAFT" || hasil.status_verifikasi === "REVISI_ANALIS") && (

@@ -18,7 +18,10 @@ const COLORS = ['#e50914', '#10b981', '#fbbf24', '#38bdf8', '#8b5cf6', '#ec4899'
 export default function Dashboard() {
     const userCookie = Cookies.get("user");
     const user = userCookie ? JSON.parse(userCookie) : null;
-    const isAdmin = user && (user.role_id === 2 || user.role_id === '2');
+    const userRoleId = Number(user?.role_id);
+    const isAdmin = user && (userRoleId === 2 || user.role_id === '2');
+    const isVerifikator = userRoleId === 4;
+    const isKepala = userRoleId === 5;
 
     // State untuk data API real
     const [isLoading, setIsLoading] = useState(true);
@@ -31,6 +34,12 @@ export default function Dashboard() {
         chartMonthlyData: [],
         chartKategoriData: [],
         recentActivities: []
+    });
+
+    const [verifData, setVerifData] = useState({
+        pendingVerifCount: 0,
+        pendingKepalaCount: 0,
+        recentHasils: []
     });
 
     const [pemohonData, setPemohonData] = useState({
@@ -73,6 +82,20 @@ export default function Dashboard() {
         Api.defaults.headers.common['Authorization'] = token;
 
         try {
+            if (isVerifikator || isKepala || isAdmin) {
+                const resHasils = await Api.get('/api/hasils?limit=200').catch(() => null);
+                const hasilsList = resHasils?.data?.data || [];
+                const pendingVerifItems = hasilsList.filter(i => i.status_verifikasi === 'MENUNGGU_VERIFIKASI');
+                const pendingKepalaItems = hasilsList.filter(i => i.status_verifikasi === 'DIVERIFIKASI');
+                setVerifData({
+                    pendingVerifCount: pendingVerifItems.length,
+                    pendingKepalaCount: pendingKepalaItems.length,
+                    pendingVerifItems: pendingVerifItems,
+                    pendingKepalaItems: pendingKepalaItems,
+                    recentHasils: hasilsList.slice(0, 10)
+                });
+            }
+
             if (isAdmin) {
                 // Endpoint Admin BE: /api/pemohonan/all, /api/users, /api/transactions, /api/berita-acara, /api/categories
                 const [resPemohonan, resUsers, resTransactions, resBA, resCategories] = await Promise.allSettled([
@@ -194,7 +217,7 @@ export default function Dashboard() {
 
     useEffect(() => {
         fetchBackendData();
-    }, [isAdmin]);
+    }, [isAdmin, isVerifikator, isKepala]);
 
     // Render Admin Dashboard UI
     const renderAdminDashboard = () => {
@@ -433,6 +456,130 @@ export default function Dashboard() {
                         </table>
                     </div>
                 </div>
+
+                {/* 1. Tabel Realtime Hasil Menunggu Verifikasi */}
+                <div className="card-3d p-4 bg-white mb-4 mt-4 border border-2 border-dark" style={{ boxShadow: '6px 6px 0px #000', borderRadius: '18px' }}>
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 className="fw-black text-dark mb-1">📋 Daftar Hasil Uji Menunggu Verifikasi (Verifikator)</h5>
+                            <small className="text-muted">Item hasil pemeriksaan laboratorium yang sedang menunggu verifikasi oleh Verifikator.</small>
+                        </div>
+                        <Link to="/hasil" className="btn btn-sm btn-pop-blue fw-bold">
+                            Lihat di Menu Hasil ➔
+                        </Link>
+                    </div>
+                    <div className="table-responsive">
+                        <table className="table table-pop align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Kode Sampel</th>
+                                    <th>Metode / Parameter</th>
+                                    <th>Hasil Uji</th>
+                                    <th>Tanggal Masuk</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {verifData.pendingVerifItems && verifData.pendingVerifItems.length > 0 ? (
+                                    verifData.pendingVerifItems.slice(0, 5).map((item) => (
+                                        <tr key={item.id}>
+                                            <td className="fw-bold text-dark">{item.kode_sampel || `SPL-${item.id}`}</td>
+                                            <td>
+                                                <div className="fw-bold">{item.metode || 'Hasil Uji'}</div>
+                                                <small className="text-muted">{item.satuan || '-'}</small>
+                                            </td>
+                                            <td>
+                                                <span className="badge bg-light text-dark fw-bold border border-secondary px-2 py-1 fs-6">
+                                                    {item.hasil || '-'} {item.satuan}
+                                                </span>
+                                            </td>
+                                            <td>{item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}</td>
+                                            <td>
+                                                <span className="badge-3d bg-warning text-dark fw-bold">
+                                                    MENUNGGU VERIFIKASI
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <Link to="/hasil" className="btn btn-sm btn-pop-yellow py-1 px-3 text-decoration-none fw-bold">
+                                                    Lihat Detail ➔
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="6" className="text-center py-4 text-secondary">
+                                            {isLoading ? "Memuat data..." : "✅ Tidak ada hasil uji yang menunggu verifikasi saat ini."}
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* 2. Tabel Realtime Hasil Menunggu TTD Kepala */}
+                <div className="card-3d p-4 bg-white border border-2 border-dark" style={{ boxShadow: '6px 6px 0px #000', borderRadius: '18px' }}>
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 className="fw-black text-dark mb-1">🔏 Daftar Hasil Uji Menunggu TTD & Persetujuan (Kepala Labkesda)</h5>
+                            <small className="text-muted">Item hasil uji yang telah terverifikasi dan menunggu persetujuan TTD Kepala Labkesda.</small>
+                        </div>
+                        <Link to="/hasil" className="btn btn-sm btn-pop-blue fw-bold">
+                            Lihat di Menu Hasil ➔
+                        </Link>
+                    </div>
+                    <div className="table-responsive">
+                        <table className="table table-pop align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Kode Sampel</th>
+                                    <th>Metode / Parameter</th>
+                                    <th>Hasil Uji</th>
+                                    <th>Tanggal Terverifikasi</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {verifData.pendingKepalaItems && verifData.pendingKepalaItems.length > 0 ? (
+                                    verifData.pendingKepalaItems.slice(0, 5).map((item) => (
+                                        <tr key={item.id}>
+                                            <td className="fw-bold text-dark">{item.kode_sampel || `SPL-${item.id}`}</td>
+                                            <td>
+                                                <div className="fw-bold">{item.metode || 'Hasil Uji'}</div>
+                                                <small className="text-muted">{item.satuan || '-'}</small>
+                                            </td>
+                                            <td>
+                                                <span className="badge bg-light text-dark fw-bold border border-secondary px-2 py-1 fs-6">
+                                                    {item.hasil || '-'} {item.satuan}
+                                                </span>
+                                            </td>
+                                            <td>{item.updated_at || item.created_at ? new Date(item.updated_at || item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}</td>
+                                            <td>
+                                                <span className="badge-3d bg-info text-white fw-bold">
+                                                    DIVERIFIKASI
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <Link to="/hasil" className="btn btn-sm btn-pop-green py-1 px-3 text-decoration-none fw-bold">
+                                                    Lihat Detail ➔
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="6" className="text-center py-4 text-secondary">
+                                            {isLoading ? "Memuat data..." : "✅ Tidak ada hasil uji yang menunggu TTD saat ini."}
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         );
     };
@@ -643,10 +790,262 @@ export default function Dashboard() {
         );
     };
 
+    // Render Verifikator Dashboard UI
+    const renderVerifikatorDashboard = () => {
+        return (
+            <div className="dashboard-3d-wrapper">
+                <div className="dash-hero-card mb-4" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)' }}>
+                    <div className="dash-hero-overlay"></div>
+                    <div className="row align-items-center position-relative z-2">
+                        <div className="col-lg-8 text-white mb-3 mb-lg-0">
+                            <div className="greeting-pill mb-2" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff' }}>
+                                <IconSparkles size={16} className="text-warning me-1" />
+                                <span>{greeting.text}, {user?.name || 'Verifikator'}</span>
+                            </div>
+                            <h1 className="fw-black fs-2 text-white mb-2">
+                                Panel Verifikator Hasil Laboratorium
+                            </h1>
+                            <p className="text-white-80 small max-w-650 mb-0">
+                                Verifikasi hasil pengujian laboratorium dari tim analisis sebelum diteruskan ke Kepala Labkesda.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="row g-4 mb-4">
+                    <div className="col-md-6">
+                        <div className="stat-card-3d p-4 bg-white border border-2 border-dark" style={{ boxShadow: '6px 6px 0px #000', borderRadius: '18px' }}>
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <div className="stat-icon-3d bg-danger text-white">
+                                    <IconClock size={28} />
+                                </div>
+                                <span className="badge bg-danger-subtle text-danger fw-bold fs-6">Menunggu Verifikasi</span>
+                            </div>
+                            <h6 className="text-secondary fw-bold small text-uppercase mb-1">Tugas Verifikasi Anda</h6>
+                            <h2 className="fw-black text-dark mb-3">
+                                {isLoading ? <span className="spinner-border spinner-border-sm"></span> : `${verifData.pendingVerifCount} Parameter`}
+                            </h2>
+                            <Link to="/hasil" className="btn btn-pop-blue w-100 fw-bold">
+                                Buka Menu Hasil & Verifikasi ➔
+                            </Link>
+                        </div>
+                    </div>
+
+                    <div className="col-md-6">
+                        <div className="stat-card-3d p-4 bg-white border border-2 border-dark" style={{ boxShadow: '6px 6px 0px #000', borderRadius: '18px' }}>
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <div className="stat-icon-3d bg-success text-white">
+                                    <IconCheck size={28} />
+                                </div>
+                                <span className="badge bg-success-subtle text-success fw-bold fs-6">Akses Cepat</span>
+                            </div>
+                            <h6 className="text-secondary fw-bold small text-uppercase mb-1">Status Sistem</h6>
+                            <h2 className="fw-black text-dark mb-3">Realtime Active</h2>
+                            <Link to="/hasil" className="btn btn-pop-green w-100 fw-bold">
+                                Lihat Semua Hasil Uji ➔
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tabel Realtime Item Menunggu Verifikasi */}
+                <div className="card-3d p-4 bg-white border border-2 border-dark" style={{ boxShadow: '6px 6px 0px #000', borderRadius: '18px' }}>
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 className="fw-black text-dark mb-1">📋 Daftar Hasil Uji Menunggu Verifikasi</h5>
+                            <small className="text-muted">Item hasil pemeriksaan laboratorium dari tim analis yang perlu diverifikasi.</small>
+                        </div>
+                        <Link to="/hasil" className="btn btn-sm btn-pop-blue fw-bold">
+                            Lihat di Menu Hasil ➔
+                        </Link>
+                    </div>
+                    <div className="table-responsive">
+                        <table className="table table-pop align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Kode Sampel</th>
+                                    <th>Metode / Parameter</th>
+                                    <th>Hasil Uji</th>
+                                    <th>Tanggal Masuk</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {verifData.pendingVerifItems && verifData.pendingVerifItems.length > 0 ? (
+                                    verifData.pendingVerifItems.slice(0, 10).map((item) => (
+                                        <tr key={item.id}>
+                                            <td className="fw-bold text-dark">{item.kode_sampel || `SPL-${item.id}`}</td>
+                                            <td>
+                                                <div className="fw-bold">{item.metode || 'Hasil Uji'}</div>
+                                                <small className="text-muted">{item.satuan || '-'}</small>
+                                            </td>
+                                            <td>
+                                                <span className="badge bg-light text-dark fw-bold border border-secondary px-2 py-1 fs-6">
+                                                    {item.hasil || '-'} {item.satuan}
+                                                </span>
+                                            </td>
+                                            <td>{item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}</td>
+                                            <td>
+                                                <span className="badge-3d bg-warning text-dark fw-bold">
+                                                    MENUNGGU VERIFIKASI
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <Link to="/hasil" className="btn btn-sm btn-pop-yellow py-1 px-3 text-decoration-none fw-bold">
+                                                    ✓ Verifikasi ➔
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="6" className="text-center py-4 text-secondary">
+                                            {isLoading ? "Memuat data dari server..." : "✅ Tidak ada hasil uji yang menunggu verifikasi saat ini."}
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    // Render Kepala Labkesda Dashboard UI
+    const renderKepalaDashboard = () => {
+        return (
+            <div className="dashboard-3d-wrapper">
+                <div className="dash-hero-card mb-4" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
+                    <div className="dash-hero-overlay"></div>
+                    <div className="row align-items-center position-relative z-2">
+                        <div className="col-lg-8 text-white mb-3 mb-lg-0">
+                            <div className="greeting-pill mb-2" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff' }}>
+                                <IconSparkles size={16} className="text-warning me-1" />
+                                <span>{greeting.text}, Kepala Labkesda</span>
+                            </div>
+                            <h1 className="fw-black fs-2 text-white mb-2">
+                                Panel Persetujuan & TTD Kepala Labkesda
+                            </h1>
+                            <p className="text-white-80 small max-w-650 mb-0">
+                                Berikan persetujuan akhir dan tanda tangan elektronik QR pada laporan hasil uji laboratorium.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="row g-4 mb-4">
+                    <div className="col-md-6">
+                        <div className="stat-card-3d p-4 bg-white border border-2 border-dark" style={{ boxShadow: '6px 6px 0px #000', borderRadius: '18px' }}>
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <div className="stat-icon-3d bg-primary text-white">
+                                    <IconFileText size={28} />
+                                </div>
+                                <span className="badge bg-primary-subtle text-primary fw-bold fs-6">Menunggu TTD</span>
+                            </div>
+                            <h6 className="text-secondary fw-bold small text-uppercase mb-1">Tanda Tangan & Persetujuan</h6>
+                            <h2 className="fw-black text-dark mb-3">
+                                {isLoading ? <span className="spinner-border spinner-border-sm"></span> : `${verifData.pendingKepalaCount} Parameter`}
+                            </h2>
+                            <Link to="/hasil" className="btn btn-pop-blue w-100 fw-bold">
+                                Buka Menu Hasil & ACC TTD ➔
+                            </Link>
+                        </div>
+                    </div>
+
+                    <div className="col-md-6">
+                        <div className="stat-card-3d p-4 bg-white border border-2 border-dark" style={{ boxShadow: '6px 6px 0px #000', borderRadius: '18px' }}>
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <div className="stat-icon-3d bg-success text-white">
+                                    <IconCheck size={28} />
+                                </div>
+                                <span className="badge bg-success-subtle text-success fw-bold fs-6">Berita Acara</span>
+                            </div>
+                            <h6 className="text-secondary fw-bold small text-uppercase mb-1">Dokumen Resmi</h6>
+                            <h2 className="fw-black text-dark mb-3">Berita Acara</h2>
+                            <Link to="/berita-acara" className="btn btn-pop-green w-100 fw-bold">
+                                Buka Menu Berita Acara ➔
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tabel Realtime Item Menunggu TTD Kepala */}
+                <div className="card-3d p-4 bg-white border border-2 border-dark" style={{ boxShadow: '6px 6px 0px #000', borderRadius: '18px' }}>
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 className="fw-black text-dark mb-1">🔏 Daftar Hasil Uji Menunggu TTD & Persetujuan</h5>
+                            <small className="text-muted">Item hasil uji yang telah lolos verifikasi dan membutuhkan tanda tangan elektronik Kepala Labkesda.</small>
+                        </div>
+                        <Link to="/hasil" className="btn btn-sm btn-pop-blue fw-bold">
+                            Lihat di Menu Hasil ➔
+                        </Link>
+                    </div>
+                    <div className="table-responsive">
+                        <table className="table table-pop align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Kode Sampel</th>
+                                    <th>Metode / Parameter</th>
+                                    <th>Hasil Uji</th>
+                                    <th>Tanggal Terverifikasi</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {verifData.pendingKepalaItems && verifData.pendingKepalaItems.length > 0 ? (
+                                    verifData.pendingKepalaItems.slice(0, 10).map((item) => (
+                                        <tr key={item.id}>
+                                            <td className="fw-bold text-dark">{item.kode_sampel || `SPL-${item.id}`}</td>
+                                            <td>
+                                                <div className="fw-bold">{item.metode || 'Hasil Uji'}</div>
+                                                <small className="text-muted">{item.satuan || '-'}</small>
+                                            </td>
+                                            <td>
+                                                <span className="badge bg-light text-dark fw-bold border border-secondary px-2 py-1 fs-6">
+                                                    {item.hasil || '-'} {item.satuan}
+                                                </span>
+                                            </td>
+                                            <td>{item.updated_at || item.created_at ? new Date(item.updated_at || item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}</td>
+                                            <td>
+                                                <span className="badge-3d bg-info text-white fw-bold">
+                                                    DIVERIFIKASI
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <Link to="/hasil" className="btn btn-sm btn-pop-green py-1 px-3 text-decoration-none fw-bold">
+                                                    🔏 TTD ➔
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="6" className="text-center py-4 text-secondary">
+                                            {isLoading ? "Memuat data dari server..." : "✅ Tidak ada hasil uji yang menunggu TTD saat ini."}
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <LayoutAdmin>
             <div className="container-fluid py-4">
-                {isAdmin ? renderAdminDashboard() : renderPemohonDashboard()}
+                {isAdmin
+                    ? renderAdminDashboard()
+                    : isVerifikator
+                    ? renderVerifikatorDashboard()
+                    : isKepala
+                    ? renderKepalaDashboard()
+                    : renderPemohonDashboard()}
             </div>
 
             <style>{`

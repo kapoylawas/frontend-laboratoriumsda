@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useStore as useThemeStore } from '../stores/theme';
 import { useStore as useUserStore } from '../stores/user';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { isAdmin, canAccessHasil, canAccessOperationalMenus, canAccessPenjadwalan, canAccessJadwalPengambilan } from '../constants/roles';
+import { isAdmin, canAccessHasil, canAccessOperationalMenus, canAccessPenjadwalan, canAccessJadwalPengambilan, canAccessPenawaran, canAccessBeritaAcara } from '../constants/roles';
+import Cookies from 'js-cookie';
+import Api from '../services/api';
 import "./Header.css";
 
 export default function Header() {
@@ -32,6 +34,10 @@ export default function Header() {
     const userCanAccessOperationalMenus = canAccessOperationalMenus(user);
     const userCanAccessPenjadwalan = canAccessPenjadwalan(user);
     const userCanAccessJadwalPengambilan = canAccessJadwalPengambilan(user);
+    const userCanAccessPenawaran = canAccessPenawaran(user);
+    const userCanAccessBeritaAcara = canAccessBeritaAcara(user);
+
+
 
     const logoutHandler = () => {
         logout();
@@ -233,22 +239,24 @@ export default function Header() {
                                     </Link>
                                 </li>
 
-                                {/* Penawaran Menu - All authenticated users */}
-                                <li className={`mobile-nav-item ${isActivePath('/penawaran') ? 'active' : ''}`}>
-                                    <Link className="mobile-nav-link" to="/penawaran" onClick={closeMobileMenu}>
-                                        <div className="nav-icon">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                                <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-                                                <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
-                                                <path d="M9 9l1 0" />
-                                                <path d="M9 13l6 0" />
-                                                <path d="M9 17l6 0" />
-                                            </svg>
-                                        </div>
-                                        <span className="nav-label">PENAWARAN</span>
-                                    </Link>
-                                </li>
+                                {/* Penawaran Menu - All authenticated users except Verifikator */}
+                                {userCanAccessPenawaran && (
+                                    <li className={`mobile-nav-item ${isActivePath('/penawaran') ? 'active' : ''}`}>
+                                        <Link className="mobile-nav-link" to="/penawaran" onClick={closeMobileMenu}>
+                                            <div className="nav-icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                                                    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+                                                    <path d="M9 9l1 0" />
+                                                    <path d="M9 13l6 0" />
+                                                    <path d="M9 17l6 0" />
+                                                </svg>
+                                            </div>
+                                            <span className="nav-label">PENAWARAN</span>
+                                        </Link>
+                                    </li>
+                                )}
 
                                 {/* Orders Menu - Admin Only */}
                                 {userCanAccessOperationalMenus && (
@@ -360,8 +368,8 @@ export default function Header() {
                                     </li>
                                 )}
 
-                                {/* Berita Acara Menu - Admin & Pemohon (Step 3) */}
-                                {userCanAccessOperationalMenus && (
+                                {/* Berita Acara Menu - Accessible by Admin, Pemohon, Analis, Kepala */}
+                                {userCanAccessBeritaAcara && (
                                     <li className={`mobile-nav-item ${isActivePath('/berita-acara') ? 'active' : ''}`}>
                                         <Link className="mobile-nav-link" to="/berita-acara" onClick={closeMobileMenu}>
                                             <div className="nav-icon">
@@ -483,22 +491,24 @@ export default function Header() {
                                         </Link>
                                     </li>
 
-                                    {/* Penawaran Menu - All authenticated users */}
-                                    <li className={`nav-item ${isActivePath('/penawaran') ? 'active' : ''}`}>
-                                        <Link className="nav-link cashier-nav-link" to="/penawaran">
-                                            <div className="nav-icon">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                                    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-                                                    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
-                                                    <path d="M9 9l1 0" />
-                                                    <path d="M9 13l6 0" />
-                                                    <path d="M9 17l6 0" />
-                                                </svg>
-                                            </div>
-                                            <span className="nav-label">PENAWARAN</span>
-                                        </Link>
-                                    </li>
+                                    {/* Penawaran Menu - All authenticated users except Verifikator */}
+                                    {userCanAccessPenawaran && (
+                                        <li className={`nav-item ${isActivePath('/penawaran') ? 'active' : ''}`}>
+                                            <Link className="nav-link cashier-nav-link" to="/penawaran">
+                                                <div className="nav-icon">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                        <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                                                        <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+                                                        <path d="M9 9l1 0" />
+                                                        <path d="M9 13l6 0" />
+                                                        <path d="M9 17l6 0" />
+                                                    </svg>
+                                                </div>
+                                                <span className="nav-label">PENAWARAN</span>
+                                            </Link>
+                                        </li>
+                                    )}
 
                                     {/* Orders Menu - Admin Only */}
                                     {userCanAccessOperationalMenus && (
@@ -610,8 +620,8 @@ export default function Header() {
                                         </li>
                                     )}
 
-                                    {/* Berita Acara Menu - Admin & Pemohon (Step 3) */}
-                                    {userCanAccessOperationalMenus && (
+                                    {/* Berita Acara Menu - Accessible by Admin, Pemohon, Analis, Kepala */}
+                                    {userCanAccessBeritaAcara && (
                                         <li className={`nav-item ${isActivePath('/berita-acara') ? 'active' : ''}`}>
                                             <Link className="nav-link cashier-nav-link" to="/berita-acara">
                                                 <div className="nav-icon">

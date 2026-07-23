@@ -129,6 +129,26 @@ export const canAccessOperationalMenus = (user) => {
 };
 
 /**
+ * Helper function to check if user can access Penawaran menu
+ * (Admin, Pemohon, Analis - NOT Verifikator or Kepala)
+ * @param {Object} user - User object from store
+ * @returns {Boolean}
+ */
+export const canAccessPenawaran = (user) => {
+  return !isVerifikator(user) && !isKepala(user);
+};
+
+/**
+ * Helper function to check if user can access Berita Acara menu
+ * (Admin, Pemohon, Analis, Kepala - NOT Verifikator)
+ * @param {Object} user - User object from store
+ * @returns {Boolean}
+ */
+export const canAccessBeritaAcara = (user) => {
+  return !isVerifikator(user);
+};
+
+/**
  * Get all available roles as array
  * @returns {Array} Array of role objects
  */
