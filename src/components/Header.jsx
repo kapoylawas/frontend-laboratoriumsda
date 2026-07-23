@@ -384,6 +384,24 @@ export default function Header() {
                                     </li>
                                 )}
 
+                                {/* Laporan Rekapitulasi Menu */}
+                                {userCanAccessHasil && (
+                                    <li className={`mobile-nav-item ${isActivePath('/laporan') ? 'active' : ''}`}>
+                                        <Link className="mobile-nav-link" to="/laporan" onClick={closeMobileMenu}>
+                                            <div className="nav-icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                    <path d="M8 5h6a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-6a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2z" />
+                                                    <path d="M9 12h6" />
+                                                    <path d="M9 16h6" />
+                                                    <path d="M9 8h6" />
+                                                </svg>
+                                            </div>
+                                            <span className="nav-label">LAPORAN</span>
+                                        </Link>
+                                    </li>
+                                )}
+
                                 {userIsAdmin && (
                                     <li className={`mobile-nav-item mobile-nav-dropdown ${isMasterDataOpen ? 'open' : ''} ${isActivePath('/categories') || isActivePath('/sampels') || isActivePath('/users') ? 'active' : ''}`}>
                                         <div
@@ -632,6 +650,24 @@ export default function Header() {
                                                     </svg>
                                                 </div>
                                                 <span className="nav-label">3. BERITA ACARA</span>
+                                            </Link>
+                                        </li>
+                                    )}
+
+                                    {/* Laporan Rekapitulasi Menu */}
+                                    {userCanAccessHasil && (
+                                        <li className={`nav-item ${isActivePath('/laporan') ? 'active' : ''}`}>
+                                            <Link className="nav-link cashier-nav-link" to="/laporan">
+                                                <div className="nav-icon">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                        <path d="M8 5h6a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-6a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2z" />
+                                                        <path d="M9 12h6" />
+                                                        <path d="M9 16h6" />
+                                                        <path d="M9 8h6" />
+                                                    </svg>
+                                                </div>
+                                                <span className="nav-label">LAPORAN</span>
                                             </Link>
                                         </li>
                                     )}

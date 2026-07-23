@@ -35,6 +35,7 @@ export default function HasilIndex() {
   const currentUserCookie = Cookies.get("user");
   const currentUser = currentUserCookie ? JSON.parse(currentUserCookie) : {};
   const userRoleId = currentUser?.role_id;
+  const canInputHasil = userRoleId === 2 || userRoleId === 3 || userRoleId === 6 || (currentUser?.role?.name && currentUser.role.name.toLowerCase().includes("sanitarian"));
 
   // ---- PRINT SELECTION HELPERS ----
   const togglePrintSelect = (hasilId) => {
@@ -1124,7 +1125,7 @@ export default function HasilIndex() {
                             })()}
 
                             {/* Tombol Batch Verifikasi berdasarkan Role & Status Item */}
-                            {(userRoleId === 2 || userRoleId === 3) && items.some((i) => !i.status_verifikasi || i.status_verifikasi === "DRAFT" || i.status_verifikasi === "REVISI_ANALIS") && (
+                            {canInputHasil && items.some((i) => !i.status_verifikasi || i.status_verifikasi === "DRAFT" || i.status_verifikasi === "REVISI_ANALIS") && (
                               <button
                                 className="btn btn-sm btn-warning text-dark fw-bold"
                                 onClick={(e) => {
@@ -1364,15 +1365,15 @@ export default function HasilIndex() {
                                         </div>
                                       ) : (
                                         <div className="d-flex flex-wrap gap-1 justify-content-center">
-                                          {/* Edit Hasil Uji (Admin & Analis only) */}
-                                          {(userRoleId === 2 || userRoleId === 3) && (
+                                          {/* Edit Hasil Uji (Admin, Analis, & Sanitarian) */}
+                                          {canInputHasil && (
                                             <button className="btn btn-sm btn-outline-primary" onClick={() => handleEdit(hasil)} title="Edit Hasil Uji">
                                               <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none"><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.097 2.097 0 0 0 -2.955 -2.955l-8.56 8.56l-1.37 3.89l3.89 -1.37l8.56 -8.56z" /></svg>
                                             </button>
                                           )}
 
-                                          {/* 1. Kirim ke Verifikator (Analis / Admin) */}
-                                          {(userRoleId === 2 || userRoleId === 3) && (!hasil.status_verifikasi || hasil.status_verifikasi === "DRAFT" || hasil.status_verifikasi === "REVISI_ANALIS") && (
+                                          {/* 1. Kirim ke Verifikator (Analis / Sanitarian / Admin) */}
+                                          {canInputHasil && (!hasil.status_verifikasi || hasil.status_verifikasi === "DRAFT" || hasil.status_verifikasi === "REVISI_ANALIS") && (
                                             <button
                                               className="btn btn-sm btn-warning text-dark fw-bold"
                                               onClick={() => handleVerifikasiAction(hasil.id, "SUBMIT_VERIFIKASI")}

@@ -30,6 +30,11 @@ export const ROLES = {
     id: 5,
     name: 'Kepala Labkesda',
     description: 'Kepala Labkesda untuk persetujuan akhir & TTD elektronik'
+  },
+  SANITARIAN: {
+    id: 6,
+    name: 'Sanitarian',
+    description: 'Petugas Sanitarian dengan akses ke menu Hasil untuk input & kirim verifikasi'
   }
 };
 
@@ -88,14 +93,18 @@ export const isKepala = (user) => {
   return hasRoleId(user, ROLES.KEPALA_LABKESDA.id);
 };
 
+export const isSanitarian = (user) => {
+  return hasRoleId(user, ROLES.SANITARIAN.id) || hasRoleName(user, 'Sanitarian') || user?.role?.name?.toLowerCase()?.includes('sanitarian');
+};
+
 /**
  * Helper function to check if user can access Hasil menu
- * (Admin Labkesda, Analisis, Verifikator, or Kepala role)
+ * (Admin Labkesda, Analisis, Verifikator, Kepala, or Sanitarian role)
  * @param {Object} user - User object from store
  * @returns {Boolean}
  */
 export const canAccessHasil = (user) => {
-  return isAdmin(user) || isAnalisis(user) || isVerifikator(user) || isKepala(user);
+  return isAdmin(user) || isAnalisis(user) || isVerifikator(user) || isKepala(user) || isSanitarian(user);
 };
 
 /**

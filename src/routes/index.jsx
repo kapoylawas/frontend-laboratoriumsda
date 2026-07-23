@@ -41,8 +41,9 @@ import BeritaAcaraCreate from "../views/berita-acara/create.jsx";
 import BeritaAcaraEdit from "../views/berita-acara/edit.jsx";
 import BeritaAcaraDetail from "../views/berita-acara/detail.jsx";
 
-// Import Landing view
+// Import Landing & Laporan views
 import LandingPage from "../views/landing/index.jsx";
+import Laporan from "../views/laporan/index.jsx";
 
 export default function AppRoutes() {
   return (
@@ -145,6 +146,18 @@ export default function AppRoutes() {
       <Route path="/hasil/print/:id" element={
         <HasilRoute>
           <PrintLaporanHasil />
+        </HasilRoute>
+      } />
+
+      {/* Laporan Rekapitulasi Route - Accessible by Admin, Analisis, Verifikator, & Kepala */}
+      <Route path="/laporan" element={
+        <HasilRoute>
+          <Laporan />
+        </HasilRoute>
+      } />
+      <Route path="/report" element={
+        <HasilRoute>
+          <Laporan />
         </HasilRoute>
       } />
 

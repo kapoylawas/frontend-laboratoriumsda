@@ -821,12 +821,18 @@ export default function LandingPage() {
                         Layanan pengaduan langsung melalui Customer Service WhatsApp UPTD Labkesda Sidoarjo:
                       </p>
                       <a
-                        href="https://wa.me/6281234567890?text=Halo%20Admin%20Labkesda%20Sidoarjo,%20saya%20ingin%20mengajukan%20pengaduan%20pelayanan"
+                        href="https://wa.me/6282323242360?text=Halo%20Admin%20Labkesda%20Sidoarjo,%20saya%20ingin%20mengajukan%20pengaduan%20pelayanan"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn btn-pop-green w-100 text-decoration-none"
+                        className="btn btn-pop-green w-100 text-decoration-none py-2 px-3"
                       >
-                        <span>💬 Chat WhatsApp CS</span>
+                        <div className="d-flex align-items-center justify-content-center gap-2 text-center w-100">
+                          <span className="fs-5 flex-shrink-0">💬</span>
+                          <div className="d-flex flex-column lh-sm text-start">
+                            <span className="fw-black fs-6 text-white">Chat WhatsApp CS</span>
+                            <small className="opacity-90 font-monospace fw-bold" style={{ fontSize: "0.8rem" }}>0823-2324-2360</small>
+                          </div>
+                        </div>
                       </a>
                     </div>
 

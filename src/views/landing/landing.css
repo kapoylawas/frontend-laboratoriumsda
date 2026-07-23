@@ -915,6 +915,9 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
   transition: all 0.15s ease-in-out;
 }
 
@@ -937,6 +940,9 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
   transition: all 0.15s ease-in-out;
 }
 

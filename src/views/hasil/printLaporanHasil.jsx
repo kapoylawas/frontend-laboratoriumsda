@@ -36,27 +36,57 @@ export default function PrintLaporanHasil() {
 
       try {
         let listData = [];
+        const preSelected = location.state?.selectedIds;
 
-        // Prioritas 1: data langsung dari router state (dari Cetak per-invoice di menu hasil)
+        // Prioritas 1: data langsung dari router state
         if (location.state?.hasilItems && location.state.hasilItems.length > 0) {
           listData = location.state.hasilItems;
-        } else {
-          // Prioritas 2: fetch per transaction_id
+        } else if (preSelected && preSelected.length > 0) {
+          // Fetch semua ID yang ada di selectedIds
           try {
-            const invRes = await Api.get(`/api/hasils?transaction_id=${id}&limit=100`);
-            if (invRes.data.data?.length > 0) listData = invRes.data.data;
-          } catch (_) {}
-
-          // Fallback: single hasil
-          if (listData.length === 0) {
-            const res = await Api.get(`/api/hasils/${id}`);
-            if (res.data.data) listData = [res.data.data];
+            const fetched = await Promise.all(
+              preSelected.map(async (sId) => {
+                const r = await Api.get(`/api/hasils/${sId}`);
+                return r.data?.data;
+              })
+            );
+            listData = fetched.filter(Boolean);
+          } catch (e) {
+            console.error("Error fetching preSelected ids:", e);
           }
         }
 
+        // Jika listData masih kosong atau ingin menarik seluruh saudara sampel dalam transaksi yang sama:
+        if (listData.length === 0) {
+          try {
+            const resSingle = await Api.get(`/api/hasils/${id}`);
+            if (resSingle.data?.data) {
+              const singleHasil = resSingle.data.data;
+              listData = [singleHasil];
+              if (singleHasil.transaction_id) {
+                const txRes = await Api.get(`/api/hasils?transaction_id=${singleHasil.transaction_id}&limit=100`);
+                if (txRes.data?.data?.length > 0) {
+                  listData = txRes.data.data;
+                }
+              }
+            }
+          } catch (_) {}
+        } else if (listData.length > 0 && listData[0]?.transaction_id) {
+          try {
+            const txRes = await Api.get(`/api/hasils?transaction_id=${listData[0].transaction_id}&limit=100`);
+            if (txRes.data?.data?.length > 0) {
+              const existingMap = new Map(listData.map((h) => [h.id, h]));
+              txRes.data.data.forEach((h) => {
+                if (!existingMap.has(h.id)) existingMap.set(h.id, h);
+              });
+              listData = Array.from(existingMap.values());
+            }
+          } catch (_) {}
+        }
+
         setAllHasils(listData);
+
         // Pre-select: dari state selectedIds, atau semua item yang ada
-        const preSelected = location.state?.selectedIds;
         if (preSelected && preSelected.length > 0) {
           setSelectedIds(new Set(preSelected));
         } else {
