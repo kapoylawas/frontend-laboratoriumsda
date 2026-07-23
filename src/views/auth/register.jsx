@@ -32,6 +32,8 @@ export default function Register() {
 
   //state
   const [formData, setFormData] = useState({
+    user_type: "individu",
+    nama_perusahaan: "",
     name: "",
     email: "",
     nik: "",
@@ -272,6 +274,9 @@ export default function Register() {
     const passwordRegex =
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
+    if (formData.user_type === "perusahaan" && !formData.nama_perusahaan.trim()) {
+      newErrors.nama_perusahaan = "Nama Perusahaan / Instansi wajib diisi";
+    }
     if (!formData.name.trim()) newErrors.name = "Nama lengkap wajib diisi";
     if (!formData.email) {
       newErrors.email = "Email wajib diisi";
@@ -321,6 +326,9 @@ export default function Register() {
     try {
       // Pastikan gender dikirim dalam format yang benar (uppercase/lowercase)
       const payload = {
+        user_type: formData.user_type,
+        nama_perusahaan:
+          formData.user_type === "perusahaan" ? formData.nama_perusahaan : null,
         name: formData.name,
         email: formData.email,
         nik: formData.nik,
@@ -348,6 +356,8 @@ export default function Register() {
 
       // Reset form
       setFormData({
+        user_type: "individu",
+        nama_perusahaan: "",
         name: "",
         email: "",
         nik: "",
@@ -449,6 +459,88 @@ export default function Register() {
             <div className="card-body p-4 p-md-5">
               <form onSubmit={storeRegister} noValidate>
                 <div className="form-grid">
+                  {/* Tipe Pemohon */}
+                  <div className="form-group full-width mb-3">
+                    <label className="form-label blue-text">
+                      Tipe Pemohon <span className="text-danger">*</span>
+                    </label>
+                    <div className="d-flex gap-3 mt-1">
+                      <div className={`p-3 rounded border flex-fill cursor-pointer transition-all ${formData.user_type === "individu" ? "bg-primary text-white border-primary shadow-sm" : "bg-light text-dark border-secondary opacity-75"}`}
+                           onClick={() => handleChange({ target: { name: "user_type", value: "individu" } })}>
+                        <div className="form-check mb-0">
+                          <input
+                            className="form-check-input"
+                            type="radio"
+                            name="user_type"
+                            id="typeIndividu"
+                            value="individu"
+                            checked={formData.user_type === "individu"}
+                            onChange={handleChange}
+                          />
+                          <label className="form-check-label fw-bold cursor-pointer ms-1" htmlFor="typeIndividu">
+                            👤 Individu (Perorangan)
+                          </label>
+                        </div>
+                      </div>
+                      <div className={`p-3 rounded border flex-fill cursor-pointer transition-all ${formData.user_type === "perusahaan" ? "bg-primary text-white border-primary shadow-sm" : "bg-light text-dark border-secondary opacity-75"}`}
+                           onClick={() => handleChange({ target: { name: "user_type", value: "perusahaan" } })}>
+                        <div className="form-check mb-0">
+                          <input
+                            className="form-check-input"
+                            type="radio"
+                            name="user_type"
+                            id="typePerusahaan"
+                            value="perusahaan"
+                            checked={formData.user_type === "perusahaan"}
+                            onChange={handleChange}
+                          />
+                          <label className="form-check-label fw-bold cursor-pointer ms-1" htmlFor="typePerusahaan">
+                            🏢 Perusahaan / Instansi
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Nama Perusahaan (jika Tipe Pemohon = Perusahaan) */}
+                  {formData.user_type === "perusahaan" && (
+                    <div className="form-group full-width">
+                      <label className="form-label blue-text">
+                        Nama Perusahaan / Instansi <span className="text-danger">*</span>
+                      </label>
+                      <div className="input-wrapper">
+                        <div className="input-icon-wrapper">
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#e50914"
+                            strokeWidth="2"
+                          >
+                            <path d="M3 21h18" />
+                            <path d="M5 21V7l8-4v18" />
+                            <path d="M19 21V11l-6-3" />
+                            <path d="M9 9v.01" />
+                            <path d="M9 12v.01" />
+                            <path d="M9 15v.01" />
+                            <path d="M9 18v.01" />
+                          </svg>
+                        </div>
+                        <input
+                          type="text"
+                          className={`form-control ${errors.nama_perusahaan ? "is-invalid" : ""}`}
+                          placeholder="Contoh: PT Sukses Mandiri / Dinas Kesehatan"
+                          name="nama_perusahaan"
+                          value={formData.nama_perusahaan}
+                          onChange={handleChange}
+                        />
+                      </div>
+                      {errors.nama_perusahaan && (
+                        <div className="invalid-feedback d-block">{errors.nama_perusahaan}</div>
+                      )}
+                    </div>
+                  )}
                   {/* Nama Lengkap */}
                   <div className="form-group">
                     <label className="form-label blue-text">

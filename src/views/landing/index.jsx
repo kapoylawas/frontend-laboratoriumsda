@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import Api from "../../services/api";
 import { useStore as useUserStore } from "../../stores/user";
 import { useStore as useThemeStore } from "../../stores/theme";
 import Swal from "sweetalert2";
@@ -104,6 +105,27 @@ const SERVICES_DATA = [
 
 export default function LandingPage() {
   const navigate = useNavigate();
+
+  // Dynamic live IKM stats
+  const [ikmStats, setIkmStats] = useState({
+    score: "97.36",
+    mutu: "Mutu A (Sangat Baik)",
+    responden: "83 Responden"
+  });
+
+  useEffect(() => {
+    const fetchIkmStats = async () => {
+      try {
+        const response = await Api.get("/api/ikm-stats");
+        if (response?.data?.data) {
+          setIkmStats(response.data.data);
+        }
+      } catch (err) {
+        console.log("Using default IKM stats");
+      }
+    };
+    fetchIkmStats();
+  }, []);
 
   // Stores
   const { isAuthenticated } = useUserStore();
@@ -350,39 +372,16 @@ export default function LandingPage() {
                   </a>
                 </div>
 
-                {/* Quick Info Badges */}
-                <div className="hero-quick-stats mt-4 pt-3 border-top border-white-20 d-flex flex-wrap gap-4">
-                  <div className="d-flex align-items-center gap-2">
-                    <IconShieldCheck size={22} className="text-warning-glow" />
-                    <div>
-                      <div className="fw-bold fs-6">100% Resmi OPD</div>
-                      <div className="small text-white fw-semibold">Pemkab Sidoarjo</div>
-                    </div>
-                  </div>
-                  <div className="d-flex align-items-center gap-2">
-                    <IconAward size={22} className="text-warning-glow" />
-                    <div>
-                      <div className="fw-bold fs-6">Akreditasi KAN</div>
-                      <div className="small text-white fw-semibold">ISO/IEC 17025</div>
-                    </div>
-                  </div>
-                  <div className="d-flex align-items-center gap-2">
-                    <IconClock size={22} className="text-warning-glow" />
-                    <div>
-                      <div className="fw-bold fs-6">Hanya 2 Menit</div>
-                      <div className="small text-white fw-semibold">Pengisian Mudah</div>
-                    </div>
-                  </div>
-                </div>
+
               </div>
 
-              {/* Right Column Floating Graphics (Trakteer style widget showcase) */}
+              {/* Right Column: 3D Mascot / Widget Card */}
               <div className="col-lg-5">
                 <div className="trakteer-hero-widget-stack">
                   {/* Floating Top Badge */}
                   <div className="floating-sticker sticker-top">
                     <IconHeart className="text-danger fill-danger" size={18} />
-                    <span>97.28 Sangat Baik!</span>
+                    <span>{ikmStats.score} Sangat Baik!</span>
                   </div>
 
                   {/* Main Mascot / Card Box */}
@@ -401,15 +400,15 @@ export default function LandingPage() {
                       </div>
 
                       <div className="score-badge-large">
-                        <span className="score-number">97.28</span>
-                        <span className="score-label">Mutu A (Sangat Baik)</span>
+                        <span className="score-number">{ikmStats.score}</span>
+                        <span className="score-label">{ikmStats.mutu}</span>
                       </div>
                     </div>
 
                     <div className="mascot-card-bottom">
                       <div className="d-flex justify-content-between align-items-center small text-secondary">
                         <span>Total Responden:</span>
-                        <strong className="text-body fw-bold">78 Responden</strong>
+                        <strong className="text-body fw-bold">{ikmStats.responden}</strong>
                       </div>
                       <div className="d-flex justify-content-between align-items-center small text-secondary mt-2">
                         <span>Status UPT Lab:</span>

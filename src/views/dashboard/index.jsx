@@ -51,6 +51,12 @@ export default function Dashboard() {
         jadwalList: []
     });
 
+    const [ikmStats, setIkmStats] = useState({
+        score: "97.36",
+        mutu: "Mutu A (Sangat Baik)",
+        responden: "83 Responden"
+    });
+
     const formatRupiah = (value) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value || 0);
     };
@@ -80,6 +86,15 @@ export default function Dashboard() {
         }
 
         Api.defaults.headers.common['Authorization'] = token;
+
+        // Fetch live IKM stats
+        Api.get('/api/ikm-stats')
+            .then(res => {
+                if (res?.data?.data) {
+                    setIkmStats(res.data.data);
+                }
+            })
+            .catch(() => null);
 
         try {
             if (isVerifikator || isKepala || isAdmin) {
@@ -252,11 +267,11 @@ export default function Dashboard() {
                                     </button>
                                 </div>
                                 <div className="d-flex align-items-baseline gap-2">
-                                    <span className="fw-black fs-2 text-danger">97.28</span>
-                                    <span className="badge bg-success-subtle text-success fw-bold">Mutu A (Sangat Baik)</span>
+                                    <span className="fw-black fs-2 text-danger">{ikmStats.score}</span>
+                                    <span className="badge bg-success-subtle text-success fw-bold">{ikmStats.mutu}</span>
                                 </div>
                                 <span className="small text-secondary d-block mt-1">
-                                    Survey Responden Pemkab Sidoarjo
+                                    {ikmStats.responden} • Survey Responden Pemkab Sidoarjo
                                 </span>
                             </div>
                         </div>
