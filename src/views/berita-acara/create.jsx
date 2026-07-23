@@ -84,6 +84,7 @@ export default function BeritaAcaraCreate() {
         tujuan_pengambilan: [],
         tujuan_lainnya: '',
         titik_pengambilan: '',
+        jenis_pengambilan: 'TIM_KE_LOKASI',
         tanggal_pengambilan: '',
         waktu_pengambilan: '',
         tanggal_selesai_estimasi: '',
@@ -241,6 +242,7 @@ export default function BeritaAcaraCreate() {
                 formData.append('nama_sampel', form.nama_sampel || '');
                 formData.append('tujuan_pengambilan', JSON.stringify(form.tujuan_pengambilan));
                 formData.append('titik_pengambilan', form.titik_pengambilan || '');
+                formData.append('jenis_pengambilan', form.jenis_pengambilan || 'TIM_KE_LOKASI');
                 formData.append('tanggal_pengambilan', new Date(form.tanggal_pengambilan).toISOString());
                 formData.append('waktu_pengambilan', form.waktu_pengambilan || '');
                 formData.append('tanggal_selesai_estimasi', form.tanggal_selesai_estimasi ? new Date(form.tanggal_selesai_estimasi).toISOString() : '');
@@ -417,6 +419,40 @@ export default function BeritaAcaraCreate() {
                                             <div className="col-12 col-md-6">
                                                 <label className="form-label fw-semibold">Titik Pengambilan Sampel</label>
                                                 <input type="text" className="form-control" name="titik_pengambilan" value={form.titik_pengambilan} onChange={handleChange} placeholder="cth: Dapur / Kamar Mandi Utama" />
+                                            </div>
+
+                                            <div className="col-12 col-md-6">
+                                                <label className="form-label fw-semibold">Jenis Pengambilan Sampel</label>
+                                                <div className="d-flex gap-3 mt-1">
+                                                    <div className="form-check">
+                                                        <input
+                                                            type="radio"
+                                                            className="form-check-input"
+                                                            id="jenis_tim_ke_lokasi"
+                                                            name="jenis_pengambilan"
+                                                            value="TIM_KE_LOKASI"
+                                                            checked={form.jenis_pengambilan === 'TIM_KE_LOKASI'}
+                                                            onChange={handleChange}
+                                                        />
+                                                        <label className="form-check-label" htmlFor="jenis_tim_ke_lokasi">
+                                                            🚗 Tim ke Lokasi
+                                                        </label>
+                                                    </div>
+                                                    <div className="form-check">
+                                                        <input
+                                                            type="radio"
+                                                            className="form-check-input"
+                                                            id="jenis_datang_ke_lab"
+                                                            name="jenis_pengambilan"
+                                                            value="DATANG_KE_LAB"
+                                                            checked={form.jenis_pengambilan === 'DATANG_KE_LAB'}
+                                                            onChange={handleChange}
+                                                        />
+                                                        <label className="form-check-label" htmlFor="jenis_datang_ke_lab">
+                                                            🏥 Pelanggan datang ke Lab
+                                                        </label>
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             <div className="col-12 col-sm-6 col-md-4">

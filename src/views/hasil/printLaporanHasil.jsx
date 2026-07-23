@@ -95,6 +95,8 @@ export default function PrintLaporanHasil() {
 
         if (listData.length > 0) {
           const first = listData[0];
+          const firstUserId = first.user_id;
+
           setReportMeta((prev) => ({
             ...prev,
             nomorLaporan: first.nomor_laporan || prev.nomorLaporan,
@@ -103,6 +105,72 @@ export default function PrintLaporanHasil() {
               : prev.tanggalPengerjaan,
             tujuanPermenkes: first.tujuan_permenkes || prev.tujuanPermenkes,
           }));
+
+          // Fetch JadwalPengambilan and BeritaAcara for this specific user to get lokasi & petugas
+          if (firstUserId) {
+            try {
+              const sampelIds = listData.map(h => h.sampel_id).filter(Boolean);
+
+              // 1. Fetch all JadwalPengambilan first to find the one matching this user and sampel
+              const jpRes = await Api.get(`/api/jadwal-pengambilan?limit=100`);
+              const allJPs = jpRes.data?.data || [];
+              
+              const matchedJP = allJPs.find(jp => {
+                const td = jp.transaction_detail;
+                return td && td.transaction?.user_id === firstUserId && sampelIds.includes(td.sampel_id);
+              }) || allJPs.find(jp => {
+                const td = jp.transaction_detail;
+                return td && td.transaction?.user_id === firstUserId;
+              });
+
+              let scheduleLokasi = matchedJP?.lokasi || null;
+              let schedulePetugas = matchedJP?.petugas || null;
+
+              // 2. Fetch BeritaAcara to find the one linked to this schedule or this user
+              const baRes = await Api.get(`/api/berita-acara?limit=100`);
+              const allBAs = baRes.data?.data || [];
+
+              let matchedBA = null;
+              if (matchedJP?.berita_acara_id) {
+                matchedBA = allBAs.find(ba => ba.id === matchedJP.berita_acara_id);
+              }
+
+              if (!matchedBA) {
+                matchedBA = allBAs.find(ba => ba.jadwals?.some(j => {
+                  const td = j.transaction_detail;
+                  return td && td.transaction?.user_id === firstUserId && sampelIds.includes(td.sampel_id);
+                })) || allBAs.find(ba => ba.jadwals?.some(j => {
+                  const td = j.transaction_detail;
+                  return td && td.transaction?.user_id === firstUserId;
+                }));
+              }
+
+              if (matchedBA) {
+                const jenisLabel = matchedBA.jenis_pengambilan === 'DATANG_KE_LAB'
+                  ? 'Pelanggan datang ke Lab'
+                  : matchedBA.jenis_pengambilan === 'TIM_KE_LOKASI'
+                  ? 'Tim ke Lokasi'
+                  : null;
+
+                const lokasi = scheduleLokasi || matchedBA.titik_pengambilan || null;
+                let pengambilanText = [jenisLabel, lokasi].filter(Boolean).join(' - ');
+
+                setReportMeta((prev) => ({
+                  ...prev,
+                  pengambilanLokasi: pengambilanText || prev.pengambilanLokasi,
+                  petugasPengambil: matchedBA.petugas_pengambil || schedulePetugas || prev.petugasPengambil,
+                }));
+              } else if (matchedJP) {
+                setReportMeta((prev) => ({
+                  ...prev,
+                  pengambilanLokasi: scheduleLokasi || prev.pengambilanLokasi,
+                  petugasPengambil: schedulePetugas || prev.petugasPengambil,
+                }));
+              }
+            } catch (err) {
+              console.error("Error fetching location data:", err);
+            }
+          }
         }
       } catch (err) {
         console.error("Fetch error:", err);
