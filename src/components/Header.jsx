@@ -324,7 +324,7 @@ export default function Header() {
                                                     <path d="M14 17l6 0" />
                                                 </svg>
                                             </div>
-                                            <span className="nav-label">1. JADWAL</span>
+                                            <span className="nav-label">JADWAL</span>
                                         </Link>
                                     </li>
                                 )}
@@ -343,7 +343,7 @@ export default function Header() {
                                                     <path d="M9 7h4" />
                                                 </svg>
                                             </div>
-                                            <span className="nav-label">2. HASIL</span>
+                                            <span className="nav-label">HASIL</span>
                                         </Link>
                                     </li>
                                 )}
@@ -379,7 +379,7 @@ export default function Header() {
                                                     <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
                                                 </svg>
                                             </div>
-                                            <span className="nav-label">3. BERITA ACARA</span>
+                                            <span className="nav-label">BERITA ACARA</span>
                                         </Link>
                                     </li>
                                 )}
@@ -594,7 +594,7 @@ export default function Header() {
                                                         <path d="M14 17l6 0" />
                                                     </svg>
                                                 </div>
-                                                <span className="nav-label">1. JADWAL</span>
+                                                <span className="nav-label">JADWAL</span>
                                             </Link>
                                         </li>
                                     )}
@@ -613,7 +613,7 @@ export default function Header() {
                                                         <path d="M9 7h4" />
                                                     </svg>
                                                 </div>
-                                                <span className="nav-label">2. HASIL</span>
+                                                <span className="nav-label">HASIL</span>
                                             </Link>
                                         </li>
                                     )}
@@ -649,7 +649,7 @@ export default function Header() {
                                                         <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
                                                     </svg>
                                                 </div>
-                                                <span className="nav-label">3. BERITA ACARA</span>
+                                                <span className="nav-label">BERITA ACARA</span>
                                             </Link>
                                         </li>
                                     )}

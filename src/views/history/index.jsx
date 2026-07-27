@@ -541,9 +541,11 @@ export default function History() {
                                                                                 <span className="badge bg-secondary ms-2 me-1">3. Berita Acara</span>
                                                                             </div>
                                                                         </div>
-                                                                        <Link to="/penjadwalan" className="btn btn-sm btn-primary text-white fw-bold px-3 py-2 rounded-pill shadow-sm">
-                                                                            📅 Langkah 1: Buat Jadwal ➔
-                                                                        </Link>
+                                                                        {parsedData.role_id !== 1 && (
+                                                                            <Link to="/penjadwalan" className="btn btn-sm btn-primary text-white fw-bold px-3 py-2 rounded-pill shadow-sm">
+                                                                                📅 Langkah 1: Buat Jadwal ➔
+                                                                            </Link>
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             )}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import LayoutAdmin from '../../layouts/admin'
+import LayoutAdmin from '../../layouts/admin';
 import Cookies from "js-cookie";
 import Api from "../../services/api";
 import {
@@ -15,6 +15,8 @@ import {
     IconPlus,
     IconMinus,
     IconListCheck,
+    IconFlask,
+    IconSparkles
 } from "@tabler/icons-react";
 import { toast } from 'react-toastify';
 import OrderConfirmationModal from './orderConfirmationModal';
@@ -41,17 +43,15 @@ export default function Orders() {
     });
     const [keywords, setKeywords] = useState("");
     const [activeCategory, setActiveCategory] = useState(null);
+    const [isSummaryMinimized, setIsSummaryMinimized] = useState(false);
 
-    // Warna yang lebih soft dan professional
     const categoryColors = [
-        { bg: '#f0f7ff', text: '#1e40af', border: '#dbeafe', light: '#3b82f6' },
-        { bg: '#f0fdf4', text: '#166534', border: '#dcfce7', light: '#22c55e' },
-        { bg: '#fffbeb', text: '#92400e', border: '#fef3c7', light: '#f59e0b' },
-        { bg: '#fdf2f8', text: '#be185d', border: '#fce7f3', light: '#ec4899' },
-        { bg: '#faf5ff', text: '#7c3aed', border: '#f3e8ff', light: '#a855f7' },
-        { bg: '#eff6ff', text: '#3730a3', border: '#e0e7ff', light: '#6366f1' },
-        { bg: '#ecfdf5', text: '#047857', border: '#d1fae5', light: '#10b981' },
-        { bg: '#fff7ed', text: '#ea580c', border: '#ffedd5', light: '#f97316' },
+        { bg: '#eff6ff', text: '#1d4ed8', border: '#000000' },
+        { bg: '#f0fdf4', text: '#15803d', border: '#000000' },
+        { bg: '#fffbeb', text: '#b45309', border: '#000000' },
+        { bg: '#fdf2f8', text: '#be185d', border: '#000000' },
+        { bg: '#faf5ff', text: '#6b21a8', border: '#000000' },
+        { bg: '#ecfdf5', text: '#047857', border: '#000000' },
     ];
 
     const packageCategories = [1, 2];
@@ -65,7 +65,7 @@ export default function Orders() {
         return packageCategories.includes(parseInt(categoryId));
     };
 
-    const fetchData = async (pageNumber, keywords = "") => {
+    const fetchData = async (pageNumber, searchKw = "") => {
         setIsLoading(true);
         const page = pageNumber ? pageNumber : pagination.currentPage;
         const token = Cookies.get("token");
@@ -75,17 +75,18 @@ export default function Orders() {
             try {
                 const categoriesResponse = await Api.get('/api/categories');
                 const categoriesMap = {};
-                categoriesResponse.data.data.forEach(category => {
+                (categoriesResponse.data.data || []).forEach(category => {
                     categoriesMap[category.id] = category;
                 });
                 setCategories(categoriesMap);
 
                 const response = await Api.get(
-                    `/api/sampels?page=${page}&search=${keywords}`
+                    `/api/sampels?page=${page}&search=${searchKw}`
                 );
 
-                setSampel(response.data.data);
-                const grouped = groupSampelsByCategoryId(response.data.data, categoriesMap);
+                const sampelsData = response.data.data || [];
+                setSampel(sampelsData);
+                const grouped = groupSampelsByCategoryId(sampelsData, categoriesMap);
                 setGroupedSampels(grouped);
 
                 const initialExpandedState = {};
@@ -94,11 +95,13 @@ export default function Orders() {
                 });
                 setExpandedCategories(initialExpandedState);
 
-                setPagination(() => ({
-                    currentPage: response.data.pagination.currentPage,
-                    perPage: response.data.pagination.perPage,
-                    total: response.data.pagination.total
-                }));
+                if (response.data.pagination) {
+                    setPagination(() => ({
+                        currentPage: response.data.pagination.currentPage || response.data.pagination.page || 1,
+                        perPage: response.data.pagination.perPage || response.data.pagination.limit || 10,
+                        total: response.data.pagination.total || 0
+                    }));
+                }
 
             } catch (error) {
                 console.error("There was an error fetching the data!", error);
@@ -140,7 +143,7 @@ export default function Orders() {
         setExpandedCategories(newState);
     };
 
-    const toggleSampelSelection = (sampelId, categoryId = null) => {
+    const toggleSampelSelection = (sampelId) => {
         setSelectedSampels(prev => {
             if (prev.includes(sampelId)) {
                 const newQuantities = { ...quantities };
@@ -148,6 +151,7 @@ export default function Orders() {
                 setQuantities(newQuantities);
                 return prev.filter(id => id !== sampelId);
             } else {
+                setQuantities(q => ({ ...q, [sampelId]: q[sampelId] || 1 }));
                 return [...prev, sampelId];
             }
         });
@@ -270,7 +274,7 @@ export default function Orders() {
                 qty: quantities[sampelId] || 1
             }));
 
-            const response = await Api.post("/api/order", {
+            await Api.post("/api/order", {
                 items: orderData
             });
 
@@ -330,7 +334,7 @@ export default function Orders() {
             style: 'currency',
             currency: 'IDR',
             minimumFractionDigits: 0
-        }).format(amount);
+        }).format(amount || 0);
     };
 
     const orderSummary = calculateOrderSummary();
@@ -348,372 +352,581 @@ export default function Orders() {
     const navigate = useNavigate();
 
     const handleViewOrders = () => {
-        // Navigasi ke halaman daftar pesanan
         navigate('/cart');
     };
 
     return (
         <LayoutAdmin>
-            <div className="page-header">
+            {/* 3D Neo-Brutalist Theme Styles */}
+            <style>{`
+                .card-3d {
+                    background: #ffffff !important;
+                    border: 3px solid #000000 !important;
+                    box-shadow: 6px 6px 0px #000000 !important;
+                    border-radius: 20px !important;
+                    transition: all 0.15s ease-in-out !important;
+                }
+                .hero-card-3d {
+                    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+                    border: 3px solid #000000 !important;
+                    box-shadow: 6px 6px 0px #000000 !important;
+                    border-radius: 22px !important;
+                    color: #ffffff !important;
+                }
+                .category-card-3d {
+                    background: #ffffff !important;
+                    border: 2.5px solid #000000 !important;
+                    box-shadow: 5px 5px 0px #000000 !important;
+                    border-radius: 16px !important;
+                    transition: all 0.15s ease-in-out !important;
+                }
+                .category-card-3d:hover {
+                    box-shadow: 7px 7px 0px #000000 !important;
+                }
+                .sampel-card-3d {
+                    background: #ffffff !important;
+                    border: 2.5px solid #000000 !important;
+                    box-shadow: 4px 4px 0px #000000 !important;
+                    border-radius: 16px !important;
+                    transition: all 0.15s ease-in-out !important;
+                    height: 100%;
+                }
+                .sampel-card-3d:hover {
+                    box-shadow: 6px 6px 0px #000000 !important;
+                    transform: translateY(-2px);
+                }
+                .sampel-card-3d.selected {
+                    background: #f0fdf4 !important;
+                    border-color: #16a34a !important;
+                }
+                .badge-3d {
+                    border: 2px solid #000000 !important;
+                    box-shadow: 2px 2px 0px #000000 !important;
+                    border-radius: 8px !important;
+                    font-weight: 800 !important;
+                }
+                .btn-3d-primary {
+                    background: #2563eb !important;
+                    color: #ffffff !important;
+                    border: 2.5px solid #000000 !important;
+                    box-shadow: 4px 4px 0px #000000 !important;
+                    border-radius: 12px !important;
+                    font-weight: 800 !important;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 6px;
+                    transition: all 0.15s ease-in-out !important;
+                    text-decoration: none !important;
+                }
+                .btn-3d-primary:hover {
+                    background: #1d4ed8 !important;
+                    color: #ffffff !important;
+                    transform: translate(-2px, -2px);
+                    box-shadow: 6px 6px 0px #000000 !important;
+                }
+                .btn-3d-secondary {
+                    background: #f1f5f9 !important;
+                    color: #0f172a !important;
+                    border: 2.5px solid #000000 !important;
+                    box-shadow: 4px 4px 0px #000000 !important;
+                    border-radius: 12px !important;
+                    font-weight: 800 !important;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 6px;
+                    transition: all 0.15s ease-in-out !important;
+                    text-decoration: none !important;
+                }
+                .btn-3d-secondary:hover {
+                    background: #e2e8f0 !important;
+                    color: #000000 !important;
+                    transform: translate(-2px, -2px);
+                    box-shadow: 6px 6px 0px #000000 !important;
+                }
+                .btn-3d-green {
+                    background: #10b981 !important;
+                    color: #ffffff !important;
+                    border: 2.5px solid #000000 !important;
+                    box-shadow: 4px 4px 0px #000000 !important;
+                    border-radius: 12px !important;
+                    font-weight: 800 !important;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 6px;
+                    transition: all 0.15s ease-in-out !important;
+                }
+                .btn-3d-green:hover {
+                    background: #059669 !important;
+                    color: #ffffff !important;
+                    transform: translate(-2px, -2px);
+                    box-shadow: 6px 6px 0px #000000 !important;
+                }
+                .btn-3d-danger {
+                    background: #ef4444 !important;
+                    color: #ffffff !important;
+                    border: 2px solid #000000 !important;
+                    box-shadow: 3px 3px 0px #000000 !important;
+                    border-radius: 10px !important;
+                    font-weight: 800 !important;
+                    transition: all 0.15s ease-in-out !important;
+                }
+                .btn-3d-danger:hover {
+                    background: #dc2626 !important;
+                    color: #ffffff !important;
+                    transform: translate(-1px, -1px);
+                    box-shadow: 4px 4px 0px #000000 !important;
+                }
+                .floating-summary-3d {
+                    position: fixed;
+                    bottom: 24px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    z-index: 1040;
+                    width: 90%;
+                    max-width: 820px;
+                    background: #ffffff !important;
+                    border: 3px solid #000000 !important;
+                    box-shadow: 8px 8px 0px #000000 !important;
+                    border-radius: 20px !important;
+                }
+                .input-3d {
+                    border: 2.5px solid #000000 !important;
+                    border-radius: 12px !important;
+                    box-shadow: 3px 3px 0px #000000 !important;
+                    font-weight: 600 !important;
+                }
+
+                /* Modals Styling */
+                .custom-order-modal {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0, 0, 0, 0.6) !important;
+                    display: flex !important;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 1050;
+                    backdrop-filter: blur(5px);
+                }
+                .custom-order-modal-dialog {
+                    width: 95%;
+                    max-width: 1200px;
+                    margin: 0 auto;
+                }
+                .custom-order-modal-content {
+                    background: white !important;
+                    border: 3px solid #000000 !important;
+                    border-radius: 20px !important;
+                    box-shadow: 10px 10px 0px #000000 !important;
+                    overflow: hidden;
+                }
+                .custom-order-modal-header {
+                    background: linear-gradient(135deg, #1e293b, #0f172a) !important;
+                    color: white;
+                    padding: 1.5rem 2rem;
+                    border-bottom: 2.5px solid #000;
+                }
+                .custom-order-modal-body {
+                    background: white !important;
+                    padding: 2rem;
+                    max-height: 70vh;
+                    overflow-y: auto;
+                    color: #333 !important;
+                }
+                .custom-order-modal-footer {
+                    background: white !important;
+                    border-top: 2px solid #000;
+                    padding: 1.5rem 2rem;
+                }
+            `}</style>
+
+            <div className="page-wrapper py-3" style={{ paddingBottom: selectedSampels.length > 0 && !isSummaryMinimized ? '160px' : '40px' }}>
                 <div className="container-xl">
-                    <div className="row g-2 align-items-center">
-                        <div className="col">
-                            <div className="page-pretitle text-muted">Pemesanan</div>
-                            <h2 className="page-title">Pilih Sampel untuk Dipesan</h2>
-                            <div className="text-muted mt-1">
-                                Pilih sampel yang Anda butuhkan dari berbagai kategori yang tersedia
+                    {/* Hero Header Card 3D */}
+                    <div className="hero-card-3d p-4 mb-4">
+                        <div className="row align-items-center g-3">
+                            <div className="col-lg-8">
+                                <div className="d-flex align-items-center gap-3 mb-2">
+                                    <div className="p-3 bg-primary text-white rounded-3 border border-2 border-dark" style={{ boxShadow: '3px 3px 0px #000' }}>
+                                        <IconShoppingCart size={32} />
+                                    </div>
+                                    <div>
+                                        <h2 className="fw-black mb-1 text-white" style={{ fontSize: '1.75rem', letterSpacing: '-0.5px' }}>
+                                            Pemesanan Sampel & Parameter
+                                        </h2>
+                                        <div className="text-white-50 small">
+                                            Pilih sampel pengujian laboratorium yang Anda butuhkan dari katalog resmi
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="d-flex flex-wrap gap-2 mt-3">
+                                    <span className="badge badge-3d bg-warning text-dark">
+                                        <IconSparkles size={14} className="me-1" /> Katalog Aktif
+                                    </span>
+                                    <span className="badge badge-3d bg-info text-dark">
+                                        <IconFlask size={14} className="me-1" /> {sampels.length} Sampel Tersedia
+                                    </span>
+                                    <span className="badge badge-3d bg-success text-white">
+                                        <IconListCheck size={14} className="me-1" /> {selectedSampels.length} Dipilih
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="col-lg-4 text-lg-end">
+                                <div className="d-flex flex-wrap gap-2 justify-content-lg-end">
+                                    {selectedSampels.length > 0 && (
+                                        <button
+                                            onClick={() => setShowOrderModal(true)}
+                                            className="btn btn-3d-green py-2 px-3"
+                                        >
+                                            <IconShoppingCart size={20} />
+                                            Buat Pesanan ({selectedSampels.length})
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => fetchData()}
+                                        className="btn btn-3d-secondary py-2 px-3"
+                                        disabled={isLoading}
+                                    >
+                                        <IconRefresh size={18} />
+                                        {isLoading ? "Memuat..." : "Refresh"}
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <div className="col-auto ms-auto">
-                            <div className="btn-list">
-                                {selectedSampels.length > 0 && (
+                    </div>
+
+                    {/* Floating Order Summary 3D */}
+                    {selectedSampels.length > 0 && (
+                        isSummaryMinimized ? (
+                            <div 
+                                className="floating-summary-3d p-2 px-3 text-center cursor-pointer"
+                                onClick={() => setIsSummaryMinimized(false)}
+                                style={{ maxWidth: '420px', cursor: 'pointer' }}
+                                title="Klik untuk membuka ringkasan pesanan"
+                            >
+                                <div className="d-flex align-items-center justify-content-between gap-2">
+                                    <div className="d-flex align-items-center gap-2">
+                                        <span className="badge badge-3d bg-success text-white">
+                                            {selectedSampels.length} Sampel
+                                        </span>
+                                        <span className="fw-black text-primary small">
+                                            {formatCurrency(orderSummary.totalPrice)}
+                                        </span>
+                                    </div>
                                     <button
-                                        onClick={() => setShowOrderModal(true)}
-                                        className="btn btn-success btn-lg"
+                                        type="button"
+                                        className="btn btn-3d-green py-1 px-3 btn-sm"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowOrderModal(true);
+                                        }}
                                     >
-                                        <IconShoppingCart size={20} className="me-2" />
-                                        Buat Pesanan ({selectedSampels.length})
-                                        <div className="small fw-normal">Total: {formatCurrency(orderSummary.totalPrice)}</div>
+                                        <IconCheck size={16} /> Pesan
                                     </button>
-                                )}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="floating-summary-3d p-3">
+                                <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                                    <div className="d-flex align-items-center gap-3">
+                                        <div className="p-2 bg-success text-white rounded-3 border border-2 border-dark" style={{ boxShadow: '2px 2px 0px #000' }}>
+                                            <IconListCheck size={24} />
+                                        </div>
+                                        <div>
+                                            <div className="fw-black text-dark fs-5">
+                                                {selectedSampels.length} Sampel Dipilih
+                                            </div>
+                                            <div className="text-muted small">
+                                                Total {orderSummary.totalItems} item • <strong className="text-primary fs-6">{formatCurrency(orderSummary.totalPrice)}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="d-flex align-items-center gap-2">
+                                        <button
+                                            type="button"
+                                            className="btn btn-3d-danger py-2 px-3"
+                                            onClick={() => {
+                                                setSelectedSampels([]);
+                                                setQuantities({});
+                                            }}
+                                        >
+                                            Batalkan
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="btn btn-3d-green py-2 px-4"
+                                            onClick={() => setShowOrderModal(true)}
+                                        >
+                                            <IconCheck size={18} /> Pesan Sekarang
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="btn btn-sm btn-light border border-2 border-dark ms-1 p-1 px-2 fw-bold"
+                                            onClick={() => setIsSummaryMinimized(true)}
+                                            title="Sembunyikan Ringkasan"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )
+                    )}
+
+                    {/* Search Section 3D */}
+                    <div className="card-3d p-4 mb-4">
+                        <label className="form-label fw-black text-dark mb-2 fs-5">Cari Sampel & Parameter</label>
+                        <div className="d-flex align-items-center bg-white p-1" style={{ border: '2.5px solid #000', boxShadow: '4px 4px 0px #000', borderRadius: '14px' }}>
+                            <div className="ps-3 pe-2 text-muted d-flex align-items-center">
+                                <IconSearch size={20} />
+                            </div>
+                            <input
+                                type="text"
+                                className="form-control border-0 shadow-none bg-transparent py-2 fw-semibold"
+                                style={{ fontSize: '0.95rem' }}
+                                value={keywords}
+                                onChange={(e) => setKeywords(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                placeholder="Ketik nama sampel atau parameter yang dicari..."
+                                disabled={isLoading}
+                            />
+                            {keywords && (
                                 <button
-                                    onClick={() => fetchData()}
-                                    className="btn btn-outline-primary"
+                                    onClick={resetSearch}
+                                    className="btn btn-sm btn-light border-0 text-muted me-2 fw-bold rounded-circle px-2"
+                                    type="button"
+                                    disabled={isLoading}
+                                    title="Reset Pencarian"
+                                >
+                                    ✕
+                                </button>
+                            )}
+                            <button
+                                onClick={searchHandlder}
+                                className="btn btn-primary fw-bold py-2 px-4 me-1"
+                                style={{ border: '2px solid #000', boxShadow: 'none', borderRadius: '10px' }}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? "Mencari..." : "Cari Sampel"}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Categories Navigation Bar 3D */}
+                    {Object.keys(groupedSampels).length > 0 && (
+                        <div className="card-3d p-3 mb-4">
+                            <div className="d-flex justify-content-between align-items-center">
+                                <div className="d-flex align-items-center gap-2">
+                                    <div className="p-2 bg-primary text-white rounded-3 border border-2 border-dark" style={{ boxShadow: '2px 2px 0px #000' }}>
+                                        <IconCategory size={20} />
+                                    </div>
+                                    <span className="fw-black text-dark">Kategori Sampel Laboratorium</span>
+                                </div>
+                                <button
+                                    onClick={toggleAllCategories}
+                                    className="btn btn-3d-secondary py-1 px-3"
                                     disabled={isLoading}
                                 >
-                                    <IconRefresh size={18} className="me-1" />
-                                    {isLoading ? "Memuat..." : "Refresh"}
+                                    {Object.values(expandedCategories).every(val => val)
+                                        ? "Tutup Semua"
+                                        : "Buka Semua"}
                                 </button>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="page-body">
-                <div className="container-xl">
-                    {/* Floating Order Summary */}
-                    {selectedSampels.length > 0 && (
-                        <div className="floating-order-summary">
-                            <div className="card shadow-lg border-0">
-                                <div className="card-body p-3">
-                                    <div className="row align-items-center">
-                                        <div className="col">
-                                            <div className="d-flex align-items-center">
-                                                <IconListCheck size={24} className="text-success me-3" />
-                                                <div>
-                                                    <div className="fw-bold">{selectedSampels.length} sampel dipilih</div>
-                                                    <div className="text-muted small">
-                                                        {orderSummary.totalItems} item • {formatCurrency(orderSummary.totalPrice)}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="col-auto">
-                                            <div className="btn-group">
-                                                <button
-                                                    className="btn btn-outline-danger btn-sm"
-                                                    onClick={() => {
-                                                        setSelectedSampels([]);
-                                                        setQuantities({});
-                                                    }}
-                                                >
-                                                    Batalkan
-                                                </button>
-                                                <button
-                                                    className="btn btn-success btn-sm"
-                                                    onClick={() => setShowOrderModal(true)}
-                                                >
-                                                    <IconCheck size={16} className="me-1" />
-                                                    Pesan Sekarang
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     )}
 
-                    {/* Search Section */}
-                    <div className="row mb-4">
-                        <div className="col-12">
-                            <div className="card shadow-sm">
-                                <div className="card-body">
-                                    <div className="row g-3 align-items-center">
-                                        <div className="col-md-8">
-                                            <label className="form-label fw-semibold">Cari Sampel</label>
-                                            <div className="input-group input-group-lg">
-                                                <span className="input-group-text bg-light border-end-0">
-                                                    <IconSearch size={20} />
-                                                </span>
-                                                <input
-                                                    type="text"
-                                                    className="form-control border-start-0"
-                                                    value={keywords}
-                                                    onChange={(e) => setKeywords(e.target.value)}
-                                                    onKeyDown={handleKeyDown}
-                                                    placeholder="Ketik nama sampel yang dicari..."
-                                                    disabled={isLoading}
-                                                />
-                                                {keywords && (
-                                                    <button
-                                                        onClick={resetSearch}
-                                                        className="btn btn-outline-secondary"
-                                                        type="button"
-                                                        disabled={isLoading}
+                    {/* Sampels List 3D */}
+                    <div className="card-3d p-4" style={{ marginBottom: selectedSampels.length > 0 ? '180px' : '0px' }}>
+                        <div className="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom border-2 border-dark">
+                            <div className="d-flex align-items-center gap-2">
+                                <div className="p-2 bg-warning text-dark rounded-3 border border-2 border-dark" style={{ boxShadow: '2px 2px 0px #000' }}>
+                                    <IconListCheck size={20} />
+                                </div>
+                                <h3 className="fw-black text-dark mb-0">Daftar Sampel Tersedia</h3>
+                            </div>
+                            <span className="badge badge-3d bg-primary text-white fs-6 px-3 py-1">
+                                {sampels.length} Sampel
+                            </span>
+                        </div>
+
+                        {isLoading ? (
+                            <div className="text-center p-5">
+                                <div className="spinner-border text-primary" style={{ width: '3rem', height: '3rem' }} role="status"></div>
+                                <p className="mt-3 text-muted fw-bold">Memuat data sampel laboratorium...</p>
+                            </div>
+                        ) : (
+                            <>
+                                {Object.keys(groupedSampels).length > 0 ? (
+                                    <div className="d-flex flex-column gap-4">
+                                        {Object.entries(groupedSampels).map(([categoryId, categoryData]) => {
+                                            const color = getCategoryColor(categoryId);
+                                            const hasSampels = categoryData.sampels.length > 0;
+                                            const isPackage = isPackageCategory(categoryId);
+                                            const packageTotal = isPackage ? calculatePackageTotal(categoryId) : 0;
+                                            const allSelected = isPackage ? isAllSampelsSelected(categoryId) : false;
+                                            const isExpanded = expandedCategories[categoryId];
+
+                                            return (
+                                                <div key={categoryId} className="category-card-3d overflow-hidden">
+                                                    <div
+                                                        className="p-3 d-flex justify-content-between align-items-center cursor-pointer"
+                                                        onClick={() => toggleCategory(categoryId)}
+                                                        style={{
+                                                            backgroundColor: color.bg,
+                                                            borderBottom: isExpanded ? '2.5px solid #000' : 'none',
+                                                            transition: 'all 0.2s ease'
+                                                        }}
                                                     >
-                                                        Hapus
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className="col-md-4">
-                                            <label className="form-label fw-semibold">&nbsp;</label>
-                                            <div className="d-grid gap-2">
-                                                <button
-                                                    onClick={searchHandlder}
-                                                    className="btn btn-primary btn-lg"
-                                                    disabled={isLoading}
-                                                >
-                                                    {isLoading ? "Mencari..." : "Cari Sampel"}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Categories Navigation */}
-                    {Object.keys(groupedSampels).length > 0 && (
-                        <div className="row mb-4">
-                            <div className="col-12">
-                                <div className="card shadow-sm">
-                                    <div className="card-body py-3">
-                                        <div className="d-flex justify-content-between align-items-center">
-                                            <div className="d-flex align-items-center">
-                                                <IconCategory size={20} className="text-primary me-2" />
-                                                <span className="fw-semibold">Kategori Sampel:</span>
-                                            </div>
-                                            <div className="d-flex gap-2">
-                                                <button
-                                                    onClick={toggleAllCategories}
-                                                    className="btn btn-outline-primary btn-sm"
-                                                    disabled={isLoading}
-                                                >
-                                                    {Object.values(expandedCategories).every(val => val)
-                                                        ? "Tutup Semua"
-                                                        : "Buka Semua"}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Sampels List */}
-                    <div className="row">
-                        <div className="col-12">
-                            <div className="card shadow-sm">
-                                <div className="card-header bg-light">
-                                    <h3 className="card-title mb-0">
-                                        <IconListCheck size={20} className="me-2" />
-                                        Daftar Sampel Tersedia
-                                        <span className="badge bg-primary ms-2">{sampels.length}</span>
-                                    </h3>
-                                </div>
-
-                                <div className="card-body p-0">
-                                    {isLoading ? (
-                                        <div className="text-center p-5">
-                                            <div className="spinner-border text-primary" style={{ width: '3rem', height: '3rem' }} role="status"></div>
-                                            <p className="mt-3 text-muted">Memuat data sampel...</p>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            {Object.keys(groupedSampels).length > 0 ? (
-                                                <div className="category-groups">
-                                                    {Object.entries(groupedSampels).map(([categoryId, categoryData]) => {
-                                                        const color = getCategoryColor(categoryId);
-                                                        const hasSampels = categoryData.sampels.length > 0;
-                                                        const isPackage = isPackageCategory(categoryId);
-                                                        const packageTotal = isPackage ? calculatePackageTotal(categoryId) : 0;
-                                                        const allSelected = isPackage ? isAllSampelsSelected(categoryId) : false;
-                                                        const isExpanded = expandedCategories[categoryId];
-
-                                                        return (
-                                                            <div key={categoryId} className="category-group border-bottom">
-                                                                <div
-                                                                    className="category-header p-4 d-flex justify-content-between align-items-center cursor-pointer"
-                                                                    onClick={() => toggleCategory(categoryId)}
-                                                                    style={{
-                                                                        backgroundColor: isExpanded ? color.bg : '#f8f9fa',
-                                                                        borderLeft: `4px solid ${color.text}`,
-                                                                        transition: 'all 0.3s ease'
+                                                        <div className="d-flex align-items-center gap-3">
+                                                            <div className="p-2 bg-white rounded-3 border border-2 border-dark" style={{ boxShadow: '2px 2px 0px #000', color: color.text }}>
+                                                                {isExpanded ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="m-0 fw-black" style={{ color: color.text }}>
+                                                                    {categoryData.category.name}
+                                                                    {isPackage && (
+                                                                        <span className="badge badge-3d bg-warning text-dark ms-2">
+                                                                            <IconPackage size={12} className="me-1" /> Paket
+                                                                        </span>
+                                                                    )}
+                                                                </h4>
+                                                                <div className="text-muted small mt-1 fw-semibold">
+                                                                    {hasSampels
+                                                                        ? `${categoryData.sampels.length} sampel tersedia`
+                                                                        : 'Sampel belum tersedia'
+                                                                    }
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="d-flex align-items-center gap-3">
+                                                            {isPackage && hasSampels && packageTotal > 0 && (
+                                                                <div className="fw-black fs-5 text-primary">
+                                                                    {formatCurrency(packageTotal)}
+                                                                </div>
+                                                            )}
+                                                            {isPackage && hasSampels && (
+                                                                <button
+                                                                    className="btn btn-3d-secondary py-1 px-3 text-dark"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        toggleAllSampelsInPackage(categoryId);
                                                                     }}
                                                                 >
-                                                                    <div className="d-flex align-items-center flex-fill">
-                                                                        <div className="me-3" style={{ color: color.text }}>
-                                                                            {isExpanded ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
-                                                                        </div>
-                                                                        <div className="flex-fill">
-                                                                            <h4 className="m-0 fw-semibold" style={{ color: color.text }}>
-                                                                                {categoryData.category.name}
-                                                                                {isPackage && (
-                                                                                    <span className="badge bg-warning text-dark ms-2">
-                                                                                        <IconPackage size={12} className="me-1" />
-                                                                                        Paket
-                                                                                    </span>
-                                                                                )}
-                                                                            </h4>
-                                                                            <div className="text-muted small mt-1">
-                                                                                {hasSampels
-                                                                                    ? `${categoryData.sampels.length} sampel tersedia`
-                                                                                    : 'Sampel belum tersedia'
-                                                                                }
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="d-flex align-items-center gap-3">
-                                                                        {isPackage && hasSampels && packageTotal > 0 && (
-                                                                            <div className="fw-bold fs-5" style={{ color: color.text }}>
-                                                                                {formatCurrency(packageTotal)}
-                                                                            </div>
-                                                                        )}
-                                                                        {isPackage && hasSampels && (
-                                                                            <button
-                                                                                className="btn btn-outline-primary btn-sm"
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    toggleAllSampelsInPackage(categoryId);
-                                                                                }}
-                                                                            >
-                                                                                {allSelected ? 'Batal Pilih Semua' : 'Pilih Semua'}
-                                                                            </button>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
+                                                                    {allSelected ? 'Batal Pilih Semua' : 'Pilih Semua'}
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
 
-                                                                {isExpanded && (
-                                                                    <div className="p-3">
-                                                                        {hasSampels ? (
-                                                                            <div className="row g-3">
-                                                                                {categoryData.sampels.map((sampel) => (
-                                                                                    <div key={sampel.id} className="col-lg-6 col-xl-4">
-                                                                                        <div className={`card sampel-card ${selectedSampels.includes(sampel.id) ? 'border-success' : ''}`}>
-                                                                                            <div className="card-body">
-                                                                                                <div className="d-flex justify-content-between align-items-start mb-2">
-                                                                                                    <div className="form-check">
-                                                                                                        <input
-                                                                                                            type="checkbox"
-                                                                                                            className="form-check-input"
-                                                                                                            checked={selectedSampels.includes(sampel.id)}
-                                                                                                            onChange={() => toggleSampelSelection(sampel.id)}
-                                                                                                            id={`sampel-${sampel.id}`}
-                                                                                                        />
-                                                                                                        <label className="form-check-label fw-medium" htmlFor={`sampel-${sampel.id}`}>
-                                                                                                            {sampel.parameter || 'Tidak ada parameter'}
-                                                                                                        </label>
-                                                                                                    </div>
-                                                                                                </div>
-
-                                                                                                <div className="d-flex justify-content-between align-items-center mt-3">
-                                                                                                    <div className="text-success fw-bold fs-5">
-                                                                                                        {sampel.price_sell ? formatCurrency(sampel.price_sell) : 'Gratis'}
-                                                                                                    </div>
-
-                                                                                                    {selectedSampels.includes(sampel.id) ? (
-                                                                                                        <div className="quantity-controls">
-                                                                                                            <div className="input-group input-group-sm" style={{ width: '120px' }}>
-                                                                                                                <button
-                                                                                                                    className="btn btn-outline-secondary"
-                                                                                                                    type="button"
-                                                                                                                    onClick={() => decrementQuantity(sampel.id)}
-                                                                                                                >
-                                                                                                                    <IconMinus size={14} />
-                                                                                                                </button>
-                                                                                                                <input
-                                                                                                                    type="number"
-                                                                                                                    className="form-control text-center"
-                                                                                                                    value={quantities[sampel.id] || 1}
-                                                                                                                    onChange={(e) => updateQuantity(sampel.id, e.target.value)}
-                                                                                                                    min="1"
-                                                                                                                    max="999"
-                                                                                                                />
-                                                                                                                <button
-                                                                                                                    className="btn btn-outline-secondary"
-                                                                                                                    type="button"
-                                                                                                                    onClick={() => incrementQuantity(sampel.id)}
-                                                                                                                >
-                                                                                                                    <IconPlus size={14} />
-                                                                                                                </button>
-                                                                                                            </div>
-                                                                                                        </div>
-                                                                                                    ) : (
-                                                                                                        <button
-                                                                                                            className="btn btn-outline-primary btn-sm"
-                                                                                                            onClick={() => toggleSampelSelection(sampel.id)}
-                                                                                                        >
-                                                                                                            Pilih
-                                                                                                        </button>
-                                                                                                    )}
-                                                                                                </div>
-                                                                                            </div>
+                                                    {isExpanded && (
+                                                        <div className="p-3 bg-light">
+                                                            {hasSampels ? (
+                                                                <div className="row g-3">
+                                                                    {categoryData.sampels.map((sampel) => {
+                                                                        const isSelected = selectedSampels.includes(sampel.id);
+                                                                        return (
+                                                                            <div key={sampel.id} className="col-lg-6 col-xl-4">
+                                                                                <div className={`sampel-card-3d p-3 ${isSelected ? 'selected' : ''}`}>
+                                                                                    <div className="d-flex justify-content-between align-items-start mb-2">
+                                                                                        <div className="form-check">
+                                                                                            <input
+                                                                                                type="checkbox"
+                                                                                                className="form-check-input border-2 border-dark"
+                                                                                                checked={isSelected}
+                                                                                                onChange={() => toggleSampelSelection(sampel.id)}
+                                                                                                id={`sampel-${sampel.id}`}
+                                                                                                style={{ cursor: 'pointer', width: '20px', height: '20px' }}
+                                                                                            />
+                                                                                            <label className="form-check-label fw-bold text-dark ms-2" htmlFor={`sampel-${sampel.id}`} style={{ cursor: 'pointer' }}>
+                                                                                                {sampel.parameter || 'Tidak ada parameter'}
+                                                                                            </label>
                                                                                         </div>
                                                                                     </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        ) : (
-                                                                            <div className="text-center p-5">
-                                                                                <div className="d-flex flex-column align-items-center">
-                                                                                    <div className="bg-light p-4 rounded-circle mb-3">
-                                                                                        <IconInfoCircle size={48} className="text-muted" />
+
+                                                                                    <div className="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                                                                                        <div className="text-primary fw-black fs-5">
+                                                                                            {sampel.price_sell ? formatCurrency(sampel.price_sell) : 'Gratis'}
+                                                                                        </div>
+
+                                                                                        {isSelected ? (
+                                                                                            <div className="d-flex align-items-center gap-1">
+                                                                                                <button
+                                                                                                    className="btn btn-3d-secondary py-1 px-2"
+                                                                                                    type="button"
+                                                                                                    onClick={() => decrementQuantity(sampel.id)}
+                                                                                                >
+                                                                                                    <IconMinus size={14} />
+                                                                                                </button>
+                                                                                                <input
+                                                                                                    type="number"
+                                                                                                    className="form-control input-3d text-center py-1"
+                                                                                                    style={{ width: '55px' }}
+                                                                                                    value={quantities[sampel.id] || 1}
+                                                                                                    onChange={(e) => updateQuantity(sampel.id, e.target.value)}
+                                                                                                    min="1"
+                                                                                                    max="999"
+                                                                                                />
+                                                                                                <button
+                                                                                                    className="btn btn-3d-primary py-1 px-2"
+                                                                                                    type="button"
+                                                                                                    onClick={() => incrementQuantity(sampel.id)}
+                                                                                                >
+                                                                                                    <IconPlus size={14} />
+                                                                                                </button>
+                                                                                            </div>
+                                                                                        ) : (
+                                                                                            <button
+                                                                                                className="btn btn-3d-primary py-1 px-3"
+                                                                                                onClick={() => toggleSampelSelection(sampel.id)}
+                                                                                            >
+                                                                                                Pilih
+                                                                                            </button>
+                                                                                        )}
                                                                                     </div>
-                                                                                    <h4 className="h5 text-muted">Sampel Belum Tersedia</h4>
-                                                                                    <p className="text-muted mb-0">
-                                                                                        Untuk kategori {categoryData.category.name} saat ini belum ada sampel yang tersedia.
-                                                                                    </p>
                                                                                 </div>
                                                                             </div>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            ) : (
-                                                <div className="text-center p-5">
-                                                    <div className="d-flex flex-column align-items-center">
-                                                        <div className="bg-light p-4 rounded-circle mb-3">
-                                                            <IconSearch size={48} className="text-muted" />
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="text-center p-4 text-muted">
+                                                                    <IconInfoCircle size={36} className="mb-2 opacity-50" />
+                                                                    <h5 className="mb-1">Sampel Belum Tersedia</h5>
+                                                                    <p className="small mb-0">Untuk kategori {categoryData.category.name} saat ini belum ada sampel yang tersedia.</p>
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                        <h3 className="h4 text-muted">Data tidak ditemukan</h3>
-                                                        <p className="text-muted mb-4">
-                                                            {keywords
-                                                                ? `Tidak ada hasil untuk "${keywords}". Coba dengan kata kunci lain.`
-                                                                : "Belum ada data kategori sampel yang tersedia."}
-                                                        </p>
-                                                        {keywords && (
-                                                            <button
-                                                                onClick={resetSearch}
-                                                                className="btn btn-primary"
-                                                            >
-                                                                Tampilkan Semua Sampel
-                                                            </button>
-                                                        )}
-                                                    </div>
+                                                    )}
                                                 </div>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="text-center p-5">
+                                        <IconSearch size={48} className="text-muted mb-3 opacity-50" />
+                                        <h3 className="fw-black text-dark mb-2">Data sampel tidak ditemukan</h3>
+                                        <p className="text-muted mb-4">
+                                            {keywords
+                                                ? `Tidak ada hasil untuk "${keywords}". Coba dengan kata kunci lain.`
+                                                : "Belum ada data kategori sampel yang tersedia."}
+                                        </p>
+                                        {keywords && (
+                                            <button
+                                                onClick={resetSearch}
+                                                className="btn btn-3d-primary py-2 px-4"
+                                            >
+                                                Tampilkan Semua Sampel
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
@@ -743,191 +956,6 @@ export default function Orders() {
                 onOrderAgain={handleOrderAgain}
                 onViewOrders={handleViewOrders}
             />
-
-            <style jsx>{`
-                /* ===== FIX UNTUK FONT ===== */
-                body {
-                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 
-                                'Oxygen', 'Ubuntu', 'Cantarell', sans-serif !important;
-                    -webkit-font-smoothing: antialiased;
-                    -moz-osx-font-smoothing: grayscale;
-                }
-
-                /* ===== CUSTOM MODAL ORDER - FIXED ===== */
-                .custom-order-modal {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background-color: rgba(0, 0, 0, 0.6) !important; /* Lebih gelap */
-                    display: flex !important;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 1050;
-                    backdrop-filter: blur(5px); /* Efek blur background */
-                }
-
-                .custom-order-modal-dialog {
-                    width: 95%;
-                    max-width: 1400px;
-                    margin: 0 auto;
-                }
-
-                .custom-order-modal-content {
-                    background: white !important; /* Pastikan background putih */
-                    border: none;
-                    border-radius: 12px;
-                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-                    animation: customModalSlideIn 0.3s ease-out;
-                    overflow: hidden;
-                }
-
-                .custom-order-modal-header {
-                    background: linear-gradient(135deg, #198754, #157347) !important;
-                    color: white;
-                    border-radius: 12px 12px 0 0;
-                    padding: 1.5rem 2rem;
-                    border-bottom: none;
-                }
-
-                .custom-order-modal-body {
-                    background: white !important;
-                    padding: 2rem;
-                    max-height: 70vh;
-                    overflow-y: auto;
-                    color: #333 !important; /* Pastikan warna teks gelap */
-                }
-
-                .custom-order-modal-footer {
-                    background: white !important;
-                    border-top: 1px solid #e9ecef;
-                    padding: 1.5rem 2rem;
-                    border-radius: 0 0 12px 12px;
-                }
-
-                .custom-order-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    background: white !important;
-                }
-
-                .custom-order-table th {
-                    background-color: #f8f9fa !important;
-                    font-weight: 600;
-                    padding: 1rem;
-                    border-bottom: 2px solid #dee2e6;
-                    color: #333 !important;
-                }
-
-                .custom-order-table td {
-                    background: white !important;
-                    padding: 1rem;
-                    border-bottom: 1px solid #dee2e6;
-                    vertical-align: middle;
-                    color: #333 !important;
-                }
-
-                .custom-order-table tfoot th {
-                    background-color: #f8f9fa !important;
-                    font-size: 1.1em;
-                    color: #333 !important;
-                }
-
-                /* Pastikan semua teks visible */
-                .custom-order-modal-body * {
-                    color: #333 !important;
-                }
-
-                .modal-title {
-                    color: white !important;
-                    font-weight: 600;
-                }
-
-                /* Animasi */
-                @keyframes customModalSlideIn {
-                    from {
-                        opacity: 0;
-                        transform: translateY(-50px) scale(0.9);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0) scale(1);
-                    }
-                }
-
-                /* Responsive */
-                @media (max-width: 768px) {
-                    .custom-order-modal-dialog {
-                        width: 98%;
-                        margin: 10px;
-                    }
-                    
-                    .custom-order-modal-body {
-                        padding: 1rem;
-                        max-height: 80vh;
-                    }
-                    
-                    .custom-order-table {
-                        font-size: 0.9em;
-                    }
-                    
-                    .custom-order-table th,
-                    .custom-order-table td {
-                        padding: 0.5rem;
-                    }
-                }
-
-                /* ===== STYLE EXISTING ===== */
-                .cursor-pointer {
-                    cursor: pointer;
-                }
-                .category-group {
-                    transition: all 0.3s ease;
-                }
-                .category-header:hover {
-                    transform: translateY(-1px);
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                }
-                .sampel-card {
-                    transition: all 0.3s ease;
-                    height: 100%;
-                }
-                .sampel-card:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-                }
-                .sampel-card.border-success {
-                    border-width: 2px !important;
-                }
-                .quantity-controls .input-group {
-                    width: 120px;
-                }
-                .quantity-controls input {
-                    text-align: center;
-                    font-family: inherit !important;
-                }
-                .floating-order-summary {
-                    position: sticky;
-                    top: 20px;
-                    z-index: 1000;
-                    margin-bottom: 20px;
-                }
-                .form-check-input {
-                    width: 18px;
-                    height: 18px;
-                    cursor: pointer;
-                }
-                .form-check-input:checked {
-                    background-color: #198754;
-                    border-color: #198754;
-                }
-                .form-check-label {
-                    cursor: pointer;
-                    user-select: none;
-                    font-family: inherit !important;
-                }
-            `}</style>
         </LayoutAdmin>
-    )
+    );
 }

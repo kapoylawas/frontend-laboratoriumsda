@@ -350,7 +350,7 @@ export default function InvoicePrint() {
                         <div className="text-danger mb-3" style={{ fontSize: '3rem' }}>⚠️</div>
                         <h4 className="fw-bold text-dark mb-2">Data Invoice Tidak Ditemukan</h4>
                         <p className="text-muted mb-4">{error || 'Transaksi tidak ditemukan atau telah dihapus dari sistem.'}</p>
-                        <button onClick={() => navigate('/penjadwalan')} className="btn btn-primary rounded-pill px-4">
+                        <button onClick={() => navigate('/history')} className="btn btn-primary rounded-pill px-4">
                             <FaArrowLeft className="me-2" /> Kembali ke Daftar Transaksi
                         </button>
                     </div>
@@ -399,7 +399,7 @@ export default function InvoicePrint() {
                             <div className="col-md-5 text-md-end text-start">
                                 <div className="d-flex flex-wrap gap-2 justify-content-md-end justify-content-start">
                                     <button
-                                        onClick={() => navigate('/penjadwalan')}
+                                        onClick={() => navigate('/history')}
                                         className="btn btn-light btn-sm fw-semibold rounded-pill px-3 py-2 d-inline-flex align-items-center gap-1 shadow-sm"
                                     >
                                         <FaArrowLeft /> Kembali
