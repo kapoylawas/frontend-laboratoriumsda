@@ -1,195 +1,169 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import Api from "../../services/api";
 import { handleErrors } from "../../utils/handleErrors";
+import { IconFolder, IconX, IconCheck } from "@tabler/icons-react";
 
-export default function CategoryCreate({ fetchData }) {
+export default function CategoryCreate({ fetchData, showModal, setShowModal }) {
     const [name, setName] = useState("");
     const [errors, setErrors] = useState({});
-    const [isLoading, setIsLoading] = useState(false); // State untuk loading
-    const modalRef = useRef(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     const token = Cookies.get("token");
 
-    // Inisialisasi modal setelah komponen dimount
-    useEffect(() => {
-        if (modalRef.current) {
-            const modal = new bootstrap.Modal(modalRef.current);
-        }
-    }, []);
+    const openModal = () => {
+        setName("");
+        setErrors({});
+        setIsLoading(false);
+        setShowModal(true);
+    };
+
+    const closeModal = () => {
+        setShowModal(false);
+        setName("");
+        setErrors({});
+    };
 
     const storeCategory = async (e) => {
         e.preventDefault();
-
-        // Reset errors
         setErrors({});
 
-        // Validasi sederhana
         if (!name.trim()) {
-            setErrors({ name: "Category name is required" });
+            setErrors({ name: "Nama kategori wajib diisi" });
             return;
         }
 
-        // Set loading state
         setIsLoading(true);
+        try {
+            Api.defaults.headers.common['Authorization'] = token;
+            await Api.post('/api/categories', { name: name.trim() });
 
-        // Set authorization header with token
-        Api.defaults.headers.common['Authorization'] = token;
-        await Api.post('/api/categories', {
-            name: name,
-        }).then((response) => {
-            toast.success(`${response.data.meta.message}`, {
-                duration: 4000,
+            toast.success('Kategori berhasil ditambahkan', {
+                duration: 3000,
                 position: "top-center",
-                style: {
-                    borderRadius: '10px',
-                    background: '#333',
-                    color: '#fff',
-                },
             });
 
-            // Hide the modal
-            const modalElement = modalRef.current;
-            const modalInstance = bootstrap.Modal.getInstance(modalElement);
-            modalInstance.hide();
-
-            // Call function "fetchData"
+            closeModal();
             fetchData();
-
-            // Reset form
-            setName('');
-
-        })
-            .catch((error) => {
+        } catch (error) {
+            if (error.response?.data?.errors) {
                 handleErrors(error.response.data, setErrors);
-            })
-            .finally(() => {
-                // Reset loading state regardless of success or failure
-                setIsLoading(false);
-            });
-    }
+            } else {
+                toast.error(error.response?.data?.meta?.message || "Gagal menambah kategori");
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <>
-            <a href="#" className="btn btn-primary d-sm-inline-block" data-bs-toggle="modal" data-bs-target="#modal-create-category">
-                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                    <path d="M12 5l0 14" />
-                    <path d="M5 12l14 0" />
+            {/* Tombol Trigger di header */}
+            <button
+                type="button"
+                className="btn btn-primary d-inline-flex align-items-center gap-2"
+                onClick={openModal}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
-                Tambah Data
-            </a>
+                Tambah Kategori
+            </button>
 
-            <div className="modal fade" id="modal-create-category" tabIndex="-1" role="dialog" aria-hidden="true" ref={modalRef}>
-                <div className="modal-dialog modal-dialog-centered" role="document">
-                    <div className="modal-content" style={{ borderRadius: '16px', overflow: 'hidden', maxWidth: '500px', margin: '0 auto' }}>
-                        <button type="button" className="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
-                        <form onSubmit={storeCategory}>
-                            <div className="modal-body p-5 text-center">
-                                <div className="mb-4">
-                                    <h3 className="fw-bold mb-1">Create New Category</h3>
-                                    <p className="text-muted">Add a new category to organize your content</p>
+            {/* Modal — React state, bukan Bootstrap JS */}
+            {showModal && (
+                <div
+                    style={{
+                        position: "fixed",
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: "rgba(15, 23, 42, 0.65)",
+                        backdropFilter: "blur(6px)",
+                        WebkitBackdropFilter: "blur(6px)",
+                        zIndex: 9999,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "1rem"
+                    }}
+                    onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
+                >
+                    <div
+                        className="bg-white rounded-4 shadow-lg overflow-hidden"
+                        style={{ maxWidth: "480px", width: "100%", animation: "soModalFadeIn 0.2s ease-out" }}
+                    >
+                        {/* Header */}
+                        <div
+                            className="px-4 py-3 text-white d-flex align-items-center justify-content-between"
+                            style={{ background: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)" }}
+                        >
+                            <div className="d-flex align-items-center gap-3">
+                                <div
+                                    className="rounded-circle d-flex align-items-center justify-content-center"
+                                    style={{ backgroundColor: "rgba(255,255,255,0.2)", width: 40, height: 40, flexShrink: 0 }}
+                                >
+                                    <IconFolder size={20} color="#fff" />
                                 </div>
-                                <div className="mb-4">
-                                    <input
-                                        type="text"
-                                        className={`form-control form-control-lg ${errors.name ? 'is-invalid' : ''}`}
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                        placeholder='Enter category name'
-                                        style={{ textAlign: 'center' }}
-                                        autoFocus
-                                        disabled={isLoading} // Disable input saat loading
-                                    />
-                                    {errors.name && (
-                                        <div className="invalid-feedback d-block mt-2">
-                                            {errors.name}
-                                        </div>
-                                    )}
+                                <div>
+                                    <h5 className="mb-0 fw-bold fs-5 text-white">Tambah Kategori Layanan</h5>
+                                    <small style={{ color: "rgba(255,255,255,0.85)" }}>Masukkan nama kategori pengujian baru</small>
                                 </div>
                             </div>
-                            <div className="modal-footer justify-content-center py-4 border-top-0">
-                                <button
-                                    type="button"
-                                    className="btn btn-outline-secondary rounded-pill px-4"
-                                    data-bs-dismiss="modal"
-                                    disabled={isLoading} // Disable tombol cancel saat loading
-                                >
-                                    Cancel
+                            <button
+                                type="button"
+                                onClick={closeModal}
+                                style={{
+                                    backgroundColor: "rgba(255,255,255,0.15)",
+                                    border: "none", borderRadius: "50%",
+                                    width: 34, height: 34,
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                    cursor: "pointer", transition: "all 0.2s"
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.3)"}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.15)"}
+                            >
+                                <IconX size={18} color="#fff" />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <form onSubmit={storeCategory}>
+                            <div className="p-4">
+                                <div className="mb-3">
+                                    <label className="form-label fw-semibold text-dark" htmlFor="cat-name">
+                                        Nama Kategori <span className="text-danger">*</span>
+                                    </label>
+                                    <input
+                                        id="cat-name"
+                                        type="text"
+                                        className={`form-control ${errors.name ? 'is-invalid' : ''}`}
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        placeholder="e.g. Air Minum, Makanan, Usap Alat"
+                                        disabled={isLoading}
+                                        autoFocus
+                                    />
+                                    {errors.name && <div className="invalid-feedback">{errors.name}</div>}
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="px-4 py-3 bg-light border-top d-flex align-items-center justify-content-between">
+                                <button type="button" className="btn btn-outline-secondary px-4" onClick={closeModal} disabled={isLoading}>
+                                    Batal
                                 </button>
-                                <button
-                                    type='submit'
-                                    className="btn btn-primary rounded-pill px-4 ms-3 d-flex align-items-center justify-content-center"
-                                    disabled={isLoading} // Disable tombol save saat loading
-                                    style={{ minWidth: '140px' }}
-                                >
+                                <button type="submit" className="btn btn-primary px-4" disabled={isLoading}>
                                     {isLoading ? (
-                                        <>
-                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                            Saving...
-                                        </>
+                                        <><span className="spinner-border spinner-border-sm me-2" role="status"></span>Menyimpan...</>
                                     ) : (
-                                        <>
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-check me-1" width="20" height="20" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                                <path d="M5 12l5 5l10 -10" />
-                                            </svg>
-                                            Save Category
-                                        </>
+                                        <><IconCheck size={16} className="me-1" />Simpan Kategori</>
                                     )}
                                 </button>
                             </div>
                         </form>
                     </div>
                 </div>
-            </div>
-
-            {/* CSS untuk styling modal */}
-            <style>
-                {`
-                    .modal-backdrop {
-                        z-index: 1040;
-                    }
-                    #modal-create-category {
-                        z-index: 1050;
-                    }
-                    .modal-content {
-                        pointer-events: auto;
-                        border: none;
-                        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
-                    }
-                    .form-control-lg {
-                        padding: 12px 16px;
-                        font-size: 16px;
-                        border-radius: 12px;
-                    }
-                    .btn {
-                        font-weight: 500;
-                    }
-                    .btn-primary {
-                        background-color: #206bc4;
-                        border-color: #206bc4;
-                    }
-                    .btn-primary:hover {
-                        background-color: #1a5aa0;
-                        border-color: #1a5aa0;
-                    }
-                    .btn:disabled {
-                        opacity: 0.65;
-                        pointer-events: none;
-                    }
-                    @media (max-width: 576px) {
-                        .modal-content {
-                            margin: 20px;
-                            width: auto;
-                        }
-                        .modal-body {
-                            padding: 2rem 1.5rem !important;
-                        }
-                    }
-                `}
-            </style>
+            )}
         </>
-    )
+    );
 }

@@ -6,13 +6,10 @@ import { handleErrors } from "../../utils/handleErrors";
 import {
     IconEdit,
     IconUser,
-    IconMail,
-    IconId,
-    IconPhone,
-    IconMapPin,
-    IconLock,
     IconEye,
-    IconEyeOff
+    IconEyeOff,
+    IconCheck,
+    IconX
 } from "@tabler/icons-react";
 
 export default function UserEdit({ fetchData, userId }) {
@@ -35,12 +32,10 @@ export default function UserEdit({ fetchData, userId }) {
     const fetchUser = async (id) => {
         if (id) {
             try {
-                // Set authorization header with token
                 Api.defaults.headers.common['Authorization'] = token;
                 const response = await Api.get(`/api/users/${id}`);
                 const user = response.data.data;
 
-                // Set semua field user ke state (kecuali password)
                 setFormData({
                     name: user.name || "",
                     email: user.email || "",
@@ -48,19 +43,16 @@ export default function UserEdit({ fetchData, userId }) {
                     phone: user.phone || "",
                     gender: user.gender || "",
                     alamat: user.alamat || "",
-                    password: user.password || "",
+                    password: "",
                 });
             } catch (error) {
-                console.error("There was an error fetching the user data!", error);
-                toast.error("Gagal mengambil data pengguna");
+                console.error("Error fetching user:", error);
             }
         }
     };
 
-    // Event listener untuk modal show
     useEffect(() => {
         const modalElement = modalRef.current;
-
         const handleShowModal = () => {
             fetchUser(userId);
         };
@@ -83,7 +75,6 @@ export default function UserEdit({ fetchData, userId }) {
             [name]: value
         }));
 
-        // Hapus error untuk field ini jika ada
         if (errors[name]) {
             setErrors(prev => {
                 const newErrors = { ...prev };
@@ -96,39 +87,16 @@ export default function UserEdit({ fetchData, userId }) {
     const validateForm = () => {
         const newErrors = {};
 
-        if (!formData.name.trim()) {
-            newErrors.name = "Nama lengkap wajib diisi";
-        }
+        if (!formData.name.trim()) newErrors.name = "Nama lengkap wajib diisi";
+        if (!formData.email.trim()) newErrors.email = "Email wajib diisi";
+        else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Format email tidak valid";
+        if (!formData.nik.trim()) newErrors.nik = "NIK wajib diisi";
+        if (!formData.phone.trim()) newErrors.phone = "Nomor telepon wajib diisi";
+        if (!formData.gender) newErrors.gender = "Jenis kelamin wajib dipilih";
+        if (!formData.alamat.trim()) newErrors.alamat = "Alamat wajib diisi";
 
-        if (!formData.email.trim()) {
-            newErrors.email = "Email wajib diisi";
-        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-            newErrors.email = "Format email tidak valid";
-        }
-
-        if (!formData.nik.trim()) {
-            newErrors.nik = "NIK wajib diisi";
-        } else if (formData.nik.length !== 16) {
-            newErrors.nik = "NIK harus 16 digit";
-        }
-
-        if (!formData.phone.trim()) {
-            newErrors.phone = "Nomor telepon wajib diisi";
-        }
-
-        if (!formData.gender) {
-            newErrors.gender = "Jenis kelamin wajib dipilih";
-        }
-
-        if (!formData.alamat.trim()) {
-            newErrors.alamat = "Alamat wajib diisi";
-        }
-
-        // Validasi password hanya jika diisi
-        if (formData.password) {
-            if (formData.password.length < 6) {
-                newErrors.password = "Password minimal 6 karakter";
-            }
+        if (formData.password && formData.password.length < 6) {
+            newErrors.password = "Password minimal 6 karakter";
         }
 
         setErrors(newErrors);
@@ -138,15 +106,11 @@ export default function UserEdit({ fetchData, userId }) {
     const updateUser = async (e) => {
         e.preventDefault();
 
-        if (!validateForm()) {
-            return;
-        }
+        if (!validateForm()) return;
 
         setLoading(true);
 
         try {
-            // Siapkan data untuk dikirim
-            // JANGAN menghapus field password meskipun kosong, karena API mungkin mengharuskannya
             const dataToSend = {
                 name: formData.name,
                 email: formData.email,
@@ -154,78 +118,43 @@ export default function UserEdit({ fetchData, userId }) {
                 phone: formData.phone,
                 gender: formData.gender,
                 alamat: formData.alamat,
-                password: formData.password || null // Kirim null jika password kosong
             };
 
-            // Set authorization header with token
+            if (formData.password) {
+                dataToSend.password = formData.password;
+            }
+
             Api.defaults.headers.common['Authorization'] = token;
             const response = await Api.put(`/api/users/${userId}`, dataToSend);
 
-            toast.success(`${response.data.meta.message}`, {
-                duration: 4000,
+            toast.success(`${response.data.meta.message || 'Data pengguna berhasil diperbarui'}`, {
+                duration: 3000,
                 position: "top-center",
                 style: {
-                    borderRadius: '10px',
-                    background: '#333',
+                    border: '2px solid #000',
+                    boxShadow: '4px 4px 0px #000',
+                    background: '#10b981',
                     color: '#fff',
+                    fontWeight: 'bold'
                 },
             });
 
-            // Hide the modal
-            const modalElement = modalRef.current;
-            const modalInstance = bootstrap.Modal.getInstance(modalElement);
-            modalInstance.hide();
+            if (modalRef.current) {
+                if (window.bootstrap && window.bootstrap.Modal) {
+                    const modalInstance = window.bootstrap.Modal.getInstance(modalRef.current) || new window.bootstrap.Modal(modalRef.current);
+                    modalInstance.hide();
+                } else {
+                    const closeBtn = modalRef.current.querySelector('[data-bs-dismiss="modal"]');
+                    if (closeBtn) closeBtn.click();
+                }
+            }
 
-            // Call function "fetchData"
             fetchData();
 
         } catch (error) {
-            console.error("Update error:", error);
-
-            // Coba pendekatan alternatif jika dengan null masih error
-            if (error.response?.data?.meta?.success === false) {
-                try {
-                    // Coba tanpa mengirim password jika kosong
-                    const dataToSend = {
-                        name: formData.name,
-                        email: formData.email,
-                        nik: formData.nik,
-                        phone: formData.phone,
-                        gender: formData.gender,
-                        alamat: formData.alamat
-                    };
-
-                    // Hanya tambahkan password jika diisi
-                    if (formData.password) {
-                        dataToSend.password = formData.password;
-                    }
-
-                    const response = await Api.put(`/api/users/${userId}`, dataToSend);
-
-                    toast.success(`${response.data.meta.message}`, {
-                        duration: 4000,
-                        position: "top-center",
-                        style: {
-                            borderRadius: '10px',
-                            background: '#333',
-                            color: '#fff',
-                        },
-                    });
-
-                    // Hide the modal
-                    const modalElement = modalRef.current;
-                    const modalInstance = bootstrap.Modal.getInstance(modalElement);
-                    modalInstance.hide();
-
-                    // Call function "fetchData"
-                    fetchData();
-                    return;
-                } catch (secondError) {
-                    handleErrors(secondError.response?.data, setErrors);
-                    toast.error("Gagal memperbarui data pengguna");
-                }
+            if (error.response && error.response.data) {
+                handleErrors(error.response.data, setErrors);
             } else {
-                handleErrors(error.response?.data, setErrors);
                 toast.error("Gagal memperbarui data pengguna");
             }
         } finally {
@@ -233,11 +162,11 @@ export default function UserEdit({ fetchData, userId }) {
         }
     };
 
-
     return (
         <>
             <button
-                className="btn btn-icon btn-sm btn-outline-primary"
+                type="button"
+                className="btn-pop-blue p-1 px-2 fs-7"
                 title="Edit User"
                 data-bs-toggle="modal"
                 data-bs-target={`#modal-edit-user-${userId}`}
@@ -249,195 +178,161 @@ export default function UserEdit({ fetchData, userId }) {
                 className="modal fade"
                 id={`modal-edit-user-${userId}`}
                 tabIndex="-1"
-                role="dialog"
                 aria-hidden="true"
                 ref={modalRef}
             >
-                <div className="modal-dialog modal-dialog-centered modal-lg" role="document">
-                    <div className="modal-content" style={{ borderRadius: '16px', overflow: 'hidden' }}>
-                        <div className="modal-header bg-light">
-                            <h5 className="modal-title fw-bold">Edit Data Pengguna</h5>
+                <div className="modal-dialog modal-dialog-centered modal-lg">
+                    <div className="modal-content" style={{ border: '3px solid #000', boxShadow: '8px 8px 0px #000', borderRadius: '20px' }}>
+                        <div className="modal-header bg-light" style={{ borderBottom: '2.5px solid #000' }}>
+                            <h5 className="modal-title fw-black text-dark d-flex align-items-center gap-2">
+                                <IconUser size={22} className="text-primary" /> Edit Data Pengguna
+                            </h5>
                             <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <form onSubmit={updateUser}>
-                            <div className="modal-body">
-                                <div className="row">
-                                    <div className="col-md-6 mb-3">
-                                        <label htmlFor="name" className="form-label">
-                                            <IconUser size={18} className="me-2" />
-                                            Name
-                                        </label>
+                            <div className="modal-body p-4">
+                                <div className="row g-3">
+                                    <div className="col-md-6">
+                                        <label className="form-label fw-bold text-dark">Nama Lengkap <span className="text-danger">*</span></label>
                                         <input
                                             type="text"
-                                            className={`form-control ${errors.name ? 'is-invalid' : ''}`}
-                                            id="name"
+                                            className={`form-control py-2 shadow-none ${errors.name ? 'is-invalid' : ''}`}
                                             name="name"
                                             value={formData.name}
                                             onChange={handleInputChange}
-                                            placeholder="Enter name"
+                                            placeholder="Masukkan nama"
+                                            style={{ border: '2px solid #000', borderRadius: '10px' }}
+                                            disabled={loading}
                                         />
-                                        {errors.name && (
-                                            <div className="invalid-feedback">
-                                                {errors.name}
-                                            </div>
-                                        )}
+                                        {errors.name && <div className="invalid-feedback fw-bold">{errors.name}</div>}
                                     </div>
 
-                                    <div className="col-md-6 mb-3">
-                                        <label htmlFor="email" className="form-label">
-                                            <IconMail size={18} className="me-2" />
-                                            Email
-                                        </label>
+                                    <div className="col-md-6">
+                                        <label className="form-label fw-bold text-dark">Alamat Email <span className="text-danger">*</span></label>
                                         <input
                                             type="email"
-                                            className={`form-control ${errors.email ? 'is-invalid' : ''}`}
-                                            id="email"
+                                            className={`form-control py-2 shadow-none ${errors.email ? 'is-invalid' : ''}`}
                                             name="email"
                                             value={formData.email}
                                             onChange={handleInputChange}
-                                            placeholder="Enter email"
+                                            placeholder="email@domain.com"
+                                            style={{ border: '2px solid #000', borderRadius: '10px' }}
+                                            disabled={loading}
                                         />
-                                        {errors.email && (
-                                            <div className="invalid-feedback">
-                                                {errors.email}
-                                            </div>
-                                        )}
+                                        {errors.email && <div className="invalid-feedback fw-bold">{errors.email}</div>}
                                     </div>
 
-                                    <div className="col-md-6 mb-3">
-                                        <label htmlFor="nik" className="form-label">
-                                            <IconId size={18} className="me-2" />
-                                            NIK
-                                        </label>
+                                    <div className="col-md-6">
+                                        <label className="form-label fw-bold text-dark">NIK <span className="text-danger">*</span></label>
                                         <input
                                             type="text"
-                                            className={`form-control ${errors.nik ? 'is-invalid' : ''}`}
-                                            id="nik"
+                                            className={`form-control py-2 shadow-none ${errors.nik ? 'is-invalid' : ''}`}
                                             name="nik"
                                             value={formData.nik}
                                             onChange={handleInputChange}
-                                            placeholder="Enter NIK"
-                                            maxLength="16"
+                                            placeholder="NIK 16 digit"
+                                            style={{ border: '2px solid #000', borderRadius: '10px' }}
+                                            disabled={loading}
                                         />
-                                        {errors.nik && (
-                                            <div className="invalid-feedback">
-                                                {errors.nik}
-                                            </div>
-                                        )}
+                                        {errors.nik && <div className="invalid-feedback fw-bold">{errors.nik}</div>}
                                     </div>
 
-                                    <div className="col-md-6 mb-3">
-                                        <label htmlFor="phone" className="form-label">
-                                            <IconPhone size={18} className="me-2" />
-                                            Phone
-                                        </label>
+                                    <div className="col-md-6">
+                                        <label className="form-label fw-bold text-dark">Nomor Telepon <span className="text-danger">*</span></label>
                                         <input
-                                            type="tel"
-                                            className={`form-control ${errors.phone ? 'is-invalid' : ''}`}
-                                            id="phone"
+                                            type="text"
+                                            className={`form-control py-2 shadow-none ${errors.phone ? 'is-invalid' : ''}`}
                                             name="phone"
                                             value={formData.phone}
                                             onChange={handleInputChange}
-                                            placeholder="Enter phone number"
+                                            placeholder="081234567890"
+                                            style={{ border: '2px solid #000', borderRadius: '10px' }}
+                                            disabled={loading}
                                         />
-                                        {errors.phone && (
-                                            <div className="invalid-feedback">
-                                                {errors.phone}
-                                            </div>
-                                        )}
+                                        {errors.phone && <div className="invalid-feedback fw-bold">{errors.phone}</div>}
                                     </div>
 
-                                    <div className="col-md-6 mb-3">
-                                        <label htmlFor="gender" className="form-label">
-                                            Gender
-                                        </label>
+                                    <div className="col-md-6">
+                                        <label className="form-label fw-bold text-dark">Jenis Kelamin <span className="text-danger">*</span></label>
                                         <select
-                                            className={`form-select ${errors.gender ? 'is-invalid' : ''}`}
-                                            id="gender"
+                                            className={`form-select py-2 shadow-none ${errors.gender ? 'is-invalid' : ''}`}
                                             name="gender"
                                             value={formData.gender}
                                             onChange={handleInputChange}
+                                            style={{ border: '2px solid #000', borderRadius: '10px' }}
+                                            disabled={loading}
                                         >
-                                            <option value="">Select gender</option>
-                                            <option value="male">Male</option>
-                                            <option value="female">Female</option>
+                                            <option value="">-- Pilih Jenis Kelamin --</option>
+                                            <option value="male">Laki-laki</option>
+                                            <option value="female">Perempuan</option>
                                         </select>
-                                        {errors.gender && (
-                                            <div className="invalid-feedback">
-                                                {errors.gender}
-                                            </div>
-                                        )}
+                                        {errors.gender && <div className="invalid-feedback fw-bold">{errors.gender}</div>}
                                     </div>
 
-                                    <div className="col-md-6 mb-3">
-                                        <label htmlFor="alamat" className="form-label">
-                                            <IconMapPin size={18} className="me-2" />
-                                            Alamat
-                                        </label>
-                                        <input
-                                            type="text"
-                                            className={`form-control ${errors.alamat ? 'is-invalid' : ''}`}
-                                            id="alamat"
-                                            name="alamat"
-                                            value={formData.alamat}
-                                            onChange={handleInputChange}
-                                            placeholder="Enter address"
-                                        />
-                                        {errors.alamat && (
-                                            <div className="invalid-feedback">
-                                                {errors.alamat}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="col-md-12 mb-3">
-                                        <label htmlFor="password" className="form-label">
-                                            <IconLock size={18} className="me-2" />
-                                            Password (Optional)
-                                        </label>
-                                        <div className="input-group">
+                                    <div className="col-md-6">
+                                        <label className="form-label fw-bold text-dark">Kata Sandi Baru <small className="text-muted fw-normal">(Opsional)</small></label>
+                                        <div className="input-group" style={{ border: '2px solid #000', borderRadius: '10px', overflow: 'hidden' }}>
                                             <input
                                                 type={showPassword ? "text" : "password"}
-                                                className={`form-control ${errors.password ? 'is-invalid' : ''}`}
-                                                id="password"
+                                                className={`form-control border-0 py-2 shadow-none ${errors.password ? 'is-invalid' : ''}`}
                                                 name="password"
                                                 value={formData.password}
                                                 onChange={handleInputChange}
-                                                placeholder="Leave empty to keep current password"
+                                                placeholder="Kosongkan jika tidak diubah"
+                                                disabled={loading}
                                             />
                                             <button
                                                 type="button"
-                                                className="btn btn-outline-secondary"
+                                                className="btn btn-light border-0 px-3"
                                                 onClick={() => setShowPassword(!showPassword)}
+                                                disabled={loading}
                                             >
                                                 {showPassword ? <IconEyeOff size={18} /> : <IconEye size={18} />}
                                             </button>
-                                            {errors.password && (
-                                                <div className="invalid-feedback">
-                                                    {errors.password}
-                                                </div>
-                                            )}
                                         </div>
-                                        <small className="text-muted">Minimum 6 characters</small>
+                                        {errors.password && <div className="invalid-feedback fw-bold d-block mt-1">{errors.password}</div>}
+                                    </div>
+
+                                    <div className="col-12">
+                                        <label className="form-label fw-bold text-dark">Alamat Lengkap <span className="text-danger">*</span></label>
+                                        <textarea
+                                            className={`form-control py-2 shadow-none ${errors.alamat ? 'is-invalid' : ''}`}
+                                            name="alamat"
+                                            value={formData.alamat}
+                                            onChange={handleInputChange}
+                                            placeholder="Alamat domisili"
+                                            rows="2"
+                                            style={{ border: '2px solid #000', borderRadius: '10px' }}
+                                            disabled={loading}
+                                        ></textarea>
+                                        {errors.alamat && <div className="invalid-feedback fw-bold">{errors.alamat}</div>}
                                     </div>
                                 </div>
                             </div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-outline-secondary" data-bs-dismiss="modal">
-                                    Cancel
+
+                            <div className="modal-footer" style={{ borderTop: '2.5px solid #000' }}>
+                                <button
+                                    type="button"
+                                    className="btn-pop-yellow py-2 px-4"
+                                    data-bs-dismiss="modal"
+                                    disabled={loading}
+                                >
+                                    <IconX size={18} /> Batal
                                 </button>
                                 <button
                                     type="submit"
-                                    className="btn btn-primary"
+                                    className="btn-pop-green py-2 px-4"
                                     disabled={loading}
                                 >
                                     {loading ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                            Saving...
+                                            Memperbarui...
                                         </>
                                     ) : (
-                                        "Save Changes"
+                                        <>
+                                            <IconCheck size={18} /> Perbarui Pengguna
+                                        </>
                                     )}
                                 </button>
                             </div>
@@ -445,73 +340,6 @@ export default function UserEdit({ fetchData, userId }) {
                     </div>
                 </div>
             </div>
-
-            <style>
-                {`
-                    .modal-backdrop {
-                        z-index: 1040;
-                    }
-                    #modal-edit-category {
-                        z-index: 1050;
-                    }
-                    .modal-header {
-                        border-bottom: 1px solid #e9ecef;
-                        border-top-left-radius: 16px;
-                        border-top-right-radius: 16px;
-                    }
-                    
-                    .modal-footer {
-                        border-top: 1px solid #e9ecef;
-                        border-bottom-left-radius: 16px;
-                        border-bottom-right-radius: 16px;
-                    }
-                    
-                    .form-label {
-                        font-weight: 500;
-                        color: #495057;
-                        display: flex;
-                        align-items: center;
-                    }
-                    
-                    .form-control, .form-select {
-                        border-radius: 8px;
-                        padding: 10px 12px;
-                    }
-                    
-                    .form-control:focus, .form-select:focus {
-                        box-shadow: 0 0 0 3px rgba(32, 107, 196, 0.15);
-                        border-color: #206bc4;
-                    }
-                    
-                    .btn {
-                        border-radius: 8px;
-                        padding: 8px 16px;
-                        font-weight: 500;
-                    }
-                    
-                    .btn-primary {
-                        background-color: #206bc4;
-                        border-color: #206bc4;
-                    }
-                    
-                    .btn-primary:hover, .btn-primary:focus {
-                        background-color: #1a5aa0;
-                        border-color: #1a5aa0;
-                    }
-                    
-                    .btn-primary:disabled {
-                        background-color: #206bc4;
-                        border-color: #206bc4;
-                        opacity: 0.65;
-                    }
-                    
-                    @media (max-width: 768px) {
-                        .modal-dialog {
-                            margin: 20px;
-                        }
-                    }
-                `}
-            </style>
         </>
     );
 }

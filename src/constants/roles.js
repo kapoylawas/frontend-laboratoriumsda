@@ -35,6 +35,11 @@ export const ROLES = {
     id: 6,
     name: 'Sanitarian',
     description: 'Petugas Sanitarian dengan akses ke menu Hasil untuk input & kirim verifikasi'
+  },
+  ADMIN_STOCK: {
+    id: 7,
+    name: 'admin-stock',
+    description: 'Petugas Pengelola Stok Reagen & BMHP'
   }
 };
 
@@ -45,7 +50,7 @@ export const ROLES = {
  * @returns {Boolean}
  */
 export const hasRoleId = (user, roleId) => {
-  return user?.role_id === roleId;
+  return user?.role_id === roleId || user?.role?.id === roleId;
 };
 
 /**
@@ -55,7 +60,7 @@ export const hasRoleId = (user, roleId) => {
  * @returns {Boolean}
  */
 export const hasRoleName = (user, roleName) => {
-  return user?.role?.name === roleName;
+  return user?.role?.name === roleName || user?.role_name === roleName;
 };
 
 /**
@@ -73,7 +78,8 @@ export const isPemohon = (user) => {
  * @returns {Boolean}
  */
 export const isAdmin = (user) => {
-  return hasRoleId(user, ROLES.ADMIN_LABKESDA.id);
+  return hasRoleId(user, ROLES.ADMIN_LABKESDA.id) ||
+         hasRoleName(user, 'Admin Labkesda');
 };
 
 /**
@@ -97,13 +103,31 @@ export const isSanitarian = (user) => {
   return hasRoleId(user, ROLES.SANITARIAN.id) || hasRoleName(user, 'Sanitarian') || user?.role?.name?.toLowerCase()?.includes('sanitarian');
 };
 
+export const isAdminStock = (user) => {
+  return hasRoleId(user, ROLES.ADMIN_STOCK.id) ||
+         hasRoleName(user, 'admin-stock') ||
+         hasRoleName(user, 'Admin Stock') ||
+         user?.role?.name?.toLowerCase()?.includes('stock');
+};
+
+/**
+ * Helper function to check if user can access Stock Opname menu
+ * (Admin Stock, Admin Labkesda, Analisis, or Kepala role)
+ * @param {Object} user - User object from store
+ * @returns {Boolean}
+ */
+export const canAccessStockOpname = (user) => {
+  return isAdminStock(user) || isAdmin(user) || isAnalisis(user) || isKepala(user);
+};
+
 /**
  * Helper function to check if user can access Hasil menu
- * (Admin Labkesda, Analisis, Verifikator, Kepala, or Sanitarian role)
+ * (Admin Labkesda, Analisis, Verifikator, Kepala, or Sanitarian role - NOT Admin Stock)
  * @param {Object} user - User object from store
  * @returns {Boolean}
  */
 export const canAccessHasil = (user) => {
+  if (isAdminStock(user)) return false;
   return isAdmin(user) || isAnalisis(user) || isVerifikator(user) || isKepala(user) || isSanitarian(user);
 };
 
@@ -114,7 +138,7 @@ export const canAccessHasil = (user) => {
  * @returns {Boolean}
  */
 export const canAccessPenjadwalan = (user) => {
-  return isAdmin(user);
+  return isAdmin(user) && !isAdminStock(user);
 };
 
 /**
@@ -129,31 +153,34 @@ export const canAccessJadwalPengambilan = (user) => {
 
 /**
  * Helper function to check if user can access operational menus
- * (Orders, Cart, History) - Admin Labkesda and Pemohon
+ * (Orders, Cart, History) - Admin Labkesda and Pemohon (NOT Admin Stock)
  * @param {Object} user - User object from store
  * @returns {Boolean}
  */
 export const canAccessOperationalMenus = (user) => {
+  if (isAdminStock(user)) return false;
   return isAdmin(user) || isPemohon(user);
 };
 
 /**
  * Helper function to check if user can access Penawaran menu
- * (Admin, Pemohon, Analis - NOT Verifikator or Kepala)
+ * (Admin Labkesda, Pemohon, Analis - NOT Verifikator, Kepala, or Admin Stock)
  * @param {Object} user - User object from store
  * @returns {Boolean}
  */
 export const canAccessPenawaran = (user) => {
+  if (isAdminStock(user)) return false;
   return !isVerifikator(user) && !isKepala(user);
 };
 
 /**
  * Helper function to check if user can access Berita Acara menu
- * (Admin, Pemohon, Analis, Kepala - NOT Verifikator)
+ * (Admin Labkesda, Pemohon, Analis, Kepala - NOT Verifikator or Admin Stock)
  * @param {Object} user - User object from store
  * @returns {Boolean}
  */
 export const canAccessBeritaAcara = (user) => {
+  if (isAdminStock(user)) return false;
   return !isVerifikator(user);
 };
 

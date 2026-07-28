@@ -7,6 +7,11 @@ import LayoutAdmin from '../../layouts/admin';
 import { useStore as useUserStore } from '../../stores/user';
 import { isAdmin } from '../../constants/roles';
 import SuratPenawaran from './suratPenawaran';
+import {
+    IconFileText, IconArrowLeft, IconCheck, IconClock, IconClockX,
+    IconBan, IconPackage, IconInfoCircle, IconSquareCheck, IconPrinter,
+    IconFileInvoice, IconFlask
+} from '@tabler/icons-react';
 
 export default function PengajuanDetail() {
     const { id } = useParams();
@@ -103,8 +108,9 @@ export default function PengajuanDetail() {
                             </div>
                         </div>
                     `,
-                    confirmButtonText: 'Lihat Detail'
+                    confirmButtonText: 'OK'
                 });
+                fetchDetail();
             } catch (error) {
                 Swal.fire({ icon: 'error', title: 'Gagal', text: error.response?.data?.message || 'Gagal menyetujui pemohonan' });
             }
@@ -112,11 +118,11 @@ export default function PengajuanDetail() {
     };
 
     const handleCancel = async () => {
-        const confirmResult = await Swal.fire({
+        const result = await Swal.fire({
             title: 'Batalkan Pemohonan?',
             html: `
                 <div class="text-start">
-                    <p class="text-muted mb-2">Pemohonan yang dibatalkan tidak dapat dikembalikan.</p>
+                    <p class="text-muted mb-2">Apakah Anda yakin ingin membatalkan pemohonan ini?</p>
                     <label for="alasan-cancel" class="form-label small fw-semibold">Alasan Pembatalan (opsional)</label>
                     <textarea id="alasan-cancel" class="form-control" rows="3" placeholder="Masukkan alasan pembatalan..."></textarea>
                 </div>
@@ -124,17 +130,19 @@ export default function PengajuanDetail() {
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d63939',
-            confirmButtonText: 'Ya, Batalkan!',
-            cancelButtonText: 'Kembali',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Batalkan',
+            cancelButtonText: 'Tidak',
             focusConfirm: false,
             preConfirm: () => {
                 const alasan = document.getElementById('alasan-cancel')?.value || '';
                 return { alasan };
             }
         });
-        if (!confirmResult.isConfirmed) return;
 
-        const { alasan } = confirmResult.value;
+        if (!result.isConfirmed) return;
+
+        const { alasan } = result.value;
         const token = Cookies.get('token');
         if (token) {
             Api.defaults.headers.common['Authorization'] = token;
@@ -154,26 +162,19 @@ export default function PengajuanDetail() {
 
     const getStatusBadge = (status) => {
         const statusMap = {
-            PENDING: { class: 'bg-warning text-dark', icon: 'hourglass', label: 'Menunggu' },
-            APPROVED: { class: 'bg-success', icon: 'circle-check', label: 'Disetujui' },
-            CANCELLED: { class: 'bg-secondary', icon: 'ban', label: 'Dibatalkan' },
-            EXPIRED: { class: 'bg-dark', icon: 'clock-x', label: 'Kadaluarsa' }
+            PENDING: { bg: '#fef08a', color: '#854d0e', icon: <IconClock size={16} className="me-1" />, label: 'Menunggu' },
+            APPROVED: { bg: '#bbf7d0', color: '#166534', icon: <IconCheck size={16} className="me-1" />, label: 'Disetujui' },
+            CANCELLED: { bg: '#e2e8f0', color: '#334155', icon: <IconBan size={16} className="me-1" />, label: 'Dibatalkan' },
+            EXPIRED: { bg: '#fecdd3', color: '#9f1239', icon: <IconClockX size={16} className="me-1" />, label: 'Kadaluarsa' }
         };
-        const s = statusMap[status] || { class: 'bg-secondary', icon: 'help', label: status };
-
-        const iconPaths = {
-            'hourglass': <><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6.5 7h11" /><path d="M6.5 17h11" /><path d="M6 20v-2a6 6 0 1 1 12 0v2a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1z" /></>,
-            'circle-check': <><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></>,
-            'ban': <><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M5.7 5.7l12.6 12.6" /></>,
-            'clock-x': <><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20.926 13.151a9 9 0 1 0 -7.836 7.784" /><path d="M12 7v5l2 2" /><path d="M22 22l-5 -5" /><path d="M17 22l5 -5" /></>,
-            'help': <><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M12 17l0 .01" /><path d="M12 13.5a1.5 1.5 0 0 1 1 -1.5a2.6 2.6 0 1 0 -3 -4" /></>
-        };
+        const s = statusMap[status] || { bg: '#e2e8f0', color: '#334155', icon: null, label: status };
 
         return (
-            <span className={`badge ${s.class}`} style={{ fontSize: '1rem', padding: '8px 16px' }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', verticalAlign: 'text-bottom' }}>
-                    {iconPaths[s.icon] || iconPaths['help']}
-                </svg>
+            <span
+                className="badge-3d px-3 py-1 d-inline-flex align-items-center"
+                style={{ backgroundColor: s.bg, color: s.color }}
+            >
+                {s.icon}
                 {s.label}
             </span>
         );
@@ -182,28 +183,21 @@ export default function PengajuanDetail() {
     const getJenisBadge = (jenis) => {
         if (jenis === 'PEMESANAN') {
             return (
-                <span className="badge bg-primary" style={{ fontSize: '0.9rem', padding: '6px 12px' }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'text-bottom' }}>
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M12 3l8 4.5l0 9l-8 4.5l-8 -4.5l0 -9l8 -4.5" />
-                        <path d="M12 12l8 -4.5" />
-                        <path d="M12 12l0 9" />
-                        <path d="M12 12l-8 -4.5" />
-                    </svg>
+                <span
+                    className="badge-3d px-3 py-1 d-inline-flex align-items-center"
+                    style={{ backgroundColor: '#bfdbfe', color: '#1e40af' }}
+                >
+                    <IconPackage size={16} className="me-1" />
                     Pemesanan
                 </span>
             );
         }
         return (
-            <span className="badge bg-info" style={{ fontSize: '0.9rem', padding: '6px 12px' }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'text-bottom' }}>
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-                    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
-                    <path d="M9 9l1 0" />
-                    <path d="M9 13l6 0" />
-                    <path d="M9 17l6 0" />
-                </svg>
+            <span
+                className="badge-3d px-3 py-1 d-inline-flex align-items-center"
+                style={{ backgroundColor: '#c084fc', color: '#ffffff' }}
+            >
+                <IconFileText size={16} className="me-1" />
                 Surat Penawaran
             </span>
         );
@@ -217,15 +211,9 @@ export default function PengajuanDetail() {
     if (isLoading) {
         return (
             <LayoutAdmin>
-                <div className="page-wrapper">
-                    <div className="page-body">
-                        <div className="container-xl">
-                            <div className="text-center py-5">
-                                <div className="spinner-border text-primary" style={{ width: '3rem', height: '3rem' }}></div>
-                                <div className="mt-3 text-muted">Memuat detail pemohonan...</div>
-                            </div>
-                        </div>
-                    </div>
+                <div className="container-xl py-5 text-center">
+                    <div className="spinner-border text-primary" style={{ width: '3rem', height: '3rem' }}></div>
+                    <div className="mt-3 text-muted fw-bold">Memuat detail pemohonan...</div>
                 </div>
             </LayoutAdmin>
         );
@@ -237,368 +225,266 @@ export default function PengajuanDetail() {
 
     return (
         <LayoutAdmin>
-            <div className="page-wrapper">
-                <div className="page-header d-print-none">
-                    <div className="container-xl">
-                        <div className="row g-2 align-items-center">
-                            <div className="col">
-                                <h2 className="page-title">Detail Pemohonan</h2>
-                                <div className="text-muted mt-1">
-                                    {getJenisBadge(data.jenis)} {' '} {getStatusBadge(data.status)}
-                                </div>
-                            </div>
-                            <div className="col-auto d-flex gap-2">
-                                <button className="btn btn-info" onClick={() => setShowSurat(true)}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon me-1" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><path d="M9 9l1 0" /><path d="M9 13l6 0" /><path d="M9 17l6 0" /></svg>
-                                    Preview Surat
-                                </button>
-                                <button className="btn btn-secondary" onClick={() => navigate('/penawaran')}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon me-1" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 12l14 0" /><path d="M5 12l6 6" /><path d="M5 12l6 -6" /></svg>
-                                    Kembali
-                                </button>
-                            </div>
+            {/* Custom 3D Styles */}
+            <style>{`
+                .card-3d {
+                    background: #ffffff !important;
+                    border: 2.5px solid #000000 !important;
+                    box-shadow: 5px 5px 0px #000000 !important;
+                    border-radius: 16px !important;
+                    transition: all 0.15s ease-in-out !important;
+                }
+                .badge-3d {
+                    border: 2px solid #000000 !important;
+                    box-shadow: 2px 2px 0px #000000 !important;
+                    border-radius: 8px !important;
+                    font-weight: 800 !important;
+                }
+                .btn-3d-primary {
+                    background: #2563eb !important;
+                    color: #ffffff !important;
+                    border: 2.5px solid #000000 !important;
+                    box-shadow: 4px 4px 0px #000000 !important;
+                    border-radius: 12px !important;
+                    font-weight: 800 !important;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    padding: 8px 16px;
+                    transition: all 0.15s ease-in-out !important;
+                    text-decoration: none !important;
+                    cursor: pointer;
+                }
+                .btn-3d-primary:hover {
+                    background: #1d4ed8 !important;
+                    color: #ffffff !important;
+                    transform: translate(-2px, -2px);
+                    box-shadow: 6px 6px 0px #000000 !important;
+                }
+                .btn-3d-green {
+                    background: #10b981 !important;
+                    color: #ffffff !important;
+                    border: 2.5px solid #000000 !important;
+                    box-shadow: 4px 4px 0px #000000 !important;
+                    border-radius: 12px !important;
+                    font-weight: 800 !important;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 6px;
+                    padding: 8px 16px;
+                    transition: all 0.15s ease-in-out !important;
+                    cursor: pointer;
+                }
+                .btn-3d-green:hover {
+                    background: #059669 !important;
+                    color: #ffffff !important;
+                    transform: translate(-2px, -2px);
+                    box-shadow: 6px 6px 0px #000000 !important;
+                }
+                .btn-3d-secondary {
+                    background: #f1f5f9 !important;
+                    color: #0f172a !important;
+                    border: 2.5px solid #000000 !important;
+                    box-shadow: 4px 4px 0px #000000 !important;
+                    border-radius: 12px !important;
+                    font-weight: 800 !important;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    padding: 8px 16px;
+                    transition: all 0.15s ease-in-out !important;
+                    text-decoration: none !important;
+                    cursor: pointer;
+                }
+                .btn-3d-secondary:hover {
+                    background: #e2e8f0 !important;
+                    color: #000000 !important;
+                    transform: translate(-2px, -2px);
+                    box-shadow: 6px 6px 0px #000000 !important;
+                }
+                .btn-3d-danger {
+                    background: #ef4444 !important;
+                    color: #ffffff !important;
+                    border: 2.5px solid #000000 !important;
+                    box-shadow: 4px 4px 0px #000000 !important;
+                    border-radius: 12px !important;
+                    font-weight: 800 !important;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 6px;
+                    padding: 8px 16px;
+                    transition: all 0.15s ease-in-out !important;
+                    cursor: pointer;
+                }
+                .btn-3d-danger:hover {
+                    background: #dc2626 !important;
+                    color: #ffffff !important;
+                    transform: translate(-2px, -2px);
+                    box-shadow: 6px 6px 0px #000000 !important;
+                }
+            `}</style>
+
+            <div className="container-xl py-4">
+                {/* 3D Header Actions */}
+                <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                    <div>
+                        <div className="d-flex align-items-center gap-2 mb-1">
+                            {getJenisBadge(data.jenis)}
+                            {getStatusBadge(data.status)}
                         </div>
+                        <h2 className="fw-extrabold text-dark mb-0">Detail Pemohonan Pengujian #{data.id}</h2>
+                    </div>
+                    <div className="d-flex gap-2">
+                        <button className="btn-3d-primary" onClick={() => setShowSurat(true)}>
+                            <IconFileInvoice size={18} />
+                            Preview Surat Resmi
+                        </button>
+                        <button className="btn-3d-secondary" onClick={() => navigate(-1)}>
+                            <IconArrowLeft size={18} />
+                            Kembali
+                        </button>
                     </div>
                 </div>
 
-                <div className="page-body">
-                    <div className="container-xl">
-                        <div className="row row-cards">
-                            <div className="col-lg-8">
-                                {/* Informasi Pemohonan */}
-                                <div className="card mb-3">
-                                    <div className="card-header">
-                                        <h3 className="card-title">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon me-2" width="20" height="20" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /></svg>
-                                            Informasi Pemohonan
-                                        </h3>
-                                    </div>
-                                    <div className="card-body">
-                                        <div className="row g-3">
-                                            <div className="col-md-6">
-                                                <div className="text-muted small">ID Pemohonan</div>
-                                                <div className="fw-bold fs-4">#{data.id}</div>
-                                            </div>
-                                            <div className="col-md-6">
-                                                <div className="text-muted small">Jenis</div>
-                                                <div className="mt-1">{getJenisBadge(data.jenis)}</div>
-                                            </div>
-                                            <div className="col-md-6">
-                                                <div className="text-muted small">Pemohon</div>
-                                                <div className="fw-semibold">{data.user?.name || '-'}</div>
-                                            </div>
-                                            <div className="col-md-6">
-                                                <div className="text-muted small">Email</div>
-                                                <div>{data.user?.email || '-'}</div>
-                                            </div>
-                                            <div className="col-md-6">
-                                                <div className="text-muted small">Telepon</div>
-                                                <div>{data.user?.phone || '-'}</div>
-                                            </div>
-                                            <div className="col-md-6">
-                                                <div className="text-muted small">Tanggal Pengajuan</div>
-                                                <div>{formatDate(data.tanggal_pengajuan)}</div>
-                                            </div>
-                                            {data.tanggal_expired && (
-                                                <div className="col-md-6">
-                                                    <div className="text-muted small">Berlaku Sampai</div>
-                                                    <div className="text-warning fw-semibold">{formatDate(data.tanggal_expired)}</div>
-                                                </div>
-                                            )}
-                                            {data.tanggal_action && (
-                                                <div className="col-md-6">
-                                                    <div className="text-muted small">Tanggal Aksi</div>
-                                                    <div className="fw-semibold">{formatDateTime(data.tanggal_action)}</div>
-                                                </div>
-                                            )}
-                                            {data.catatan && (
-                                                <div className="col-12">
-                                                    <div className="text-muted small">Catatan</div>
-                                                    <div className="p-2 rounded" style={{ backgroundColor: 'var(--tblr-card-bg, #f8f9fa)' }}>{data.catatan}</div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
+                <div className="row g-4">
+                    <div className="col-lg-8">
+                        {/* 3D Card: Informasi Pemohonan */}
+                        <div className="card-3d p-4 mb-4">
+                            <h4 className="fw-extrabold text-primary mb-3 d-flex align-items-center gap-2">
+                                <IconInfoCircle size={22} /> Informasi Detail Pengajuan
+                            </h4>
+                            <div className="row g-3">
+                                <div className="col-md-6">
+                                    <div className="text-muted small fw-bold">ID Pemohonan</div>
+                                    <div className="fw-black fs-4 text-dark">#{data.id}</div>
                                 </div>
-
-                                {/* Item Sampel */}
-                                <div className="card mb-3">
-                                    <div className="card-header">
-                                        <h3 className="card-title">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon me-2" width="20" height="20" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 3h6v11l-3 3l-3 -3v-11z" /><path d="M7 21h10" /><path d="M9 14h6v3h-6z" /></svg>
-                                            Item Sampel ({data.items?.length || 0})
-                                        </h3>
-                                    </div>
-                                    <div className="table-responsive">
-                                        <table className="table table-vcenter card-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>No</th>
-                                                    <th>Parameter</th>
-                                                    <th>Kategori</th>
-                                                    <th className="text-center">Qty</th>
-                                                    <th className="text-end">Harga Satuan</th>
-                                                    <th className="text-end">Subtotal</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {(data.items || []).map((item, index) => (
-                                                    <tr key={item.id || index}>
-                                                        <td className="text-muted">{index + 1}</td>
-                                                        <td><span className="fw-bold text-dark">{item.sampel?.parameter || '-'}</span></td>
-                                                        <td><span className="badge bg-info">{item.sampel?.category?.name || '-'}</span></td>
-                                                        <td className="text-center"><span className="badge bg-primary">{item.qty}</span></td>
-                                                        <td className="text-end text-muted">{formatCurrency(item.sampel?.price_sell || 0)}</td>
-                                                        <td className="text-end fw-bold">{formatCurrency(item.price || 0)}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                            <tfoot>
-                                                <tr>
-                                                    <td colSpan="5" className="text-end fw-bold" style={{ fontSize: '1.1rem' }}>Grand Total</td>
-                                                    <td className="text-end"><span className="fw-bold text-primary" style={{ fontSize: '1.2rem' }}>{formatCurrency(grandTotal)}</span></td>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
+                                <div className="col-md-6">
+                                    <div className="text-muted small fw-bold">Jenis Layanan</div>
+                                    <div className="mt-1">{getJenisBadge(data.jenis)}</div>
                                 </div>
-
-                                {/* Orders Created - Show after approve */}
-                                {data.status === 'APPROVED' && approveResult?.orders && approveResult.orders.length > 0 && (
-                                    <div className="card mb-3">
-                                        <div className="card-header">
-                                            <h3 className="card-title">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon me-2 text-primary" width="20" height="20" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 3l8 4.5l0 9l-8 4.5l-8 -4.5l0 -9l8 -4.5" /><path d="M12 12l8 -4.5" /><path d="M12 12l0 9" /><path d="M12 12l-8 -4.5" /></svg>
-                                                Order Dibuat ({approveResult.orders.length})
-                                            </h3>
-                                        </div>
-                                        <div className="table-responsive">
-                                            <table className="table table-vcenter card-table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>ID</th>
-                                                        <th>Parameter</th>
-                                                        <th>Kategori</th>
-                                                        <th className="text-center">Qty</th>
-                                                        <th className="text-end">Harga</th>
-                                                        <th className="text-center">Status</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {approveResult.orders.map((order) => (
-                                                        <tr key={order.id}>
-                                                            <td><span className="badge bg-primary-lt">#{order.id}</span></td>
-                                                            <td className="fw-semibold">{order.sampel?.parameter || '-'}</td>
-                                                            <td><span className="badge bg-info">{order.sampel?.category?.name || '-'}</span></td>
-                                                            <td className="text-center"><span className="badge bg-primary">{order.qty}</span></td>
-                                                            <td className="text-end">{formatCurrency(order.price)}</td>
-                                                            <td className="text-center">
-                                                                {order.status === false || order.status === 0 ? (
-                                                                    <span className="badge bg-warning text-dark">
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '3px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M12 12l0 -4" /><path d="M12 12l5 3" /></svg>
-                                                                        Belum Selesai
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="badge bg-success">
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '3px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>
-                                                                        Selesai
-                                                                    </span>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
+                                <div className="col-md-6">
+                                    <div className="text-muted small fw-bold">Nama Pemohon</div>
+                                    <div className="fw-extrabold text-dark">{data.user?.name || '-'}</div>
+                                </div>
+                                <div className="col-md-6">
+                                    <div className="text-muted small fw-bold">Email Instansi / User</div>
+                                    <div className="fw-semibold">{data.user?.email || '-'}</div>
+                                </div>
+                                <div className="col-md-6">
+                                    <div className="text-muted small fw-bold">No. Telepon / WhatsApp</div>
+                                    <div className="fw-semibold">{data.user?.phone || '-'}</div>
+                                </div>
+                                <div className="col-md-6">
+                                    <div className="text-muted small fw-bold">Tanggal Pengajuan</div>
+                                    <div className="fw-semibold">{formatDate(data.tanggal_pengajuan)}</div>
+                                </div>
+                                {data.tanggal_expired && (
+                                    <div className="col-md-6">
+                                        <div className="text-muted small fw-bold">Masa Berlaku Penawaran</div>
+                                        <div className="text-warning fw-extrabold">{formatDate(data.tanggal_expired)}</div>
                                     </div>
                                 )}
-
-                                {/* Hasils Created - Show after approve */}
-                                {data.status === 'APPROVED' && approveResult?.hasils && approveResult.hasils.length > 0 && (
-                                    <div className="card mb-3">
-                                        <div className="card-header">
-                                            <h3 className="card-title">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon me-2 text-success" width="20" height="20" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 3h6v11l-3 3l-3 -3v-11z" /><path d="M7 21h10" /><path d="M9 14h6v3h-6z" /></svg>
-                                                Hasil Pemeriksaan ({approveResult.hasils.length})
-                                            </h3>
-                                        </div>
-                                        <div className="table-responsive">
-                                            <table className="table table-vcenter card-table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>ID</th>
-                                                        <th>Parameter</th>
-                                                        <th>Kategori</th>
-                                                        <th className="text-center">Qty</th>
-                                                        <th>Hasil</th>
-                                                        <th>Metode</th>
-                                                        <th className="text-center">Status</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {approveResult.hasils.map((hasil) => (
-                                                        <tr key={hasil.id}>
-                                                            <td><span className="badge bg-success-lt">#{hasil.id}</span></td>
-                                                            <td className="fw-semibold">{hasil.sampel?.parameter || '-'}</td>
-                                                            <td><span className="badge bg-info">{hasil.sampel?.category?.name || '-'}</span></td>
-                                                            <td className="text-center"><span className="badge bg-primary">{hasil.qty}</span></td>
-                                                            <td>
-                                                                <span className={hasil.hasil === '-' ? 'text-muted fst-italic' : 'fw-semibold'}>
-                                                                    {hasil.hasil || '-'}
-                                                                </span>
-                                                            </td>
-                                                            <td>
-                                                                <span className={hasil.metode === '-' ? 'text-muted fst-italic' : ''}>
-                                                                    {hasil.metode || '-'}
-                                                                </span>
-                                                            </td>
-                                                            <td className="text-center">
-                                                                {hasil.status === false || hasil.status === 0 ? (
-                                                                    <span className="badge bg-warning text-dark">
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '3px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M12 12l0 -4" /><path d="M12 12l5 3" /></svg>
-                                                                        Belum Selesai
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="badge bg-success">
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '3px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>
-                                                                        Selesai
-                                                                    </span>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        <div className="card-footer">
-                                            <div className="d-flex justify-content-between align-items-center">
-                                                <span className="text-muted small">
-                                                    Hasil pemeriksaan dapat diisi pada halaman Hasil
-                                                </span>
-                                                <Link to="/hasil" className="btn btn-sm btn-outline-success">
-                                                    Lihat Hasil
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon ms-1" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l14 0" /><path d="M13 18l6 -6" /><path d="M13 6l6 6" /></svg>
-                                                </Link>
-                                            </div>
+                                {data.tanggal_action && (
+                                    <div className="col-md-6">
+                                        <div className="text-muted small fw-bold">Waktu Persetujuan</div>
+                                        <div className="fw-semibold">{formatDateTime(data.tanggal_action)}</div>
+                                    </div>
+                                )}
+                                {data.catatan && (
+                                    <div className="col-12">
+                                        <div className="text-muted small fw-bold">Catatan Pemohon</div>
+                                        <div className="p-3 bg-light rounded-3" style={{ border: '2px solid #000' }}>
+                                            {data.catatan}
                                         </div>
                                     </div>
                                 )}
                             </div>
+                        </div>
 
-                            <div className="col-lg-4">
-                                {/* Status & Aksi */}
-                                <div className="card mb-3">
-                                    <div className="card-header">
-                                        <h3 className="card-title">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon me-2" width="20" height="20" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6.5 7h11" /><path d="M6.5 17h11" /><path d="M6 20v-2a6 6 0 1 1 12 0v2a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1z" /></svg>
-                                            Status & Aksi
-                                        </h3>
-                                    </div>
-                                    <div className="card-body text-center">
-                                        <div className="mb-3">
-                                            <div className="text-muted small mb-2">Status Saat Ini</div>
-                                            {getStatusBadge(data.status)}
-                                        </div>
-
-                                        {data.tanggal_action && (
-                                            <div className="mb-3">
-                                                <div className="text-muted small">Tanggal Aksi</div>
-                                                <div className="fw-semibold">{formatDateTime(data.tanggal_action)}</div>
-                                            </div>
-                                        )}
-
-                                        <hr />
-
-                                        {data.status === 'PENDING' && userIsAdmin && (
-                                            <div className="d-grid gap-2">
-                                                <button className="btn btn-success" onClick={handleApprove}>
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon me-1" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>
-                                                    Setujui Pemohonan
-                                                </button>
-                                                <button className="btn btn-outline-danger" onClick={handleCancel}>
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon me-1" width="16" height="16" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M5.7 5.7l12.6 12.6" /></svg>
-                                                    Batalkan
-                                                </button>
-                                            </div>
-                                        )}
-
-                                        {data.status === 'APPROVED' && (
-                                            <div>
-                                                {approveResult && (
-                                                    <div className="mb-3">
-                                                        <div className="row g-2">
-                                                            <div className="col-6">
-                                                                <div className="p-2 rounded" style={{ backgroundColor: 'rgba(32, 107, 196, 0.1)' }}>
-                                                                    <div className="fs-3 fw-bold text-primary">{approveResult.orders?.length || 0}</div>
-                                                                    <div className="text-muted small">Order</div>
-                                                                </div>
-                                                            </div>
-                                                            <div className="col-6">
-                                                                <div className="p-2 rounded" style={{ backgroundColor: 'rgba(47, 179, 68, 0.1)' }}>
-                                                                    <div className="fs-3 fw-bold text-success">{approveResult.hasils?.length || 0}</div>
-                                                                    <div className="text-muted small">Hasil</div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                <div className="text-muted small">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>
-                                                    Pemohonan telah disetujui
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {data.status === 'CANCELLED' && (
-                                            <div className="text-muted small">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M5.7 5.7l12.6 12.6" /></svg>
-                                                Pemohonan telah dibatalkan
-                                            </div>
-                                        )}
-
-                                        {data.status === 'EXPIRED' && (
-                                            <div className="text-muted small">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'text-bottom' }}><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20.926 13.151a9 9 0 1 0 -7.836 7.784" /><path d="M12 7v5l2 2" /><path d="M22 22l-5 -5" /><path d="M17 22l5 -5" /></svg>
-                                                Pemohonan telah kadaluarsa
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Ringkasan */}
-                                <div className="card">
-                                    <div className="card-header">
-                                        <h3 className="card-title">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon me-2" width="20" height="20" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 14l6 -6" /><path d="M9 8h.01" /><path d="M15 16h.01" /><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /></svg>
-                                            Ringkasan
-                                        </h3>
-                                    </div>
-                                    <div className="card-body">
-                                        <div className="d-flex justify-content-between mb-2">
-                                            <span className="text-muted">Jenis</span>
-                                            <span>{data.jenis === 'PEMESANAN' ? 'Pemesanan' : 'Surat Penawaran'}</span>
-                                        </div>
-                                        <div className="d-flex justify-content-between mb-2">
-                                            <span className="text-muted">Jumlah Item</span>
-                                            <span className="fw-semibold">{data.items?.length || 0}</span>
-                                        </div>
-                                        <div className="d-flex justify-content-between mb-2">
-                                            <span className="text-muted">Total Qty</span>
-                                            <span className="fw-semibold">{(data.items || []).reduce((sum, item) => sum + (item.qty || 0), 0)}</span>
-                                        </div>
-                                        <hr />
-                                        <div className="d-flex justify-content-between">
-                                            <span className="fw-bold">Grand Total</span>
-                                            <span className="fw-bold text-primary fs-4">{formatCurrency(grandTotal)}</span>
-                                        </div>
-                                    </div>
-                                </div>
+                        {/* 3D Card: Item Sampel */}
+                        <div className="card-3d p-4 mb-4">
+                            <h4 className="fw-extrabold text-primary mb-3 d-flex align-items-center gap-2">
+                                <IconFlask size={22} /> Rincian Item Sampel ({data.items?.length || 0})
+                            </h4>
+                            <div className="table-responsive rounded-3" style={{ border: '2.5px solid #000' }}>
+                                <table className="table table-vcenter mb-0 align-middle">
+                                    <thead className="bg-light" style={{ borderBottom: '2.5px solid #000' }}>
+                                        <tr>
+                                            <th className="text-center">No</th>
+                                            <th>Parameter Pengujian</th>
+                                            <th>Kategori</th>
+                                            <th className="text-center">Qty</th>
+                                            <th className="text-end">Harga Satuan</th>
+                                            <th className="text-end pe-3">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {(data.items || []).map((item, index) => (
+                                            <tr key={item.id || index}>
+                                                <td className="text-center fw-bold text-muted">{index + 1}</td>
+                                                <td><span className="fw-extrabold text-dark">{item.sampel?.parameter || '-'}</span></td>
+                                                <td><span className="badge-3d px-2 py-0 bg-info text-white" style={{ fontSize: '11px' }}>{item.sampel?.category?.name || '-'}</span></td>
+                                                <td className="text-center"><span className="badge-3d px-2 py-1 bg-warning text-dark">{item.qty}</span></td>
+                                                <td className="text-end text-muted">{formatCurrency(item.sampel?.price_sell || 0)}</td>
+                                                <td className="text-end pe-3 fw-extrabold text-primary">{formatCurrency(item.price || 0)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot className="bg-light" style={{ borderTop: '2.5px solid #000' }}>
+                                        <tr>
+                                            <td colSpan="5" className="text-end fw-black fs-5">Grand Total Biaya</td>
+                                            <td className="text-end pe-3"><span className="fw-black text-primary fs-4">{formatCurrency(grandTotal)}</span></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
                             </div>
+                        </div>
+                    </div>
+
+                    <div className="col-lg-4">
+                        {/* 3D Action Card */}
+                        <div className="card-3d p-4 mb-4">
+                            <h4 className="fw-extrabold text-dark mb-3">Tindakan Admin</h4>
+                            {data.status === 'PENDING' && userIsAdmin ? (
+                                <div className="d-flex flex-column gap-2">
+                                    <button className="btn-3d-green w-100 py-2" onClick={handleApprove}>
+                                        <IconSquareCheck size={20} /> Setujui Pemohonan (Approve)
+                                    </button>
+                                    <button className="btn-3d-danger w-100 py-2" onClick={handleCancel}>
+                                        <IconBan size={20} /> Batalkan Pemohonan
+                                    </button>
+                                </div>
+                            ) : data.status === 'APPROVED' ? (
+                                <div className="p-3 bg-success-subtle text-success rounded-3 text-center" style={{ border: '2px solid #000' }}>
+                                    <IconCheck size={32} className="mb-1" />
+                                    <div className="fw-bold fs-6">Pemohonan Telah Disetujui</div>
+                                    <small className="text-muted d-block mt-1">Order dan lembar hasil laboratorium telah otomatis di-generate.</small>
+                                </div>
+                            ) : (
+                                <div className="p-3 bg-light text-muted rounded-3 text-center" style={{ border: '2px solid #000' }}>
+                                    <div className="fw-bold fs-6">Status: {data.status}</div>
+                                    <small className="d-block mt-1">Tidak ada tindakan lanjutan yang tersedia.</small>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Summary Box */}
+                        <div className="card-3d p-4" style={{ backgroundColor: '#eff6ff' }}>
+                            <div className="text-muted fw-bold fs-8 text-uppercase mb-1">Total Nilai Penawaran</div>
+                            <div className="fs-2 fw-black text-primary mb-2">{formatCurrency(grandTotal)}</div>
+                            <small className="text-muted d-block">
+                                Meliputi {data.items?.length || 0} parameter pengujian sampel laboratorium UPTD Labkesda Sidoarjo.
+                            </small>
                         </div>
                     </div>
                 </div>
             </div>
 
+            {/* Modal / Preview Surat Penawaran */}
             {showSurat && (
                 <SuratPenawaran data={data} onClose={() => setShowSurat(false)} />
             )}

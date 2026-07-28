@@ -22,10 +22,11 @@ import {
 } from "@tabler/icons-react";
 import UserEdit from "./edit";
 import DeleteButton from "../../components/DeleteButton";
-import UserCreate from "./create";
+import UserCreate, { UserCreateTrigger } from "./create";
 
 export default function Users() {
     const [users, setUsers] = useState([]);
+    const [showCreateModal, setShowCreateModal] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [pagination, setPagination] = useState({
         currentPage: 1,
@@ -144,7 +145,7 @@ export default function Users() {
                         </div>
                         <div className="col-auto ms-auto d-print-none">
                             <div className="btn-list">
-                                <UserCreate fetchData={fetchData} />
+                                <UserCreate fetchData={fetchData} showModal={showCreateModal} setShowModal={setShowCreateModal} />
                                 <button
                                     onClick={() => fetchData()}
                                     className="btn btn-outline-primary"
@@ -439,7 +440,10 @@ export default function Users() {
                                                                     Tampilkan Semua Pengguna
                                                                 </button>
                                                             ) : (
-                                                                <UserCreate fetchData={fetchData} />
+                                                                <button className="btn btn-primary d-inline-flex align-items-center gap-2" onClick={() => setShowCreateModal(true)}>
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                                                                    Tambah Pengguna
+                                                                </button>
                                                             )}
                                                         </div>
                                                     </td>

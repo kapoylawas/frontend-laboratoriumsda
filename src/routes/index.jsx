@@ -9,6 +9,7 @@ import HasilRoute from '../components/HasilRoute.jsx';
 import JadwalPengambilanRoute from '../components/JadwalPengambilanRoute.jsx';
 import PenawaranRoute from '../components/PenawaranRoute.jsx';
 import BeritaAcaraRoute from '../components/BeritaAcaraRoute.jsx';
+import StockOpnameRoute from '../components/StockOpnameRoute.jsx';
 
 //import view login
 import Login from "../views/auth/login.jsx";
@@ -41,9 +42,11 @@ import BeritaAcaraCreate from "../views/berita-acara/create.jsx";
 import BeritaAcaraEdit from "../views/berita-acara/edit.jsx";
 import BeritaAcaraDetail from "../views/berita-acara/detail.jsx";
 
-// Import Landing & Laporan views
+// Import Landing, Laporan, & Stock Opname views
 import LandingPage from "../views/landing/index.jsx";
 import Laporan from "../views/laporan/index.jsx";
+import StockOpname from "../views/stock-opname/index.jsx";
+import StockOpnamePrint from "../views/stock-opname/print.jsx";
 
 export default function AppRoutes() {
   return (
@@ -159,6 +162,18 @@ export default function AppRoutes() {
         <HasilRoute>
           <Laporan />
         </HasilRoute>
+      } />
+
+      {/* Stock Opname Route - Accessible by Admin Stock, Admin Labkesda, Analisis, & Kepala */}
+      <Route path="/stock-opname" element={
+        <StockOpnameRoute>
+          <StockOpname />
+        </StockOpnameRoute>
+      } />
+      <Route path="/stock-opname/print" element={
+        <StockOpnameRoute>
+          <StockOpnamePrint />
+        </StockOpnameRoute>
       } />
 
       {/* Penjadwalan Route - Admin Only */}

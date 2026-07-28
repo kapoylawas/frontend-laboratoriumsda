@@ -21,6 +21,7 @@ import DeleteButton from "../../components/DeleteButton";
 export default function CategoriesIndex() {
   //state categories
   const [categories, setCategories] = useState([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   //state loading
   const [isLoading, setIsLoading] = useState(true);
 
@@ -138,7 +139,7 @@ export default function CategoriesIndex() {
                   <IconRefresh size={18} className="me-1" />
                   {isLoading ? "Memuat..." : "Refresh"}
                 </button>
-                <CategoryCreate fetchData={fetchData} />
+                <CategoryCreate fetchData={fetchData} showModal={showCreateModal} setShowModal={setShowCreateModal} />
               </div>
             </div>
           </div>
@@ -304,10 +305,10 @@ export default function CategoriesIndex() {
                                       Tampilkan Semua Kategori
                                     </button>
                                   ) : (
-                                    <CategoryCreate
-                                      fetchData={fetchData}
-                                      variant="primary"
-                                    />
+                                    <button className="btn btn-primary d-inline-flex align-items-center gap-2" onClick={() => setShowCreateModal(true)}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                        Tambah Kategori
+                                    </button>
                                   )}
                                 </div>
                               </td>

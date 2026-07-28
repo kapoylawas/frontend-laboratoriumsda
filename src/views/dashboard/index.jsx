@@ -7,10 +7,12 @@ import {
 import Cookies from "js-cookie";
 import { Link } from "react-router-dom";
 import Api from '../../services/api';
+import { isAdminStock } from '../../constants/roles';
 import {
     IconFlask, IconAward, IconCheck, IconClock, IconShoppingCart,
     IconFileText, IconSparkles, IconChartBar, IconCalendar, IconUserCheck,
-    IconRefresh, IconUser
+    IconRefresh, IconUser, IconBox, IconCurrencyDollar, IconAlertTriangle,
+    IconBuildingWarehouse, IconPlus, IconPrinter
 } from "@tabler/icons-react";
 
 const COLORS = ['#e50914', '#10b981', '#fbbf24', '#38bdf8', '#8b5cf6', '#ec4899'];
@@ -23,6 +25,8 @@ export default function Dashboard() {
     const isVerifikator = userRoleId === 4;
     const isKepala = userRoleId === 5;
 
+    const userIsAdminStock = isAdminStock(user);
+
     // State untuk data API real
     const [isLoading, setIsLoading] = useState(true);
     const [adminData, setAdminData] = useState({
@@ -34,6 +38,18 @@ export default function Dashboard() {
         chartMonthlyData: [],
         chartKategoriData: [],
         recentActivities: []
+    });
+
+    const [stockData, setStockData] = useState({
+        items: [],
+        totalItem: 0,
+        totalStockAwal: 0,
+        totalPenerimaan: 0,
+        totalPemakaian: 0,
+        totalSisaStock: 0,
+        totalNilai: 0,
+        lowStockItems: [],
+        nearExpiryItems: []
     });
 
     const [verifData, setVerifData] = useState({
@@ -97,6 +113,54 @@ export default function Dashboard() {
             .catch(() => null);
 
         try {
+            if (userIsAdminStock) {
+                const resStock = await Api.get('/api/stock-opname').catch(() => null);
+                const stockList = resStock?.data?.data || [];
+
+                let totalStockAwal = 0;
+                let totalPenerimaan = 0;
+                let totalPemakaian = 0;
+                let totalSisaStock = 0;
+                let totalNilai = 0;
+                const lowStockItems = [];
+                const nearExpiryItems = [];
+                const now = new Date();
+
+                stockList.forEach(item => {
+                    totalStockAwal += Number(item.stock_awal || 0);
+                    totalPenerimaan += Number(item.penerimaan || 0);
+                    totalPemakaian += Number(item.pemakaian || 0);
+                    totalSisaStock += Number(item.sisa_stock || 0);
+                    totalNilai += Number(item.nilai || item.nilai_sisa || (item.sisa_stock * item.harga_satuan) || 0);
+
+                    if (Number(item.sisa_stock) <= Number(item.min_stock || 5)) {
+                        lowStockItems.push(item);
+                    }
+                    if (item.tanggal_expired || item.ed) {
+                        const expStr = item.tanggal_expired || item.ed;
+                        const exp = new Date(expStr);
+                        if (!isNaN(exp.getTime())) {
+                            const diffDays = Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
+                            if (diffDays <= 60) {
+                                nearExpiryItems.push({ ...item, diffDays });
+                            }
+                        }
+                    }
+                });
+
+                setStockData({
+                    items: stockList,
+                    totalItem: stockList.length,
+                    totalStockAwal,
+                    totalPenerimaan,
+                    totalPemakaian,
+                    totalSisaStock,
+                    totalNilai,
+                    lowStockItems,
+                    nearExpiryItems
+                });
+            }
+
             if (isVerifikator || isKepala || isAdmin) {
                 const resHasils = await Api.get('/api/hasils?limit=200').catch(() => null);
                 const hasilsList = resHasils?.data?.data || [];
@@ -232,7 +296,230 @@ export default function Dashboard() {
 
     useEffect(() => {
         fetchBackendData();
-    }, [isAdmin, isVerifikator, isKepala]);
+    }, [isAdmin, isVerifikator, isKepala, userIsAdminStock]);
+
+    // Render Admin Stock Dashboard UI
+    const renderAdminStockDashboard = () => {
+        return (
+            <div className="dashboard-3d-wrapper">
+                {/* 3D Hero Header Banner for Admin Stock */}
+                <div
+                    className="p-4 rounded-4 mb-4 mb-lg-5 position-relative overflow-hidden"
+                    style={{
+                        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)",
+                        border: "3px solid #000000",
+                        boxShadow: "6px 6px 0px #000000",
+                        marginBottom: "2rem"
+                    }}
+                >
+                    <div className="row align-items-center position-relative z-2">
+                        <div className="col-lg-8 text-white mb-3 mb-lg-0">
+                            <div className="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill mb-2" style={{ backgroundColor: "rgba(255, 255, 255, 0.15)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.2)" }}>
+                                <span className="badge-3d px-2 py-0 bg-warning text-dark" style={{ fontSize: '11px' }}>ADMIN STOK</span>
+                                <span className="text-white fw-bold fs-8 text-uppercase">Pusat Pengelolaan Reagen & BMHP</span>
+                            </div>
+                            <h1 className="fw-black fs-2 text-white mb-2">
+                                {greeting.text}, {user?.name || 'Admin Stock'}! 📦
+                            </h1>
+                            <p className="text-white-50 small max-w-650 mb-0">
+                                Selamat datang di Pusat Kendali Stok Reagen & BMHP UPTD Laboratorium Kesehatan Daerah Kabupaten Sidoarjo. Monitor persediaan, penerimaan, pemakaian, dan peringatan stok kritis secara real-time.
+                            </p>
+                        </div>
+
+                        <div className="col-lg-4 text-lg-end">
+                            <div className="d-flex flex-column gap-2">
+                                <Link to="/stock-opname" className="btn-pop-green text-center py-2">
+                                    <IconPlus size={18} /> Input / Update Stock Opname
+                                </Link>
+                                <Link to="/stock-opname/print" className="btn-pop-yellow text-center py-2">
+                                    <IconPrinter size={18} /> Cetak Laporan Opname
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 4 3D KPI Stat Cards */}
+                <div className="row g-4 mb-4">
+                    <div className="col-xl-3 col-md-6">
+                        <div className="stat-card-3d p-3 p-md-4 bg-white" style={{ border: '2.5px solid #000', boxShadow: '5px 5px 0px #000', borderRadius: '16px' }}>
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <div className="stat-icon-3d bg-primary text-white p-3 rounded-3" style={{ border: '2px solid #000' }}>
+                                    <IconBox size={26} />
+                                </div>
+                                <span className="badge-3d px-2 py-1 bg-info-subtle text-info fw-bold">MASTER ITEM</span>
+                            </div>
+                            <h6 className="text-secondary fw-bold small text-uppercase mb-1">Total Variasi Item</h6>
+                            <h3 className="fw-black text-dark mb-0">
+                                {isLoading ? <span className="spinner-border spinner-border-sm"></span> : `${stockData.totalItem} Item`}
+                            </h3>
+                            <small className="text-muted d-block mt-1">Reagen & BMHP Terdata</small>
+                        </div>
+                    </div>
+
+                    <div className="col-xl-3 col-md-6">
+                        <div className="stat-card-3d p-3 p-md-4 bg-white" style={{ border: '2.5px solid #000', boxShadow: '5px 5px 0px #000', borderRadius: '16px' }}>
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <div className="stat-icon-3d bg-success text-white p-3 rounded-3" style={{ border: '2px solid #000' }}>
+                                    <IconFlask size={26} />
+                                </div>
+                                <span className="badge-3d px-2 py-1 bg-success-subtle text-success fw-bold">SISA STOK</span>
+                            </div>
+                            <h6 className="text-secondary fw-bold small text-uppercase mb-1">Total Stok Tersedia</h6>
+                            <h3 className="fw-black text-dark mb-0">
+                                {isLoading ? <span className="spinner-border spinner-border-sm"></span> : `${stockData.totalSisaStock.toLocaleString('id-ID')} Unit`}
+                            </h3>
+                            <small className="text-muted d-block mt-1">Akumulasi Seluruh Item</small>
+                        </div>
+                    </div>
+
+                    <div className="col-xl-3 col-md-6">
+                        <div className="stat-card-3d p-3 p-md-4 bg-white" style={{ border: '2.5px solid #000', boxShadow: '5px 5px 0px #000', borderRadius: '16px' }}>
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <div className="stat-icon-3d bg-purple text-white p-3 rounded-3" style={{ backgroundColor: '#8b5cf6', border: '2px solid #000' }}>
+                                    <IconCurrencyDollar size={26} />
+                                </div>
+                                <span className="badge-3d px-2 py-1 bg-purple-subtle text-purple fw-bold">VALUASI ASET</span>
+                            </div>
+                            <h6 className="text-secondary fw-bold small text-uppercase mb-1">Nilai Total Stok</h6>
+                            <h3 className="fw-black text-dark mb-0 fs-5">
+                                {isLoading ? <span className="spinner-border spinner-border-sm"></span> : formatRupiah(stockData.totalNilai)}
+                            </h3>
+                            <small className="text-muted d-block mt-1">Sisa Stok × Harga Satuan</small>
+                        </div>
+                    </div>
+
+                    <div className="col-xl-3 col-md-6">
+                        <div className="stat-card-3d p-3 p-md-4 bg-white" style={{ border: '2.5px solid #000', boxShadow: '5px 5px 0px #000', borderRadius: '16px' }}>
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <div className="stat-icon-3d bg-danger text-white p-3 rounded-3" style={{ border: '2px solid #000' }}>
+                                    <IconAlertTriangle size={26} />
+                                </div>
+                                <span className="badge-3d px-2 py-1 bg-danger-subtle text-danger fw-bold">PERINGATAN</span>
+                            </div>
+                            <h6 className="text-secondary fw-bold small text-uppercase mb-1">Stok Menipis / Expiry</h6>
+                            <h3 className="fw-black text-dark mb-0">
+                                {isLoading ? <span className="spinner-border spinner-border-sm"></span> : `${stockData.lowStockItems.length + stockData.nearExpiryItems.length} Item Kritis`}
+                            </h3>
+                            <small className="text-muted d-block mt-1">Perlu Restock / Pengadaan</small>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Alert Stok Kritis Panel */}
+                {(stockData.lowStockItems.length > 0 || stockData.nearExpiryItems.length > 0) && (
+                    <div className="card-3d p-4 mb-4" style={{ backgroundColor: '#fff1f2', border: '2.5px solid #000', boxShadow: '5px 5px 0px #000', borderRadius: '16px' }}>
+                        <h5 className="fw-black text-danger mb-3 d-flex align-items-center gap-2">
+                            <IconAlertTriangle size={24} /> PERINGATAN REAGEN / BMHP KRITIS!
+                        </h5>
+                        <div className="row g-3">
+                            {stockData.lowStockItems.map((item, idx) => (
+                                <div key={`low-${idx}`} className="col-md-6">
+                                    <div className="p-3 bg-white rounded-3 d-flex align-items-center justify-content-between" style={{ border: '2px solid #000' }}>
+                                        <div>
+                                            <div className="fw-extrabold text-dark">{item.nama_bmhp || item.nama_barang || '-'}</div>
+                                            <small className="text-muted">Sisa Stok: <strong className="text-danger fs-6">{item.sisa_stock} {item.satuan}</strong> (Min: {item.min_stock || 5})</small>
+                                        </div>
+                                        <span className="badge-3d px-2 py-1 bg-danger text-white" style={{ fontSize: '11px' }}>Stok Menipis</span>
+                                    </div>
+                                </div>
+                            ))}
+                            {stockData.nearExpiryItems.map((item, idx) => (
+                                <div key={`exp-${idx}`} className="col-md-6">
+                                    <div className="p-3 bg-white rounded-3 d-flex align-items-center justify-content-between" style={{ border: '2px solid #000' }}>
+                                        <div>
+                                            <div className="fw-extrabold text-dark">{item.nama_bmhp || item.nama_barang || '-'}</div>
+                                            <small className="text-muted">Expired: <strong className="text-warning-emphasis">{item.ed || item.tanggal_expired}</strong> ({item.diffDays} hari lagi)</small>
+                                        </div>
+                                        <span className="badge-3d px-2 py-1 bg-warning text-dark" style={{ fontSize: '11px' }}>Hampir Expired</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Quick Actions Grid & Stock Summary Table */}
+                <div className="row g-4 mb-4">
+                    <div className="col-lg-8">
+                        <div className="card-3d p-4 bg-white" style={{ border: '2.5px solid #000', boxShadow: '5px 5px 0px #000', borderRadius: '16px' }}>
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <h5 className="fw-black text-dark mb-0 d-flex align-items-center gap-2">
+                                    <IconBuildingWarehouse size={22} className="text-primary" /> Overview Inventaris Reagen & BMHP Terkini
+                                </h5>
+                                <Link to="/stock-opname" className="btn-pop-blue py-1 px-3 fs-7">
+                                    Kelola Seluruh Stok ➔
+                                </Link>
+                            </div>
+
+                            <div className="table-responsive rounded-3" style={{ border: '2.5px solid #000' }}>
+                                <table className="table table-vcenter mb-0 align-middle">
+                                    <thead className="bg-light" style={{ borderBottom: '2.5px solid #000' }}>
+                                        <tr>
+                                            <th>Kode</th>
+                                            <th>Nama Barang</th>
+                                            <th>Kategori</th>
+                                            <th className="text-center">Sisa Stok</th>
+                                            <th className="text-end">Harga Satuan</th>
+                                            <th className="text-end pe-3">Nilai Sisa</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {stockData.items.slice(0, 7).map((item, index) => (
+                                            <tr key={item.id || index}>
+                                                <td className="fw-bold text-muted font-monospace">{item.lot || item.kode_barang || `-`}</td>
+                                                <td><span className="fw-extrabold text-dark">{item.nama_bmhp || item.nama_barang || '-'}</span></td>
+                                                <td><span className="badge-3d px-2 py-0 bg-info text-white" style={{ fontSize: '10px' }}>{item.lokasi ? `Lokasi ${item.lokasi}` : (item.kategori || 'Reagen')}</span></td>
+                                                <td className="text-center">
+                                                    <span className={`badge-3d px-2 py-1 ${Number(item.sisa_stock) <= Number(item.min_stock || 5) ? 'bg-danger text-white' : 'bg-success text-white'}`}>
+                                                        {item.sisa_stock} {item.satuan || 'unit'}
+                                                    </span>
+                                                </td>
+                                                <td className="text-end text-muted">{formatRupiah(item.harga_satuan)}</td>
+                                                <td className="text-end pe-3 fw-extrabold text-primary">{formatRupiah(item.nilai || item.nilai_sisa || (item.sisa_stock * item.harga_satuan))}</td>
+                                            </tr>
+                                        ))}
+                                        {stockData.items.length === 0 && (
+                                            <tr>
+                                                <td colSpan="6" className="text-center py-4 text-muted fw-bold">
+                                                    Belum ada data stok opname. Silakan input stok baru atau muat data sampel.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="col-lg-4">
+                        <div className="card-3d p-4 bg-white mb-4" style={{ border: '2.5px solid #000', boxShadow: '5px 5px 0px #000', borderRadius: '16px' }}>
+                            <h5 className="fw-black text-dark mb-3">Aksi Cepat Admin Stok</h5>
+                            <div className="d-flex flex-column gap-3">
+                                <Link to="/stock-opname" className="btn-pop-green py-3 w-100 text-center">
+                                    <IconPlus size={20} /> Input Stock Opname Baru
+                                </Link>
+                                <Link to="/stock-opname/print" className="btn-pop-yellow py-3 w-100 text-center">
+                                    <IconPrinter size={20} /> Cetak & Export Laporan
+                                </Link>
+                                <button onClick={fetchBackendData} className="btn-pop-blue py-3 w-100 text-center">
+                                    <IconRefresh size={20} /> Segarkan Data Inventaris
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="card-3d p-4" style={{ backgroundColor: '#eff6ff', border: '2.5px solid #000', boxShadow: '5px 5px 0px #000', borderRadius: '16px' }}>
+                            <div className="text-muted fw-bold fs-8 text-uppercase mb-1">Informasi Hak Akses</div>
+                            <div className="fw-extrabold text-primary mb-2">Akun Staff Admin Stock</div>
+                            <small className="text-muted d-block">
+                                Akun Anda didedikasikan secara khusus untuk mencatat penerimaan, pemakaian, dan pelaporan stok Reagen & BMHP UPTD Labkesda Sidoarjo.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     // Render Admin Dashboard UI
     const renderAdminDashboard = () => {
@@ -1054,7 +1341,9 @@ export default function Dashboard() {
     return (
         <LayoutAdmin>
             <div className="container-fluid py-4">
-                {isAdmin
+                {userIsAdminStock
+                    ? renderAdminStockDashboard()
+                    : isAdmin
                     ? renderAdminDashboard()
                     : isVerifikator
                     ? renderVerifikatorDashboard()

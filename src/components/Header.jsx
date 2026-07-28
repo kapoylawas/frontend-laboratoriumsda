@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useStore as useThemeStore } from '../stores/theme';
 import { useStore as useUserStore } from '../stores/user';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { isAdmin, canAccessHasil, canAccessOperationalMenus, canAccessPenjadwalan, canAccessJadwalPengambilan, canAccessPenawaran, canAccessBeritaAcara } from '../constants/roles';
+import { isAdmin, canAccessHasil, canAccessOperationalMenus, canAccessPenjadwalan, canAccessJadwalPengambilan, canAccessPenawaran, canAccessBeritaAcara, canAccessStockOpname } from '../constants/roles';
 import Cookies from 'js-cookie';
 import Api from '../services/api';
 import "./Header.css";
@@ -36,6 +36,7 @@ export default function Header() {
     const userCanAccessJadwalPengambilan = canAccessJadwalPengambilan(user);
     const userCanAccessPenawaran = canAccessPenawaran(user);
     const userCanAccessBeritaAcara = canAccessBeritaAcara(user);
+    const userCanAccessStockOpname = canAccessStockOpname(user);
 
 
 
@@ -384,7 +385,7 @@ export default function Header() {
                                     </li>
                                 )}
 
-                                {/* Laporan Rekapitulasi Menu */}
+                                 {/* Laporan Rekapitulasi Menu */}
                                 {userCanAccessHasil && (
                                     <li className={`mobile-nav-item ${isActivePath('/laporan') ? 'active' : ''}`}>
                                         <Link className="mobile-nav-link" to="/laporan" onClick={closeMobileMenu}>
@@ -401,6 +402,25 @@ export default function Header() {
                                         </Link>
                                     </li>
                                 )}
+
+                                {/* Stock Opname Menu */}
+                                {userCanAccessStockOpname && (
+                                    <li className={`mobile-nav-item ${isActivePath('/stock-opname') ? 'active' : ''}`}>
+                                        <Link className="mobile-nav-link" to="/stock-opname" onClick={closeMobileMenu}>
+                                            <div className="nav-icon">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                    <path d="M12 3l8 4.5l0 9l-8 4.5l-8 -4.5l0 -9l8 -4.5" />
+                                                    <path d="M12 12l8 -4.5" />
+                                                    <path d="M12 12l0 9" />
+                                                    <path d="M12 12l-8 -4.5" />
+                                                </svg>
+                                            </div>
+                                            <span className="nav-label">STOCK OPNAME</span>
+                                        </Link>
+                                    </li>
+                                )}
+
 
                                 {userIsAdmin && (
                                     <li className={`mobile-nav-item mobile-nav-dropdown ${isMasterDataOpen ? 'open' : ''} ${isActivePath('/categories') || isActivePath('/sampels') || isActivePath('/users') ? 'active' : ''}`}>
@@ -654,7 +674,7 @@ export default function Header() {
                                         </li>
                                     )}
 
-                                    {/* Laporan Rekapitulasi Menu */}
+                                     {/* Laporan Rekapitulasi Menu */}
                                     {userCanAccessHasil && (
                                         <li className={`nav-item ${isActivePath('/laporan') ? 'active' : ''}`}>
                                             <Link className="nav-link cashier-nav-link" to="/laporan">
@@ -671,6 +691,25 @@ export default function Header() {
                                             </Link>
                                         </li>
                                     )}
+
+                                    {/* Stock Opname Menu */}
+                                    {userCanAccessStockOpname && (
+                                        <li className={`nav-item ${isActivePath('/stock-opname') ? 'active' : ''}`}>
+                                            <Link className="nav-link cashier-nav-link" to="/stock-opname">
+                                                <div className="nav-icon">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                        <path d="M12 3l8 4.5l0 9l-8 4.5l-8 -4.5l0 -9l8 -4.5" />
+                                                        <path d="M12 12l8 -4.5" />
+                                                        <path d="M12 12l0 9" />
+                                                        <path d="M12 12l-8 -4.5" />
+                                                    </svg>
+                                                </div>
+                                                <span className="nav-label">STOCK OPNAME</span>
+                                            </Link>
+                                        </li>
+                                    )}
+
 
                                     {/* Master Data Dropdown - Admin Only */}
                                     {userIsAdmin && (

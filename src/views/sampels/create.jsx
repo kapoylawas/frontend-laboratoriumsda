@@ -1,298 +1,246 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import Api from "../../services/api";
 import { handleErrors } from "../../utils/handleErrors";
+import { IconFlask, IconX, IconCheck } from "@tabler/icons-react";
 
 export default function SampelCreate({ fetchData }) {
+    const [showModal, setShowModal] = useState(false);
     const [categoryID, setCategoryID] = useState("");
     const [parameter, setParameter] = useState("");
     const [priceSell, setPriceSell] = useState("");
-
     const [categories, setCategories] = useState([]);
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
-    const modalRef = useRef(null);
 
     const token = Cookies.get("token");
 
     const fetchCategories = async () => {
-        // Set authorization header with token
-        Api.defaults.headers.common['Authorization'] = token;
-        await Api.get('/api/categories-all')
-            .then(response => {
-                setCategories(response.data.data);
-            });
-    }
-
-    // Inisialisasi modal setelah komponen dimount
-    useEffect(() => {
-        if (modalRef.current) {
-            const modal = new bootstrap.Modal(modalRef.current);
+        try {
+            Api.defaults.headers.common['Authorization'] = token;
+            const response = await Api.get('/api/categories-all');
+            setCategories(response.data?.data || []);
+        } catch (error) {
+            console.error("Error fetching categories:", error);
         }
-    }, []);
+    };
 
     useEffect(() => {
         fetchCategories();
     }, []);
 
-    // Fungsi untuk memformat input menjadi format Rupiah
     const formatRupiah = (value) => {
-        // Hapus semua karakter selain angka
         const numericValue = value.replace(/\D/g, '');
-
-        // Format dengan titik sebagai pemisah ribuan
-        if (numericValue) {
-            return new Intl.NumberFormat('id-ID').format(numericValue);
-        }
-        return '';
+        return numericValue ? new Intl.NumberFormat('id-ID').format(numericValue) : '';
     };
 
-    const handlePriceChange = (e) => {
-        const formattedValue = formatRupiah(e.target.value);
-        setPriceSell(formattedValue);
+    const openModal = () => {
+        setCategoryID("");
+        setParameter("");
+        setPriceSell("");
+        setErrors({});
+        setIsLoading(false);
+        setShowModal(true);
     };
 
-    // Fungsi untuk mendapatkan nilai numerik dari format Rupiah
-    const getNumericValue = (formattedValue) => {
-        return formattedValue.replace(/\./g, '');
+    const closeModal = () => {
+        setShowModal(false);
+        setCategoryID("");
+        setParameter("");
+        setPriceSell("");
+        setErrors({});
     };
 
     const storeSampels = async (e) => {
         e.preventDefault();
-
-        // Reset errors
         setErrors({});
 
-        // Validasi
         const newErrors = {};
-        if (!categoryID) newErrors.category_id = "Category is required";
-        if (!parameter.trim()) newErrors.parameter = "Parameter name is required";
-        if (!priceSell) newErrors.price_sell = "Price is required";
+        if (!categoryID) newErrors.category_id = "Kategori wajib dipilih";
+        if (!parameter.trim()) newErrors.parameter = "Nama parameter wajib diisi";
+        if (!priceSell) newErrors.price_sell = "Harga tarif wajib diisi";
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
             return;
         }
 
-        // Set loading state
         setIsLoading(true);
+        try {
+            Api.defaults.headers.common['Authorization'] = token;
+            const response = await Api.post('/api/sampels', {
+                category_id: categoryID,
+                parameter: parameter.trim(),
+                price_sell: priceSell.replace(/\./g, '') || 0,
+            });
 
-        // Set authorization header with token
-        Api.defaults.headers.common['Authorization'] = token;
-        await Api.post('/api/sampels', {
-            category_id: categoryID,
-            parameter: parameter,
-            price_sell: getNumericValue(priceSell) || 0, // Konversi format Rupiah ke angka
-        }).then((response) => {
-            toast.success(`${response.data.meta.message}`, {
-                duration: 4000,
+            toast.success(response.data?.meta?.message || 'Parameter berhasil ditambahkan', {
+                duration: 3000,
                 position: "top-center",
-                style: {
-                    borderRadius: '10px',
-                    background: '#333',
-                    color: '#fff',
-                },
             });
 
-            // Hide the modal
-            const modalElement = modalRef.current;
-            const modalInstance = bootstrap.Modal.getInstance(modalElement);
-            modalInstance.hide();
-
-            // Call function "fetchData"
+            closeModal();
             fetchData();
-
-            // Reset form
-            setCategoryID("");
-            setParameter("");
-            setPriceSell("");
-        })
-            .catch((error) => {
+        } catch (error) {
+            if (error.response?.data?.errors) {
                 handleErrors(error.response.data, setErrors);
-            })
-            .finally(() => {
-                // Reset loading state regardless of success or failure
-                setIsLoading(false);
-            });
-    }
+            } else {
+                toast.error(error.response?.data?.meta?.message || "Gagal menambahkan sampel");
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <>
-            <a href="#" className="btn btn-primary d-sm-inline-block" data-bs-toggle="modal" data-bs-target="#modal-create-category">
-                <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                    <path d="M12 5l0 14" />
-                    <path d="M5 12l14 0" />
+            {/* Tombol Trigger */}
+            <button
+                type="button"
+                className="btn btn-primary d-inline-flex align-items-center gap-2"
+                onClick={openModal}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
-                Tambah Data
-            </a>
+                Tambah Parameter
+            </button>
 
-            <div className="modal fade" id="modal-create-category" tabIndex="-1" role="dialog" aria-hidden="true" ref={modalRef}>
-                <div className="modal-dialog modal-dialog-centered" role="document">
-                    <div className="modal-content" style={{ borderRadius: '16px', overflow: 'hidden', maxWidth: '500px', margin: '0 auto' }}>
-                        <button type="button" className="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
-                        <form onSubmit={storeSampels}>
-                            <div className="modal-header bg-light px-4 pt-4 pb-0 border-0">
-                                <div className="w-100 text-center">
-                                    <h3 className="fw-bold mb-1">Create New Sample</h3>
-                                    <p className="text-muted">Add a new sample to organize your content</p>
+            {/* Modal — React state, z-index 9999 */}
+            {showModal && (
+                <div
+                    style={{
+                        position: "fixed",
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: "rgba(15, 23, 42, 0.65)",
+                        backdropFilter: "blur(6px)",
+                        WebkitBackdropFilter: "blur(6px)",
+                        zIndex: 9999,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "1rem",
+                        overflowY: "auto"
+                    }}
+                    onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
+                >
+                    <div
+                        className="bg-white rounded-4 shadow-lg overflow-hidden"
+                        style={{ maxWidth: "520px", width: "100%", animation: "soModalFadeIn 0.2s ease-out" }}
+                    >
+                        {/* Header */}
+                        <div
+                            className="px-4 py-3 text-white d-flex align-items-center justify-content-between"
+                            style={{ background: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)" }}
+                        >
+                            <div className="d-flex align-items-center gap-3">
+                                <div
+                                    className="rounded-circle d-flex align-items-center justify-content-center"
+                                    style={{ backgroundColor: "rgba(255,255,255,0.2)", width: 40, height: 40, flexShrink: 0 }}
+                                >
+                                    <IconFlask size={20} color="#fff" />
+                                </div>
+                                <div>
+                                    <h5 className="mb-0 fw-bold fs-5 text-white">Tambah Parameter Sampel</h5>
+                                    <small style={{ color: "rgba(255,255,255,0.85)" }}>Masukkan parameter dan tarif pengujian</small>
                                 </div>
                             </div>
-                            <div className="modal-body p-4">
+                            <button
+                                type="button"
+                                onClick={closeModal}
+                                style={{
+                                    backgroundColor: "rgba(255,255,255,0.15)",
+                                    border: "none", borderRadius: "50%",
+                                    width: 34, height: 34,
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                    cursor: "pointer", transition: "all 0.2s"
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.3)"}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.15)"}
+                            >
+                                <IconX size={18} color="#fff" />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <form onSubmit={storeSampels}>
+                            <div className="p-4">
+                                {/* Kategori */}
                                 <div className="mb-3">
-                                    <label className="form-label fw-semibold">Category</label>
+                                    <label className="form-label fw-semibold text-dark" htmlFor="sp-category">
+                                        Kategori Layanan <span className="text-danger">*</span>
+                                    </label>
                                     <select
-                                        className={`form-select form-select-lg ${errors.category_id ? 'is-invalid' : ''}`}
+                                        id="sp-category"
+                                        className={`form-select ${errors.category_id ? 'is-invalid' : ''}`}
                                         value={categoryID}
                                         onChange={(e) => setCategoryID(e.target.value)}
                                         disabled={isLoading}
                                     >
-                                        <option value="">Select Category</option>
-                                        {categories.map((category) => (
-                                            <option key={category.id} value={category.id}>
-                                                {category.name}
-                                            </option>
+                                        <option value="">-- Pilih Kategori --</option>
+                                        {categories.map((cat) => (
+                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
                                         ))}
                                     </select>
-                                    {errors.category_id && (
-                                        <div className="invalid-feedback d-block mt-1">
-                                            {errors.category_id}
-                                        </div>
-                                    )}
+                                    {errors.category_id && <div className="invalid-feedback">{errors.category_id}</div>}
                                 </div>
 
+                                {/* Nama Parameter */}
                                 <div className="mb-3">
-                                    <label className="form-label fw-semibold">Parameter Name</label>
+                                    <label className="form-label fw-semibold text-dark" htmlFor="sp-parameter">
+                                        Nama Parameter <span className="text-danger">*</span>
+                                    </label>
                                     <input
+                                        id="sp-parameter"
                                         type="text"
-                                        className={`form-control form-control-lg ${errors.parameter ? 'is-invalid' : ''}`}
+                                        className={`form-control ${errors.parameter ? 'is-invalid' : ''}`}
                                         value={parameter}
                                         onChange={(e) => setParameter(e.target.value)}
-                                        placeholder="Enter parameter name"
+                                        placeholder="e.g. pH Air, E. Coli, Timbal (Pb)"
                                         disabled={isLoading}
                                     />
-                                    {errors.parameter && (
-                                        <div className="invalid-feedback d-block mt-1">
-                                            {errors.parameter}
-                                        </div>
-                                    )}
+                                    {errors.parameter && <div className="invalid-feedback">{errors.parameter}</div>}
                                 </div>
 
+                                {/* Harga */}
                                 <div className="mb-3">
-                                    <label className="form-label fw-semibold">Price</label>
-                                    <div className="input-group input-group-lg">
+                                    <label className="form-label fw-semibold text-dark" htmlFor="sp-price">
+                                        Tarif Pengujian (Rp) <span className="text-danger">*</span>
+                                    </label>
+                                    <div className="input-group">
                                         <span className="input-group-text">Rp</span>
                                         <input
+                                            id="sp-price"
                                             type="text"
                                             className={`form-control ${errors.price_sell ? 'is-invalid' : ''}`}
                                             value={priceSell}
-                                            onChange={handlePriceChange}
-                                            placeholder="Enter price"
+                                            onChange={(e) => setPriceSell(formatRupiah(e.target.value))}
+                                            placeholder="50.000"
                                             disabled={isLoading}
                                         />
+                                        {errors.price_sell && <div className="invalid-feedback">{errors.price_sell}</div>}
                                     </div>
-                                    {errors.price_sell && (
-                                        <div className="invalid-feedback d-block mt-1">
-                                            {errors.price_sell}
-                                        </div>
-                                    )}
                                 </div>
                             </div>
-                            <div className="modal-footer justify-content-center py-4 border-top-0 bg-light">
-                                <button
-                                    type="button"
-                                    className="btn btn-outline-secondary rounded-pill px-4"
-                                    data-bs-dismiss="modal"
-                                    disabled={isLoading}
-                                >
-                                    Cancel
+
+                            {/* Footer */}
+                            <div className="px-4 py-3 bg-light border-top d-flex align-items-center justify-content-between">
+                                <button type="button" className="btn btn-outline-secondary px-4" onClick={closeModal} disabled={isLoading}>
+                                    Batal
                                 </button>
-                                <button
-                                    type='submit'
-                                    className="btn btn-primary rounded-pill px-4 ms-3 d-flex align-items-center justify-content-center"
-                                    disabled={isLoading}
-                                    style={{ minWidth: '140px' }}
-                                >
+                                <button type="submit" className="btn btn-primary px-4" disabled={isLoading}>
                                     {isLoading ? (
-                                        <>
-                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                            Saving...
-                                        </>
+                                        <><span className="spinner-border spinner-border-sm me-2" role="status"></span>Menyimpan...</>
                                     ) : (
-                                        <>
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="icon icon-tabler icon-tabler-check me-1" width="20" height="20" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                                <path d="M5 12l5 5l10 -10" />
-                                            </svg>
-                                            Save Sample
-                                        </>
+                                        <><IconCheck size={16} className="me-1" />Simpan Parameter</>
                                     )}
                                 </button>
                             </div>
                         </form>
                     </div>
                 </div>
-            </div>
-
-            {/* CSS untuk styling modal */}
-            <style>
-                {`
-                    .modal-backdrop {
-                        z-index: 1040;
-                    }
-                    #modal-create-category {
-                        z-index: 1050;
-                    }
-                    .modal-content {
-                        pointer-events: auto;
-                        border: none;
-                        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
-                    }
-                    .form-control-lg, .form-select-lg {
-                        padding: 12px 16px;
-                        font-size: 16px;
-                        border-radius: 12px;
-                    }
-                    .input-group-lg > .form-control,
-                    .input-group-lg > .input-group-text {
-                        padding: 12px 16px;
-                        font-size: 16px;
-                    }
-                    .input-group-text {
-                        background-color: #f8f9fa;
-                        border-radius: 12px 0 0 12px;
-                    }
-                    .btn {
-                        font-weight: 500;
-                    }
-                    .btn-primary {
-                        background-color: #206bc4;
-                        border-color: #206bc4;
-                    }
-                    .btn-primary:hover {
-                        background-color: #1a5aa0;
-                        border-color: #1a5aa0;
-                    }
-                    .btn:disabled {
-                        opacity: 0.65;
-                        pointer-events: none;
-                    }
-                    .form-label {
-                        margin-bottom: 0.5rem;
-                        color: #3b4a5a;
-                    }
-                    @media (max-width: 576px) {
-                        .modal-content {
-                            margin: 20px;
-                            width: auto;
-                        }
-                        .modal-body {
-                            padding: 1.5rem !important;
-                        }
-                    }
-                `}
-            </style>
+            )}
         </>
-    )
+    );
 }
