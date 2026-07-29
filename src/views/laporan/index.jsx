@@ -679,61 +679,67 @@ export default function Laporan() {
                             </td>
                             <td className="fw-extrabold text-primary text-wrap max-w-200">{item.hasil}</td>
                             <td className="text-center no-print">
-                              {hasMultipleCustomerSamples ? (
-                                /* Multi-Sample Selection Dropdown / Group for Customers with 2+ Samples */
-                                <div className="btn-group">
+                              {(item.status_verifikasi === "DISETUJUI" || item.status) ? (
+                                hasMultipleCustomerSamples ? (
+                                  /* Multi-Sample Selection Dropdown / Group for Customers with 2+ Samples */
+                                  <div className="btn-group">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCetakSpecificSample(item.id, [item.id])}
+                                      className="btn btn-3d-primary btn-sm d-inline-flex align-items-center gap-1"
+                                      title="Cetak Laporan Sampel Ini"
+                                    >
+                                      <IconPrinter size={14} />
+                                      <span>Cetak PDF</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn btn-3d-primary btn-sm dropdown-toggle dropdown-toggle-split"
+                                      data-bs-toggle="dropdown"
+                                      aria-expanded="false"
+                                    >
+                                      <IconChevronDown size={14} />
+                                    </button>
+                                    <ul className="dropdown-menu dropdown-menu-end shadow-lg rounded-3 p-2">
+                                      <li className="dropdown-header fw-bold text-dark border-bottom mb-1 pb-1">
+                                        Pilihan Sampel ({customerSamples.length} Sampel):
+                                      </li>
+                                      {customerSamples.map((cs, idxSample) => (
+                                        <li key={cs.id}>
+                                          <button
+                                            className="dropdown-item rounded-2 py-1 text-wrap text-start"
+                                            onClick={() => handleCetakSpecificSample(cs.id, [cs.id])}
+                                          >
+                                            📄 <strong>Sampel #{idxSample + 1}:</strong> {cs.parameter} ({cs.nomor_sampel})
+                                          </button>
+                                        </li>
+                                      ))}
+                                      <li><hr className="dropdown-divider" /></li>
+                                      <li>
+                                        <button
+                                          className="dropdown-item rounded-2 py-1 text-success fw-bold text-start"
+                                          onClick={() => handleCetakSpecificSample(item.id, allCustomerSampleIds)}
+                                        >
+                                          📑 <strong>Cetak Gabungan (Semua {customerSamples.length} Sampel)</strong>
+                                        </button>
+                                      </li>
+                                    </ul>
+                                  </div>
+                                ) : (
+                                  /* Single Sample Direct PDF Print */
                                   <button
                                     type="button"
                                     onClick={() => handleCetakSpecificSample(item.id, [item.id])}
                                     className="btn btn-3d-primary btn-sm d-inline-flex align-items-center gap-1"
-                                    title="Cetak Laporan Sampel Ini"
                                   >
                                     <IconPrinter size={14} />
                                     <span>Cetak PDF</span>
                                   </button>
-                                  <button
-                                    type="button"
-                                    className="btn btn-3d-primary btn-sm dropdown-toggle dropdown-toggle-split"
-                                    data-bs-toggle="dropdown"
-                                    aria-expanded="false"
-                                  >
-                                    <IconChevronDown size={14} />
-                                  </button>
-                                  <ul className="dropdown-menu dropdown-menu-end shadow-lg rounded-3 p-2">
-                                    <li className="dropdown-header fw-bold text-dark border-bottom mb-1 pb-1">
-                                      Pilihan Sampel ({customerSamples.length} Sampel):
-                                    </li>
-                                    {customerSamples.map((cs, idxSample) => (
-                                      <li key={cs.id}>
-                                        <button
-                                          className="dropdown-item rounded-2 py-1 text-wrap text-start"
-                                          onClick={() => handleCetakSpecificSample(cs.id, [cs.id])}
-                                        >
-                                          📄 <strong>Sampel #{idxSample + 1}:</strong> {cs.parameter} ({cs.nomor_sampel})
-                                        </button>
-                                      </li>
-                                    ))}
-                                    <li><hr className="dropdown-divider" /></li>
-                                    <li>
-                                      <button
-                                        className="dropdown-item rounded-2 py-1 text-success fw-bold text-start"
-                                        onClick={() => handleCetakSpecificSample(item.id, allCustomerSampleIds)}
-                                      >
-                                        📑 <strong>Cetak Gabungan (Semua {customerSamples.length} Sampel)</strong>
-                                      </button>
-                                    </li>
-                                  </ul>
-                                </div>
+                                )
                               ) : (
-                                /* Single Sample Direct PDF Print */
-                                <button
-                                  type="button"
-                                  onClick={() => handleCetakSpecificSample(item.id, [item.id])}
-                                  className="btn btn-3d-primary btn-sm d-inline-flex align-items-center gap-1"
-                                >
-                                  <IconPrinter size={14} />
-                                  <span>Cetak PDF</span>
-                                </button>
+                                <span className="badge bg-light text-muted border border-secondary py-2 px-3" title="Laporan hanya dapat dicetak setelah ACC TTD Kepala">
+                                  🔒 Belum ACC TTD
+                                </span>
                               )}
                             </td>
                           </tr>

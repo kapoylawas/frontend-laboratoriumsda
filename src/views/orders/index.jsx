@@ -54,15 +54,18 @@ export default function Orders() {
         { bg: '#ecfdf5', text: '#047857', border: '#000000' },
     ];
 
-    const packageCategories = [1, 2];
-
     const getCategoryColor = (categoryId) => {
         const index = parseInt(categoryId) % categoryColors.length;
         return categoryColors[index];
     };
 
     const isPackageCategory = (categoryId) => {
-        return packageCategories.includes(parseInt(categoryId));
+        const cat = categories[categoryId];
+        if (cat && cat.name) {
+            return cat.name.toUpperCase().includes("PAKET");
+        }
+        const catIdNum = parseInt(categoryId);
+        return catIdNum === 5 || catIdNum === 6;
     };
 
     const fetchData = async (pageNumber, searchKw = "") => {

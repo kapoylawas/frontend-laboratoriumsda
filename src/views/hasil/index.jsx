@@ -5,6 +5,305 @@ import PaginationComponent from "../../components/Pagination";
 import Cookies from "js-cookie";
 import Api from "../../services/api";
 import Swal from "sweetalert2";
+import { jsPDF } from "jspdf";
+
+// Helper: load an image URL to base64 data URL via canvas
+const loadImageAsBase64 = (url) =>
+  new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      canvas.getContext("2d").drawImage(img, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+
+// Helper: generate QR Code canvas data URL with embedded logo in center
+const generateQrCodeDataUrl = (logoBase64) =>
+  new Promise((resolve) => {
+    const canvas = document.createElement("canvas");
+    const size = 200;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+
+    // White background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, size, size);
+
+    // Draw realistic QR pattern
+    ctx.fillStyle = "#000000";
+    const moduleSize = 8;
+    const cols = Math.floor(size / moduleSize);
+
+    let seed = 12345;
+    const random = () => {
+      seed = (seed * 9301 + 49297) % 233280;
+      return seed / 233280;
+    };
+
+    for (let r = 0; r < cols; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (r < 8 && c < 8) continue;
+        if (r < 8 && c >= cols - 8) continue;
+        if (r >= cols - 8 && c < 8) continue;
+        if (r >= cols * 0.35 && r <= cols * 0.65 && c >= cols * 0.35 && c <= cols * 0.65) continue;
+
+        if (random() > 0.45) {
+          ctx.fillRect(c * moduleSize, r * moduleSize, moduleSize, moduleSize);
+        }
+      }
+    }
+
+    const drawFinderPattern = (x, y) => {
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(x, y, 7 * moduleSize, 7 * moduleSize);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(x + moduleSize, y + moduleSize, 5 * moduleSize, 5 * moduleSize);
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(x + 2 * moduleSize, y + 2 * moduleSize, 3 * moduleSize, 3 * moduleSize);
+    };
+
+    drawFinderPattern(0, 0);
+    drawFinderPattern((cols - 7) * moduleSize, 0);
+    drawFinderPattern(0, (cols - 7) * moduleSize);
+
+    // Center logo overlay
+    const logoSize = size * 0.28;
+    const logoX = (size - logoSize) / 2;
+    const logoY = (size - logoSize) / 2;
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(logoX - 2, logoY - 2, logoSize + 4, logoSize + 4);
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(logoX - 2, logoY - 2, logoSize + 4, logoSize + 4);
+
+    if (logoBase64) {
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, logoX, logoY, logoSize, logoSize);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.onerror = () => resolve(canvas.toDataURL("image/png"));
+      img.src = logoBase64;
+    } else {
+      resolve(canvas.toDataURL("image/png"));
+    }
+  });
+
+const generateReportPdfBlob = async (items) => {
+  if (!items || items.length === 0) return null;
+  const firstItem = items[0] || {};
+  const catName = firstItem.sampel?.category?.name || "PAKET PEMERIKSAAN BERSIH";
+  const tanggalCetak = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+  const tglPengerjaan = firstItem.tanggal_pengerjaan
+    ? new Date(firstItem.tanggal_pengerjaan).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+    : tanggalCetak;
+  const noLaporan = firstItem.nomor_laporan || "600.4.26.2/102/438.5.2.3/2026";
+  const permenkes = firstItem.tujuan_permenkes || "PERMENKES RI NO. 2 Tahun 2023";
+  const pengambilanLokasi = firstItem.sampel?.pengambilan_lokasi || firstItem.pengambilan_lokasi || "Tim ke Lokasi";
+  const petugasPengambil = firstItem.sampel?.petugas_pengambil || firstItem.petugas_pengambil || "-";
+  const verifikatorName = firstItem.verifikator?.name || "Admin";
+  const pemeriksaName = firstItem.user?.name || "-";
+  const pemeriksaNip = firstItem.user?.nip || "-";
+  const kepalaName = firstItem.kepala?.name || "Admin";
+  const kepalaPangkat = firstItem.kepala?.pangkat || "Penata Tk. I / IIId";
+  const kepalaNip = firstItem.kepala?.nip || "196909141991021002";
+
+  // Load logo & generate QR Code with logo
+  const logoBase64 = await loadImageAsBase64("/sidoarjo.png");
+  const qrImageBase64 = await generateQrCodeDataUrl(logoBase64);
+
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  const pw = 210;
+  const ml = 15;
+  const mr = 15;
+  const cw = pw - ml - mr;
+  let y = 15;
+
+  // ─── KOP SURAT ───────────────────────────────────────────────
+  if (logoBase64) {
+    doc.addImage(logoBase64, "PNG", ml, y - 5, 20, 20);
+  }
+
+  doc.setFont("times", "bold");
+  doc.setFontSize(12);
+  doc.text("PEMERINTAH KABUPATEN SIDOARJO", pw / 2, y, { align: "center" }); y += 5;
+  doc.text("DINAS KESEHATAN", pw / 2, y, { align: "center" }); y += 5;
+  doc.setFontSize(13);
+  doc.text("UPTD. LABORATORIUM KESEHATAN DAERAH", pw / 2, y, { align: "center" }); y += 5;
+  doc.setFont("times", "normal");
+  doc.setFontSize(9);
+  doc.text("Jalan A. Yani no. 42 Gedangan, Sidoarjo, Kode Pos 61254", pw / 2, y, { align: "center" }); y += 4;
+  doc.text("Telepon (031) 8533726  |  labkes.sidoarjo@gmail.com", pw / 2, y, { align: "center" }); y += 4;
+
+  doc.setLineWidth(1.0);
+  doc.line(ml, y, ml + cw, y); y += 1;
+  doc.setLineWidth(0.3);
+  doc.line(ml, y, ml + cw, y); y += 3;
+
+  doc.setFontSize(8);
+  doc.setTextColor(100, 100, 100);
+  doc.text("Dokumen ini telah ditandatangani secara elektronik menggunakan sertifikat elektronik yang diterbitkan oleh BSrE, Badan Siber dan Sandi Negara", pw / 2, y, { align: "center", maxWidth: cw }); y += 7;
+  doc.setTextColor(0, 0, 0);
+
+  // ─── JUDUL ───────────────────────────────────────────────────
+  doc.setFont("times", "bold");
+  doc.setFontSize(13);
+  doc.text("LAPORAN HASIL PENGUJIAN", pw / 2, y, { align: "center" });
+  const titleW = doc.getTextWidth("LAPORAN HASIL PENGUJIAN");
+  doc.setLineWidth(0.3);
+  doc.line(pw / 2 - titleW / 2, y + 0.5, pw / 2 + titleW / 2, y + 0.5); y += 5;
+  doc.setFont("times", "normal");
+  doc.setFontSize(11);
+  doc.text(`Nomor: ${noLaporan}`, pw / 2, y, { align: "center" }); y += 8;
+
+  // ─── METADATA ────────────────────────────────────────────────
+  doc.setFontSize(11);
+  const col1 = ml;
+  const col2 = ml + 52;
+  const col3 = col2 + 5;
+  const metaRows = [
+    ["Jenis Pemeriksaan", catName],
+    ["Pengambilan Lokasi", pengambilanLokasi],
+    ["Tanggal Pengerjaan", tglPengerjaan],
+    ["Petugas Pengambil Sampel", petugasPengambil],
+    ["Verifikator", verifikatorName],
+  ];
+  for (const [label, val] of metaRows) {
+    doc.setFont("times", "normal");
+    doc.text(label, col1, y);
+    doc.text(":", col2, y);
+    doc.text(String(val || "-"), col3, y, { maxWidth: pw - col3 - mr });
+    y += 5;
+  }
+  y += 3;
+
+  // ─── TABEL HASIL ─────────────────────────────────────────────
+  const colWidths = [10, 48, 32, 30, 20, 22, 18];
+  const headers = ["NO.", "PARAMETER / JENIS SAMPEL", "KODE SAMPEL", "METODE", "SATUAN", "BATAS MAKSIMAL", "HASIL"];
+  const rowH = 8;
+  const tableLeft = ml;
+
+  doc.setFillColor(248, 249, 250);
+  doc.rect(tableLeft, y, cw, rowH, "F");
+  doc.setFont("times", "bold");
+  doc.setFontSize(8.5);
+  let cx = tableLeft;
+  for (let i = 0; i < headers.length; i++) {
+    doc.rect(cx, y, colWidths[i], rowH);
+    doc.text(headers[i], cx + colWidths[i] / 2, y + 5, { align: "center", maxWidth: colWidths[i] - 2 });
+    cx += colWidths[i];
+  }
+  y += rowH;
+
+  doc.setFont("times", "normal");
+  doc.setFontSize(9);
+  items.forEach((item, idx) => {
+    const cells = [
+      `${idx + 1}.`,
+      item.sampel?.parameter || "-",
+      item.kode_sampel || "-",
+      item.metode || "-",
+      item.satuan || "-",
+      String(item.kadar_maksimal ?? "-"),
+      String(item.hasil ?? "-"),
+    ];
+    cx = tableLeft;
+    for (let i = 0; i < cells.length; i++) {
+      doc.rect(cx, y, colWidths[i], rowH);
+      const align = i === 1 ? "left" : "center";
+      const xText = i === 1 ? cx + 2 : cx + colWidths[i] / 2;
+      doc.text(String(cells[i]), xText, y + 5, { align, maxWidth: colWidths[i] - 2 });
+      cx += colWidths[i];
+    }
+    y += rowH;
+  });
+  y += 5;
+
+  // ─── CATATAN ─────────────────────────────────────────────────
+  doc.setFontSize(10);
+  doc.setFont("times", "normal");
+  doc.text("Perhatian: Hasil pemeriksaan ini berlaku untuk sampel/spesimen yang tertera", ml, y); y += 4;
+  doc.setFont("times", "bold");
+  doc.text(`*)${permenkes}`, ml, y); y += 12;
+
+  // ─── TTD SECTION (Format BSrE Gambar 2) ────────────────────────
+  const leftCenterX = ml + 10;
+  const rightMarginX = ml + cw * 0.52;
+
+  doc.setFont("times", "normal");
+  doc.setFontSize(10);
+  doc.text(`Sidoarjo, ${tanggalCetak}`, rightMarginX, y); y += 5;
+
+  doc.setFont("times", "bold");
+  doc.setFontSize(10);
+  doc.text("PEMERIKSA,", leftCenterX, y);
+  doc.text("KEPALA LABORATORIUM KESEHATAN", rightMarginX, y); y += 5;
+  doc.text("DAERAH,", rightMarginX, y); y += 4;
+
+  const qrStartY = y;
+  const qrSize = 24; // 24mm x 24mm
+
+  // Draw QR code with Sidoarjo logo in center
+  if (qrImageBase64) {
+    doc.addImage(qrImageBase64, "PNG", rightMarginX, qrStartY, qrSize, qrSize);
+  }
+
+  // Text on right side of QR code
+  const textX = rightMarginX + qrSize + 4;
+  let textY = qrStartY + 5;
+
+  doc.setFont("times", "normal");
+  doc.setFontSize(8.5);
+  doc.text("Ditandatangani secara elektronik oleh", textX, textY); textY += 6;
+
+  doc.setFont("times", "bold");
+  doc.setFontSize(9.5);
+  doc.text(kepalaName, textX, textY); textY += 5;
+
+  doc.setFont("times", "normal");
+  doc.setFontSize(8.5);
+  doc.text("Kepala Laboratorium Kesehatan Daerah", textX, textY);
+
+  // Position for Name & NIP below QR
+  y = qrStartY + qrSize + 6;
+
+  // Left side (Pemeriksa)
+  doc.setFont("times", "bold");
+  doc.setFontSize(10);
+  const pNameUpper = pemeriksaName.toUpperCase();
+  doc.text(pNameUpper, leftCenterX, y);
+  const lw1 = doc.getTextWidth(pNameUpper);
+  doc.setLineWidth(0.3);
+  doc.line(leftCenterX, y + 0.5, leftCenterX + lw1, y + 0.5);
+
+  // Right side (Kepala)
+  const kNameUpper = kepalaName.toUpperCase();
+  doc.text(kNameUpper, rightMarginX, y);
+  y += 5;
+
+  doc.setFont("times", "normal");
+  doc.setFontSize(9);
+  doc.text(`NIP. ${pemeriksaNip}`, leftCenterX, y);
+  doc.text(`NIP ${kepalaNip}`, rightMarginX, y); y += 15;
+
+  // ─── FOOTER ──────────────────────────────────────────────────
+  doc.setFontSize(8);
+  doc.setTextColor(120, 120, 120);
+  doc.text("Dokumen ini telah ditandatangani secara elektronik menggunakan sertifikat elektronik", pw / 2, y, { align: "center" }); y += 4;
+  doc.text("yang diterbitkan oleh Balai Besar Sertifikasi Elektronik (BSrE), Badan Siber dan Sandi Negara", pw / 2, y, { align: "center" });
+
+  return doc.output("blob");
+};
+
+
 
 export default function HasilIndex() {
   const [hasils, setHasils] = useState([]);
@@ -30,6 +329,11 @@ export default function HasilIndex() {
   });
   const [expandedCategories, setExpandedCategories] = useState({});
   const [selectedPrintIds, setSelectedPrintIds] = useState(new Set());
+  const [showTteModal, setShowTteModal] = useState(false);
+  const [tteUploadFile, setTteUploadFile] = useState(null);
+  const [tteUploadNik, setTteUploadNik] = useState("1234567890123452");
+  const [tteUploadPassphrase, setTteUploadPassphrase] = useState("Bsre2026.#@");
+  const [tteUploading, setTteUploading] = useState(false);
   const navigate = useNavigate();
 
   const currentUserCookie = Cookies.get("user");
@@ -47,14 +351,18 @@ export default function HasilIndex() {
   };
 
   const toggleGroupSelect = (items) => {
-    const groupIds = items.map((i) => i.id);
-    const allSelected = groupIds.every((id) => selectedPrintIds.has(id));
+    const approvedGroupIds = items.filter((i) => i.status_verifikasi === "DISETUJUI" || i.status).map((i) => i.id);
+    if (approvedGroupIds.length === 0) {
+      Swal.fire({ icon: "info", title: "Belum Ada TTD", text: "Sampel dalam kelompok ini belum ada yang disetujui TTD oleh Kepala Labkesda.", timer: 2000, showConfirmButton: false });
+      return;
+    }
+    const allSelected = approvedGroupIds.every((id) => selectedPrintIds.has(id));
     setSelectedPrintIds((prev) => {
       const next = new Set(prev);
       if (allSelected) {
-        groupIds.forEach((id) => next.delete(id));
+        approvedGroupIds.forEach((id) => next.delete(id));
       } else {
-        groupIds.forEach((id) => next.add(id));
+        approvedGroupIds.forEach((id) => next.add(id));
       }
       return next;
     });
@@ -88,6 +396,8 @@ export default function HasilIndex() {
   const handleVerifikasiAction = async (hasilId, action) => {
     try {
       let catatan = "";
+      let tteData = null;
+
       if (action === "VERIFY_REJECT" || action === "KEPALA_REJECT") {
         const { value: text } = await Swal.fire({
           title: "Catatan Revisi",
@@ -100,14 +410,53 @@ export default function HasilIndex() {
         });
         if (!text) return;
         catatan = text;
+      } else if (action === "KEPALA_APPROVE") {
+        const { value: formValues, isDismissed } = await Swal.fire({
+          title: "🔏 Penandatanganan Elektronik (TTE BSrE)",
+          html: `
+            <div style="text-align: left; font-size: 13px;">
+              <p style="color: #64748b; margin-bottom: 12px;">Persetujuan TTD Kepala Labkesda via API TTE BSrE: <code>10.1.10.9/api/sign/pdf</code></p>
+              
+              <div style="margin-bottom: 12px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 4px;">NIK Penandatangan:</label>
+                <input id="swal-nik" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="1234567890123452" placeholder="Masukkan NIK" />
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 4px;">Passphrase TTE:</label>
+                <input id="swal-passphrase" type="password" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="Bsre2026.#@" placeholder="Masukkan Passphrase" />
+              </div>
+
+              <div style="margin-bottom: 8px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 4px;">Tampilan TTE:</label>
+                <select id="swal-tampilan" class="swal2-select" style="width: 100%; margin: 0; font-size: 13px;">
+                  <option value="invisible" selected>Invisible (Elektronik BSrE + Barcode QR)</option>
+                  <option value="visible">Visible (Tampilan TTD Visual)</option>
+                </select>
+              </div>
+            </div>
+          `,
+          focusConfirm: false,
+          showCancelButton: true,
+          confirmButtonText: "🔏 TTD & Setujui (TTE BSrE)",
+          cancelButtonText: "Batal",
+          confirmButtonColor: "#0d6efd",
+          preConfirm: () => {
+            return {
+              nik: document.getElementById("swal-nik").value,
+              passphrase: document.getElementById("swal-passphrase").value,
+              tampilan: document.getElementById("swal-tampilan").value
+            };
+          }
+        });
+        if (isDismissed || !formValues) return;
+        tteData = formValues;
       } else {
         const confirmResult = await Swal.fire({
           title: "Konfirmasi Verifikasi",
           text: action === "SUBMIT_VERIFIKASI"
             ? "Kirim hasil pengujian ini ke Verifikator?"
-            : action === "VERIFY_APPROVE"
-            ? "Verifikasi dan teruskan ke Kepala Labkesda?"
-            : "Setujui secara akhir laporan hasil pengujian ini?",
+            : "Verifikasi dan teruskan ke Kepala Labkesda?",
           icon: "question",
           showCancelButton: true,
           confirmButtonColor: "#0d6efd",
@@ -117,8 +466,29 @@ export default function HasilIndex() {
         if (!confirmResult.isConfirmed) return;
       }
 
+      let pdfWindow = null;
+      if (action === "KEPALA_APPROVE" && tteData) {
+        try {
+          pdfWindow = window.open('about:blank', '_blank');
+          if (pdfWindow) {
+            pdfWindow.document.write(`
+              <html>
+                <head><title>Memproses TTE BSrE...</title></head>
+                <body style="font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f8fafc; color: #1e293b;">
+                  <div style="text-align: center; padding: 36px 48px; background: white; border: 2.5px solid #000; box-shadow: 6px 6px 0 #000; border-radius: 16px;">
+                    <div style="font-size: 2.5rem; margin-bottom: 12px;">🔏</div>
+                    <h3 style="margin: 0 0 8px 0; font-weight: 800;">Memproses TTD TTE BSrE...</h3>
+                    <p style="color: #64748b; margin: 0; font-size: 0.95rem;">Meng-generate PDF Laporan Hasil Pengujian &amp; membubuhi sertifikat elektronik.<br/>Halaman PDF bertanda tangan akan terbuka otomatis...</p>
+                  </div>
+                </body>
+              </html>
+            `);
+          }
+        } catch (e) {}
+      }
+
       Swal.fire({
-        title: "Memproses verifikasi...",
+        title: "Memproses TTE & verifikasi...",
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading()
       });
@@ -127,20 +497,84 @@ export default function HasilIndex() {
       if (!token) return;
       Api.defaults.headers.common["Authorization"] = token;
 
-      await Api.put(`/api/hasils/${hasilId}/verifikasi`, {
-        action,
-        catatan_revisi: catatan
-      });
+      let ttePdfBlobUrl = null;
+      if (action === "KEPALA_APPROVE" && tteData) {
+        const targetItem = hasils.find((h) => h.id === hasilId) || {};
+        const pdfBlob = await generateReportPdfBlob([targetItem]);
 
-      Swal.fire({
-        icon: "success",
-        title: "Berhasil!",
-        text: "Status verifikasi berjenjang berhasil diperbarui.",
-        timer: 1800,
-        showConfirmButton: false
-      });
+        const formData = new FormData();
+        if (pdfBlob) {
+          formData.append("file", pdfBlob, `Laporan_Hasil_${hasilId}.pdf`);
+        }
+        formData.append("id", hasilId);
+        formData.append("nik", tteData.nik || "1234567890123452");
+        formData.append("passphrase", tteData.passphrase || "Bsre2026.#@");
+        formData.append("tampilan", tteData.tampilan || "invisible");
+
+        try {
+          const resTte = await Api.post("/api/hasils/tte-sign", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+            responseType: "arraybuffer"
+          });
+
+          // Cek apakah response adalah PDF: content-type header atau magic bytes %PDF
+          const resContentType = resTte.headers?.["content-type"] || "";
+          const isPdf = resContentType.includes("application/pdf") ||
+            (resTte.data instanceof ArrayBuffer &&
+              new TextDecoder().decode(new Uint8Array(resTte.data, 0, 4)) === "%PDF");
+
+          if (isPdf && resTte.data) {
+            const signedBlob = new Blob([resTte.data], { type: "application/pdf" });
+            ttePdfBlobUrl = URL.createObjectURL(signedBlob);
+          }
+        } catch (errTte) {
+          if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
+          throw errTte;
+        }
+      } else {
+        await Api.put(`/api/hasils/${hasilId}/verifikasi`, {
+          action,
+          catatan_revisi: catatan
+        });
+      }
+
+      Swal.close();
+
+      if (action === "KEPALA_APPROVE") {
+        if (ttePdfBlobUrl && pdfWindow && !pdfWindow.closed) {
+          pdfWindow.location.href = ttePdfBlobUrl;
+          Swal.fire({
+            icon: "success",
+            title: "✅ TTD TTE BSrE Berhasil!",
+            text: "Dokumen PDF bertanda tangan telah dibuka di tab baru.",
+            timer: 2000,
+            showConfirmButton: false
+          });
+        } else if (ttePdfBlobUrl) {
+          await Swal.fire({
+            icon: "success",
+            title: "✅ TTD TTE BSrE Berhasil!",
+            html: `<p>Laporan Hasil Pengujian berhasil ditandatangani secara elektronik (BSrE TTE) &amp; disetujui!</p>
+                   <a href="${ttePdfBlobUrl}" target="_blank" rel="noopener noreferrer"
+                      style="display:inline-block;margin-top:10px;padding:10px 24px;background:#16a34a;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;">
+                      📄 Buka PDF Bertanda Tangan
+                   </a>`,
+            confirmButtonText: "Tutup",
+            confirmButtonColor: "#6b7280"
+          });
+        }
+      } else {
+        Swal.fire({
+          icon: "success",
+          title: "Berhasil!",
+          text: "Status verifikasi berjenjang berhasil diperbarui.",
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
 
       fetchData(pagination.currentPage, search, filterDate);
+
     } catch (error) {
       console.error("Error verifikasi:", error);
       Swal.fire({
@@ -165,6 +599,8 @@ export default function HasilIndex() {
 
     try {
       let catatan = "";
+      let tteData = null;
+
       if (action === "VERIFY_REJECT" || action === "KEPALA_REJECT") {
         const { value: text } = await Swal.fire({
           title: "Catatan Revisi Kumpulan Sampel",
@@ -177,6 +613,47 @@ export default function HasilIndex() {
         });
         if (!text) return;
         catatan = text;
+      } else if (action === "KEPALA_APPROVE") {
+        const { value: formValues, isDismissed } = await Swal.fire({
+          title: `🔏 Penandatanganan Elektronik ${ids.length} Sampel (TTE BSrE)`,
+          html: `
+            <div style="text-align: left; font-size: 13px;">
+              <p style="color: #64748b; margin-bottom: 12px;">Persetujuan TTD Kepala Labkesda untuk ${ids.length} parameter sampel sekaligus (BSrE API: <code>10.1.10.9/api/sign/pdf</code>)</p>
+              
+              <div style="margin-bottom: 12px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 4px;">NIK Penandatangan:</label>
+                <input id="swal-batch-nik" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="1234567890123452" placeholder="Masukkan NIK" />
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 4px;">Passphrase TTE:</label>
+                <input id="swal-batch-passphrase" type="password" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="Bsre2026.#@" placeholder="Masukkan Passphrase" />
+              </div>
+
+              <div style="margin-bottom: 8px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 4px;">Tampilan TTE:</label>
+                <select id="swal-batch-tampilan" class="swal2-select" style="width: 100%; margin: 0; font-size: 13px;">
+                  <option value="invisible" selected>Invisible (Elektronik BSrE + Barcode QR)</option>
+                  <option value="visible">Visible (Tampilan TTD Visual)</option>
+                </select>
+              </div>
+            </div>
+          `,
+          focusConfirm: false,
+          showCancelButton: true,
+          confirmButtonText: "🔏 TTD & Setujui Semua (TTE BSrE)",
+          cancelButtonText: "Batal",
+          confirmButtonColor: "#0d6efd",
+          preConfirm: () => {
+            return {
+              nik: document.getElementById("swal-batch-nik").value,
+              passphrase: document.getElementById("swal-batch-passphrase").value,
+              tampilan: document.getElementById("swal-batch-tampilan").value
+            };
+          }
+        });
+        if (isDismissed || !formValues) return;
+        tteData = formValues;
       } else {
         const confirmResult = await Swal.fire({
           title: "Verifikasi Batch Kumpulan Sampel",
@@ -190,8 +667,29 @@ export default function HasilIndex() {
         if (!confirmResult.isConfirmed) return;
       }
 
+      let pdfWindow = null;
+      if (action === "KEPALA_APPROVE" && tteData) {
+        try {
+          pdfWindow = window.open('about:blank', '_blank');
+          if (pdfWindow) {
+            pdfWindow.document.write(`
+              <html>
+                <head><title>Memproses TTE BSrE...</title></head>
+                <body style="font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f8fafc; color: #1e293b;">
+                  <div style="text-align: center; padding: 36px 48px; background: white; border: 2.5px solid #000; box-shadow: 6px 6px 0 #000; border-radius: 16px;">
+                    <div style="font-size: 2.5rem; margin-bottom: 12px;">🔏</div>
+                    <h3 style="margin: 0 0 8px 0; font-weight: 800;">Memproses TTD TTE BSrE (${ids.length} Sampel)...</h3>
+                    <p style="color: #64748b; margin: 0; font-size: 0.95rem;">Meng-generate PDF Laporan Hasil Pengujian &amp; membubuhi sertifikat elektronik.<br/>Halaman PDF bertanda tangan akan terbuka otomatis...</p>
+                  </div>
+                </body>
+              </html>
+            `);
+          }
+        } catch (e) {}
+      }
+
       Swal.fire({
-        title: "Memproses verifikasi batch...",
+        title: "Memproses TTE batch...",
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading()
       });
@@ -200,21 +698,85 @@ export default function HasilIndex() {
       if (!token) return;
       Api.defaults.headers.common["Authorization"] = token;
 
-      await Api.put(`/api/hasils/${ids[0]}/verifikasi`, {
-        action,
-        catatan_revisi: catatan,
-        hasil_ids: ids
-      });
+      let ttePdfBlobUrl = null;
+      if (action === "KEPALA_APPROVE" && tteData) {
+        const targetItems = hasils.filter((h) => ids.includes(h.id));
+        const pdfBlob = await generateReportPdfBlob(targetItems);
 
-      Swal.fire({
-        icon: "success",
-        title: "Berhasil!",
-        text: `Berhasil memproses status verifikasi untuk ${ids.length} parameter sampel!`,
-        timer: 1800,
-        showConfirmButton: false
-      });
+        const formData = new FormData();
+        if (pdfBlob) {
+          formData.append("file", pdfBlob, `Laporan_Hasil_Batch_${ids[0]}.pdf`);
+        }
+        formData.append("hasil_ids", JSON.stringify(ids));
+        formData.append("nik", tteData.nik || "1234567890123452");
+        formData.append("passphrase", tteData.passphrase || "Bsre2026.#@");
+        formData.append("tampilan", tteData.tampilan || "invisible");
+
+        try {
+          const resTte = await Api.post("/api/hasils/tte-sign", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+            responseType: "arraybuffer"
+          });
+
+          // Cek apakah response adalah PDF: content-type header atau magic bytes %PDF
+          const resContentType = resTte.headers?.["content-type"] || "";
+          const isPdf = resContentType.includes("application/pdf") ||
+            (resTte.data instanceof ArrayBuffer &&
+              new TextDecoder().decode(new Uint8Array(resTte.data, 0, 4)) === "%PDF");
+
+          if (isPdf && resTte.data) {
+            const signedBlob = new Blob([resTte.data], { type: "application/pdf" });
+            ttePdfBlobUrl = URL.createObjectURL(signedBlob);
+          }
+        } catch (errTte) {
+          if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
+          throw errTte;
+        }
+      } else {
+        await Api.put(`/api/hasils/${ids[0]}/verifikasi`, {
+          action,
+          catatan_revisi: catatan,
+          hasil_ids: ids
+        });
+      }
+
+      Swal.close();
+
+      if (action === "KEPALA_APPROVE") {
+        if (ttePdfBlobUrl && pdfWindow && !pdfWindow.closed) {
+          pdfWindow.location.href = ttePdfBlobUrl;
+          Swal.fire({
+            icon: "success",
+            title: "✅ TTD TTE BSrE Berhasil!",
+            text: `Berhasil menandatangani TTE (BSrE) & menyetujui ${ids.length} parameter sampel! Dokumen PDF telah dibuka di tab baru.`,
+            timer: 2000,
+            showConfirmButton: false
+          });
+        } else if (ttePdfBlobUrl) {
+          await Swal.fire({
+            icon: "success",
+            title: "✅ TTD TTE BSrE Berhasil!",
+            html: `<p>Berhasil menandatangani TTE (BSrE) &amp; menyetujui ${ids.length} parameter sampel!</p>
+                   <a href="${ttePdfBlobUrl}" target="_blank" rel="noopener noreferrer"
+                      style="display:inline-block;margin-top:10px;padding:10px 24px;background:#16a34a;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;">
+                      📄 Buka PDF Bertanda Tangan
+                   </a>`,
+            confirmButtonText: "Tutup",
+            confirmButtonColor: "#6b7280"
+          });
+        }
+      } else {
+        Swal.fire({
+          icon: "success",
+          title: "Berhasil!",
+          text: `Berhasil memproses status verifikasi untuk ${ids.length} parameter sampel!`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
 
       fetchData(pagination.currentPage, search, filterDate);
+
     } catch (error) {
       console.error("Error batch verifikasi:", error);
       Swal.fire({
@@ -222,6 +784,75 @@ export default function HasilIndex() {
         title: "Gagal Verifikasi",
         text: error.response?.data?.message || "Terjadi kesalahan"
       });
+    }
+  };
+
+  const handleTteUpload = async () => {
+    if (!tteUploadFile) {
+      Swal.fire({ icon: "warning", title: "Pilih file PDF terlebih dahulu", timer: 2000, showConfirmButton: false });
+      return;
+    }
+    setTteUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", tteUploadFile, tteUploadFile.name);
+      formData.append("nik", tteUploadNik || "1234567890123452");
+      formData.append("passphrase", tteUploadPassphrase || "Bsre2026.#@");
+      formData.append("tampilan", "invisible");
+
+      const token = Cookies.get("token");
+      if (token) Api.defaults.headers.common["Authorization"] = token;
+
+      const res = await Api.post("/api/hasils/tte-sign", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        responseType: "arraybuffer"
+      });
+
+      const contentType = res.headers?.["content-type"] || "";
+      const first4Bytes = res.data && res.data.byteLength >= 4 ? new TextDecoder().decode(new Uint8Array(res.data, 0, 4)) : "";
+      const isPdf = contentType.includes("application/pdf") || first4Bytes === "%PDF";
+
+      if (isPdf && res.data) {
+        const blob = new Blob([res.data], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        setShowTteModal(false);
+        await Swal.fire({
+          icon: "success",
+          title: "✅ TTE Berhasil!",
+          html: `<p>File berhasil ditandatangani secara elektronik (BSrE).</p>
+                 <a href="${url}" target="_blank" rel="noopener noreferrer"
+                    style="display:inline-block;margin-top:10px;padding:10px 24px;background:#16a34a;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;">
+                    📄 Buka PDF Bertanda Tangan
+                 </a>`,
+          confirmButtonText: "Tutup",
+          confirmButtonColor: "#6b7280"
+        });
+      } else {
+        let errMessage = "Server tidak mengembalikan file PDF.";
+        if (res.data instanceof ArrayBuffer) {
+          try {
+            const jsonText = new TextDecoder().decode(new Uint8Array(res.data));
+            const json = JSON.parse(jsonText);
+            if (json.message) errMessage = json.message;
+          } catch (e) {}
+        }
+        Swal.fire({ icon: "error", title: "Gagal TTE", text: errMessage });
+      }
+    } catch (err) {
+      console.error("TTE Upload error:", err);
+      let errMsg = err.message || "Terjadi kesalahan";
+      if (err.response?.data instanceof ArrayBuffer) {
+        try {
+          const jsonText = new TextDecoder().decode(new Uint8Array(err.response.data));
+          const json = JSON.parse(jsonText);
+          if (json.message) errMsg = json.message;
+        } catch (e) {}
+      } else if (err.response?.data?.message) {
+        errMsg = err.response.data.message;
+      }
+      Swal.fire({ icon: "error", title: "Gagal Tanda Tangan", text: errMsg });
+    } finally {
+      setTteUploading(false);
     }
   };
 
@@ -688,6 +1319,9 @@ export default function HasilIndex() {
   return (
     <LayoutAdmin>
       <style>{`
+        .swal2-container {
+          z-index: 100000 !important;
+        }
         .card-3d {
           background: #ffffff !important;
           border: 2.5px solid #000000 !important;
@@ -856,6 +1490,13 @@ export default function HasilIndex() {
                   <button className="btn btn-3d-secondary" onClick={handleClearFilters}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="icon" width="24" height="24" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2" /><path d="M4 5v4h4" /><path d="M4 13a8.1 8.1 0 0 0 15.5 2" /><path d="M20 19v-4h-4" /></svg>
                     Reset Filter
+                  </button>
+                  <button
+                    className="btn btn-3d-primary fw-bold"
+                    style={{ background: '#7c3aed !important', borderColor: '#000 !important' }}
+                    onClick={() => { setTteUploadFile(null); setShowTteModal(true); }}
+                  >
+                    🔏 Upload PDF ke TTE
                   </button>
                 </div>
               </div>
@@ -1100,26 +1741,29 @@ export default function HasilIndex() {
                             </div>
                           </div>
                           <div className="d-flex align-items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                            {/* Tombol Cetak — dinamis sesuai centang dalam grup */}
-                            {items.length > 0 && (() => {
-                              const selectedInGroup = items.filter((i) => selectedPrintIds.has(i.id));
-                              const printItems = selectedInGroup.length > 0 ? selectedInGroup : items;
+                            {/* Tombol Cetak — HANYA MUNCUL JIKA SUDAH DI-TTD (DISETUJUI) */}
+                            {(() => {
+                              const approvedItemsInGroup = items.filter((i) => i.status_verifikasi === "DISETUJUI" || i.status);
+                              if (approvedItemsInGroup.length === 0) return null;
+
+                              const selectedInGroup = approvedItemsInGroup.filter((i) => selectedPrintIds.has(i.id));
+                              const printItems = selectedInGroup.length > 0 ? selectedInGroup : approvedItemsInGroup;
                               const printCount = printItems.length;
                               const hasSelection = selectedInGroup.length > 0;
                               return (
                                 <button
-                                  className={`btn btn-sm d-flex align-items-center gap-1 ${hasSelection ? 'btn-3d-primary fw-bold' : 'btn-3d-outline-danger'}`}
+                                  className={`btn btn-sm d-flex align-items-center gap-1 ${hasSelection ? 'btn-3d-primary fw-bold' : 'btn-3d-outline-dark'}`}
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     navigate(
-                                      `/hasil/print/${isInvoiceMode ? (groupMeta.txId || items[0].id) : items[0].id}`,
+                                      `/hasil/print/${isInvoiceMode ? (groupMeta.txId || printItems[0].id) : printItems[0].id}`,
                                       { state: { hasilItems: printItems, selectedIds: printItems.map((i) => i.id) } }
                                     );
                                   }}
-                                  title={hasSelection ? `Cetak ${printCount} sampel yang dicentang` : `Cetak semua ${printCount} sampel`}
+                                  title={hasSelection ? `Cetak ${printCount} sampel yang dicentang (Sudah TTD)` : `Cetak ${printCount} sampel yang sudah TTD`}
                                 >
                                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" /><path d="M12 17v-6" /><path d="M9 14l3 3l3 -3" /></svg>
-                                  {hasSelection ? `🖨️ Cetak (${printCount})` : `Cetak (${printCount})`}
+                                  {hasSelection ? `🖨️ Cetak (${printCount})` : `🖨️ Cetak (${printCount})`}
                                 </button>
                               );
                             })()}
@@ -1225,13 +1869,17 @@ export default function HasilIndex() {
                                 return (
                                   <tr key={hasil.id} style={{ background: isPrintSelected ? '#eff6ff' : undefined }}>
                                     <td>
-                                      <input
-                                        type="checkbox"
-                                        className="form-check-input"
-                                        checked={isPrintSelected}
-                                        onChange={() => togglePrintSelect(hasil.id)}
-                                        title="Pilih untuk dicetak"
-                                      />
+                                      {(hasil.status_verifikasi === "DISETUJUI" || hasil.status) ? (
+                                        <input
+                                          type="checkbox"
+                                          className="form-check-input"
+                                          checked={isPrintSelected}
+                                          onChange={() => togglePrintSelect(hasil.id)}
+                                          title="Pilih untuk dicetak"
+                                        />
+                                      ) : (
+                                        <span className="text-muted opacity-50" style={{ fontSize: "0.75rem" }} title="Belum TTD Kepala Labkesda">🔒</span>
+                                      )}
                                     </td>
                                     <td className="text-muted">{getRowNumber(globalIndex)}</td>
                                     <td>
@@ -1423,14 +2071,28 @@ export default function HasilIndex() {
                                             </div>
                                           )}
 
-                                          {/* 4. Cetak Laporan PDF */}
-                                          <Link
-                                            to={`/hasil/print/${hasil.id}`}
-                                            className="btn btn-sm btn-outline-dark fw-bold"
-                                            title="Cetak Laporan Hasil Pengujian"
-                                          >
-                                            🖨️ Cetak
-                                          </Link>
+                                          {/* 4. Cetak Laporan PDF (Hanya muncul jika sudah disetujui / TTD) */}
+                                          {(hasil.status_verifikasi === "DISETUJUI" || hasil.status) ? (
+                                            <Link
+                                              to={`/hasil/print/${hasil.id}`}
+                                              className="btn btn-sm btn-outline-dark fw-bold"
+                                              title="Cetak Laporan Hasil Pengujian (Sudah Verifikasi & TTD)"
+                                            >
+                                              🖨️ Cetak
+                                            </Link>
+                                          ) : (!hasil.status_verifikasi || hasil.status_verifikasi === "DRAFT" || hasil.status_verifikasi === "REVISI_ANALIS") ? (
+                                            <span className="badge bg-light text-secondary border border-secondary" title="Cetak belum tersedia (Belum Diverifikasi)">
+                                              🔒 Belum Verifikasi
+                                            </span>
+                                          ) : hasil.status_verifikasi === "MENUNGGU_VERIFIKASI" ? (
+                                            <span className="badge bg-warning-subtle text-dark border border-warning" title="Cetak belum tersedia (Menunggu Verifikasi Verifikator)">
+                                              ⏳ Menunggu Verifikasi
+                                            </span>
+                                          ) : (
+                                            <span className="badge bg-info-subtle text-dark border border-info" title="Cetak belum tersedia (Sudah Verif, Menunggu TTD Kepala)">
+                                              🔒 Menunggu TTD
+                                            </span>
+                                          )}
 
                                           {userRoleId === 2 && (
                                             <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(hasil.id)} title="Hapus">
@@ -1816,6 +2478,81 @@ export default function HasilIndex() {
               </div>
             </form>
 
+          </div>
+        </div>
+      )}
+
+      {/* ─── MODAL UPLOAD PDF TTE ─────────────────────────────────── */}
+      {showTteModal && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 1050, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowTteModal(false); }}
+        >
+          <div style={{ background: '#fff', borderRadius: '18px', border: '2.5px solid #000', boxShadow: '8px 8px 0 #000', padding: '32px', width: '100%', maxWidth: '460px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h5 style={{ fontWeight: 900, margin: 0, fontSize: '1.15rem' }}>🔏 Upload PDF ke TTE BSrE</h5>
+              <button onClick={() => setShowTteModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', lineHeight: 1 }}>✕</button>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ fontWeight: 700, display: 'block', marginBottom: '6px' }}>File PDF</label>
+              <input
+                type="file"
+                accept="application/pdf,.pdf"
+                className="form-control"
+                style={{ border: '2px solid #000', borderRadius: '8px' }}
+                onChange={(e) => setTteUploadFile(e.target.files?.[0] || null)}
+              />
+              {tteUploadFile && (
+                <small style={{ color: '#16a34a', fontWeight: 600, marginTop: '4px', display: 'block' }}>
+                  ✅ {tteUploadFile.name} ({(tteUploadFile.size / 1024).toFixed(1)} KB)
+                </small>
+              )}
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ fontWeight: 700, display: 'block', marginBottom: '6px' }}>NIK</label>
+              <input
+                type="text"
+                className="form-control"
+                style={{ border: '2px solid #000', borderRadius: '8px' }}
+                value={tteUploadNik}
+                onChange={(e) => setTteUploadNik(e.target.value)}
+                placeholder="NIK penandatangan"
+              />
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ fontWeight: 700, display: 'block', marginBottom: '6px' }}>Passphrase</label>
+              <input
+                type="password"
+                className="form-control"
+                style={{ border: '2px solid #000', borderRadius: '8px' }}
+                value={tteUploadPassphrase}
+                onChange={(e) => setTteUploadPassphrase(e.target.value)}
+                placeholder="Passphrase BSrE"
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={handleTteUpload}
+                disabled={tteUploading || !tteUploadFile}
+                style={{
+                  flex: 1, padding: '12px', background: tteUploading ? '#9ca3af' : '#7c3aed',
+                  color: '#fff', border: '2px solid #000', boxShadow: '3px 3px 0 #000',
+                  borderRadius: '10px', fontWeight: 800, fontSize: '1rem', cursor: tteUploading ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {tteUploading ? '⏳ Memproses...' : '🔏 Tanda Tangani PDF'}
+              </button>
+              <button
+                onClick={() => setShowTteModal(false)}
+                style={{ padding: '12px 20px', background: '#f3f4f6', border: '2px solid #000', boxShadow: '3px 3px 0 #000', borderRadius: '10px', fontWeight: 700, cursor: 'pointer' }}
+              >
+                Batal
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -27,7 +27,8 @@ import {
     IconUser,
     IconSparkles,
     IconFlask,
-    IconLoader
+    IconLoader,
+    IconFileText
 } from "@tabler/icons-react";
 import "./cart.css";
 import PaymentAllModal from "./paymentModal";

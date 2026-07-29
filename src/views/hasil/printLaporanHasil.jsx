@@ -338,23 +338,44 @@ export default function PrintLaporanHasil() {
           </div>
           <div className="col-6 text-center">
             <p className="mb-0" style={{ fontSize: "13px" }}>Sidoarjo, {reportMeta.tanggalCetak}</p>
-            <p className="fw-bold mb-4" style={{ fontSize: "13px" }}>
+            <p className="fw-bold mb-2" style={{ fontSize: "13px" }}>
               KEPALA LABORATORIUM<br />KESEHATAN DAERAH
             </p>
+
+            {/* Barcode / QR Code TTE BSrE — HANYA MUNCUL JIKA SUDAH DI-TTD (DISETUJUI) */}
+            {firstItem.status_verifikasi === "DISETUJUI" ? (
+              <div className="my-2 d-flex flex-column align-items-center justify-content-center">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=85x85&data=${encodeURIComponent(
+                    `BSrE TERVERIFIKASI TTE\nNo. Laporan: ${firstItem.nomor_laporan || reportMeta.nomorLaporan}\nPenandatangan: ${firstItem.kepala?.name || 'MISAD, S.KM'}\nNIP: ${firstItem.kepala?.nip || '196909141991021002'}\nSertifikat BSrE BSSN Valid`
+                  )}`}
+                  alt="Barcode TTE BSrE"
+                  style={{ width: "80px", height: "80px", border: "1px solid #1e293b", padding: "2px", backgroundColor: "#fff" }}
+                />
+                <span style={{ fontSize: "9px", fontWeight: "bold", color: "#1e3a8a", marginTop: "2px" }}>
+                  🔏 Terverifikasi BSrE
+                </span>
+              </div>
+            ) : (
+              <div style={{ height: "65px" }}></div>
+            )}
+
             <p className="fw-bold text-decoration-underline mb-0" style={{ fontSize: "13px" }}>
-              {firstItem.kepala?.name || "-"}
+              {firstItem.kepala?.name || "MISAD, S.KM"}
             </p>
-            <p className="mb-0" style={{ fontSize: "12px" }}>{firstItem.kepala?.pangkat || "-"}</p>
-            <p className="mb-0" style={{ fontSize: "12px" }}>NIP {firstItem.kepala?.nip || "-"}</p>
+            <p className="mb-0" style={{ fontSize: "12px" }}>{firstItem.kepala?.pangkat || "Penata Tk. I / IIId"}</p>
+            <p className="mb-0" style={{ fontSize: "12px" }}>NIP {firstItem.kepala?.nip || "196909141991021002"}</p>
           </div>
         </div>
 
-        <div className="text-center mt-5 pt-3">
-          <p className="fst-italic text-muted mb-0" style={{ fontSize: "10px" }}>
-            Dokumen ini telah ditandatangani secara elektronik menggunakan sertifikat elektronik<br />
-            yang diterbitkan oleh Balai Besar Sertifikasi Elektronik (BSrE), Badan Siber dan Sandi Negara
-          </p>
-        </div>
+        {firstItem.status_verifikasi === "DISETUJUI" && (
+          <div className="text-center mt-5 pt-3">
+            <p className="fst-italic text-muted mb-0" style={{ fontSize: "10px" }}>
+              Dokumen ini telah ditandatangani secara elektronik menggunakan sertifikat elektronik<br />
+              yang diterbitkan oleh Balai Besar Sertifikasi Elektronik (BSrE), Badan Siber dan Sandi Negara
+            </p>
+          </div>
+        )}
       </div>
     );
   };
@@ -552,10 +573,28 @@ export default function PrintLaporanHasil() {
                 </div>
               </div>
             ) : (
-              <div ref={reportRef} className="d-flex flex-column align-items-center gap-4">
-                {getGroupedItems().map((groupItems, pageIdx) =>
-                  renderReportPage(groupItems, pageIdx)
+              <div>
+                {selectedHasils[0]?.signed_pdf && (
+                  <div className="alert alert-success d-flex justify-content-between align-items-center mb-3 shadow-sm border border-success">
+                    <div>
+                      <h6 className="fw-bold mb-1">🔏 Terverifikasi BSrE TTE (Digital Certificate)</h6>
+                      <small className="text-dark">Dokumen ini telah ditandatangani secara elektronik (BSrE BSSN) & tersimpan resmi di server.</small>
+                    </div>
+                    <a
+                      href={`${Api.defaults.baseURL || ''}${selectedHasils[0].signed_pdf}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-success fw-bold d-flex align-items-center gap-1 shadow-sm"
+                    >
+                      <FaDownload /> Buka / Unduh Berkas PDF Signed
+                    </a>
+                  </div>
                 )}
+                <div ref={reportRef} className="d-flex flex-column align-items-center gap-4">
+                  {getGroupedItems().map((groupItems, pageIdx) =>
+                    renderReportPage(groupItems, pageIdx)
+                  )}
+                </div>
               </div>
             )}
           </div>

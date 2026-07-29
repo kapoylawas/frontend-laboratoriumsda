@@ -47,7 +47,12 @@ export default function Sampels() {
     };
 
     const isPackageCategory = (categoryId) => {
-        return categoryId === 1 || categoryId === 2;
+        const catIdNum = parseInt(categoryId);
+        const cat = categories[catIdNum] || categories[categoryId];
+        if (cat && cat.name) {
+            return cat.name.toUpperCase().includes("PAKET");
+        }
+        return catIdNum === 5 || catIdNum === 6;
     };
 
     const fetchData = async (pageNumber, keywords = "") => {
