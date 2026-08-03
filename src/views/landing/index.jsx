@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Api from "../../services/api";
 import { useStore as useUserStore } from "../../stores/user";
 import { useStore as useThemeStore } from "../../stores/theme";
+import Cookies from "js-cookie";
 import Swal from "sweetalert2";
 import {
   IconSun,
@@ -131,9 +132,92 @@ export default function LandingPage() {
   const { isAuthenticated } = useUserStore();
   const { theme, changeTheme } = useThemeStore();
 
-  // Search & Filter state
+  // Search & Filter state (kept for compatibility)
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("semua");
+
+  // ── Sampels dari API ──────────────────────────────────────────
+  const [apiSampels, setApiSampels] = useState([]);
+  const [apiCategories, setApiCategories] = useState({});
+  const [groupedSampels, setGroupedSampels] = useState({});
+  const [expandedCategories, setExpandedCategories] = useState({});
+  const [loadingSampels, setLoadingSampels] = useState(true);
+  const [sampelSearch, setSampelSearch] = useState("");
+  const [selectedCatId, setSelectedCatId] = useState("semua");
+
+  const categoryColors = [
+    { bg: '#e3f2fd', text: '#0d47a1', border: '#bbdefb' },
+    { bg: '#e8f5e9', text: '#1b5e20', border: '#c8e6c9' },
+    { bg: '#fff3e0', text: '#e65100', border: '#ffe0b2' },
+    { bg: '#fce4ec', text: '#880e4f', border: '#f8bbd0' },
+    { bg: '#f3e5f5', text: '#4a148c', border: '#e1bee7' },
+    { bg: '#e8eaf6', text: '#1a237e', border: '#c5cae9' },
+    { bg: '#e0f2f1', text: '#004d40', border: '#b2dfdb' },
+    { bg: '#fff8e1', text: '#ff6f00', border: '#ffecb3' },
+  ];
+
+  const getCategoryColor = (idx) => categoryColors[parseInt(idx) % categoryColors.length];
+
+  const formatCurrency = (value) =>
+    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value || 0);
+
+  const groupByCategoryId = (sampelsArr, catsMap) => {
+    const grouped = {};
+    Object.keys(catsMap).forEach(id => { grouped[id] = { category: catsMap[id], sampels: [] }; });
+    sampelsArr.forEach(s => {
+      const cid = s.category_id?.toString();
+      if (cid && grouped[cid]) grouped[cid].sampels.push(s);
+    });
+    return grouped;
+  };
+
+  useEffect(() => {
+    const fetchSampels = async () => {
+      setLoadingSampels(true);
+      try {
+        const [resCats, resSampels] = await Promise.all([
+          Api.get('/api/public/categories'),
+          Api.get('/api/public/sampels?page=1&limit=999'),
+        ]);
+        const catsMap = {};
+        (resCats.data.data || []).forEach(c => { catsMap[c.id.toString()] = c; });
+        const sampelsList = resSampels.data.data || [];
+        const grouped = groupByCategoryId(sampelsList, catsMap);
+        setApiCategories(catsMap);
+        setApiSampels(sampelsList);
+        setGroupedSampels(grouped);
+        const expanded = {};
+        Object.keys(catsMap).forEach(id => { expanded[id] = true; });
+        setExpandedCategories(expanded);
+      } catch (e) {
+        console.log('Gagal fetch publik sampels:', e);
+      } finally {
+        setLoadingSampels(false);
+      }
+    };
+    fetchSampels();
+  }, []);
+
+  const toggleCategory = (id) =>
+    setExpandedCategories(prev => ({ ...prev, [id]: !prev[id] }));
+
+  // Filter grouped by search + selected category
+  const filteredGrouped = useMemo(() => {
+    if (!sampelSearch && selectedCatId === 'semua') return groupedSampels;
+    const result = {};
+    Object.entries(groupedSampels).forEach(([id, data]) => {
+      if (selectedCatId !== 'semua' && id !== selectedCatId) return;
+      const filtered = data.sampels.filter(s =>
+        !sampelSearch ||
+        (s.parameter || '').toLowerCase().includes(sampelSearch.toLowerCase())
+      );
+      if (filtered.length > 0 || !sampelSearch) {
+        result[id] = { ...data, sampels: filtered };
+      }
+    });
+    return result;
+  }, [groupedSampels, sampelSearch, selectedCatId]);
+
 
   // Pengaduan Form State
   const [pengaduanForm, setPengaduanForm] = useState({
@@ -606,129 +690,181 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Section: Explore Services Catalog Grid */}
-        <section id="layanan" className="explore-section py-5">
-          <div className="container py-2">
-            <div className="text-center max-w-700 mx-auto mb-5">
-              <span className="trakteer-subheading-tag">Fasilitas Uji Lengkap</span>
-              <h2 className="trakteer-section-title">Kategori Layanan Laboratorium</h2>
-              <p className="trakteer-section-desc">
-                Kami melayani pengujian laboratorium kesehatan air, makanan, udara, tanah, dan pemeriksaan medis klinis.
-              </p>
-            </div>
-
-            {/* Interactive filter tabs */}
-            <div className="filter-tabs-container mb-4">
-              <button
-                className={`filter-pill-btn ${selectedCategory === "semua" ? "active" : ""}`}
-                onClick={() => setSelectedCategory("semua")}
-              >
-                Semua Layanan
-              </button>
-              <button
-                className={`filter-pill-btn ${selectedCategory === "air" ? "active" : ""}`}
-                onClick={() => setSelectedCategory("air")}
-              >
-                Uji Air
-              </button>
-              <button
-                className={`filter-pill-btn ${selectedCategory === "makanan" ? "active" : ""}`}
-                onClick={() => setSelectedCategory("makanan")}
-              >
-                Makanan &amp; Minuman
-              </button>
-              <button
-                className={`filter-pill-btn ${selectedCategory === "lingkungan" ? "active" : ""}`}
-                onClick={() => setSelectedCategory("lingkungan")}
-              >
-                Udara &amp; Lingkungan
-              </button>
-              <button
-                className={`filter-pill-btn ${selectedCategory === "tanah" ? "active" : ""}`}
-                onClick={() => setSelectedCategory("tanah")}
-              >
-                Tanah &amp; Pupuk
-              </button>
-              <button
-                className={`filter-pill-btn ${selectedCategory === "medis" ? "active" : ""}`}
-                onClick={() => setSelectedCategory("medis")}
-              >
-                Pemeriksaan Klinis
-              </button>
-              <button
-                className={`filter-pill-btn ${selectedCategory === "toksikologi" ? "active" : ""}`}
-                onClick={() => setSelectedCategory("toksikologi")}
-              >
-                Toksikologi
-              </button>
-            </div>
-
-            {/* Grid display */}
-            <div className="row g-4">
-              {filteredServices.length > 0 ? (
-                filteredServices.map((service) => {
-                  const IconComponent = service.icon;
-                  return (
-                    <div className="col-lg-4 col-md-6" key={service.id}>
-                      <div className="service-card h-100">
-                        <div className="service-card-header">
-                          <div className="service-icon-wrapper">
-                            <IconComponent size={24} />
-                          </div>
-                          <div>
-                            <h3 className="service-card-title">{service.title}</h3>
-                          </div>
-                          <span className="service-card-tag">{service.badge}</span>
-                        </div>
-                        <div className="service-card-body d-flex flex-column justify-content-between">
-                          <div>
-                            <p className="service-card-desc">{service.description}</p>
-
-                            <div className="mb-4">
-                              <h4 className="service-parameters-title">Parameter Uji Utama</h4>
-                              <ul className="service-parameters-list">
-                                {service.parameters.map((p, index) => (
-                                  <li key={index}>{p}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
-
-                          <div className="service-price-wrapper pt-3 border-top">
-                            <div>
-                              <span className="service-price-label">Estimasi Biaya</span>
-                              <span className="service-price-amount">{service.price}</span>
-                            </div>
-                            <button
-                              onClick={handleActionClick}
-                              className="btn btn-service-action d-flex align-items-center gap-1"
-                            >
-                              <span>Ajukan Uji</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="col-12 text-center py-5">
-                  <IconFlask size={48} className="text-secondary opacity-50 mb-3" />
-                  <p className="text-secondary fs-5">Layanan pengujian tidak ditemukan.</p>
-                  <button
-                    className="btn btn-outline-danger rounded-pill px-4 mt-2"
-                    onClick={() => {
-                      setSearchQuery("");
-                      setSelectedCategory("semua");
-                    }}
-                  >
-                    Reset Pencarian
-                  </button>
+        {/* Section: Katalog Sampel & Harga Real dari API */}
+        <section id="layanan" className="catalog-section">
+          {/* Section header */}
+          <div className="catalog-section-header">
+            <div className="container">
+              <div className="text-center max-w-700 mx-auto">
+                <span className="trakteer-subheading-tag">
+                  Tarif Resmi &amp; Transparan
+                </span>
+                <h2 className="trakteer-section-title">Katalog Layanan &amp; Daftar Tarif</h2>
+                <p className="trakteer-section-desc">
+                  Daftar lengkap seluruh parameter pengujian beserta tarif resmi UPTD Laboratorium Kesehatan Daerah Kabupaten Sidoarjo.
+                </p>
+              </div>
+              {/* Stats bar */}
+              <div className="catalog-stats-bar">
+                <div className="catalog-stat-item">
+                  <span className="catalog-stat-number">{Object.keys(apiCategories).length}</span>
+                  <span className="catalog-stat-label">Kategori Uji</span>
                 </div>
-              )}
+                <div className="catalog-stat-divider" />
+                <div className="catalog-stat-item">
+                  <span className="catalog-stat-number">{apiSampels.length}</span>
+                  <span className="catalog-stat-label">Total Parameter</span>
+                </div>
+              </div>
             </div>
           </div>
+
+          <div className="container catalog-body">
+            {/* Filter Toolbar */}
+            <div className="catalog-filter-pills mb-4">
+              <button
+                className={`catalog-pill ${selectedCatId === 'semua' ? 'active' : ''}`}
+                onClick={() => setSelectedCatId('semua')}
+              >Semua Kategori</button>
+              {Object.entries(apiCategories).map(([id, cat]) => (
+                <button
+                  key={id}
+                  className={`catalog-pill ${selectedCatId === id ? 'active' : ''}`}
+                  onClick={() => setSelectedCatId(id)}
+                >{cat.name}</button>
+              ))}
+            </div>
+
+            {loadingSampels ? (
+              <div className="catalog-loading">
+                <div className="spinner-border text-danger" style={{ width: '2.5rem', height: '2.5rem' }} role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+                <p className="mt-3 text-secondary">Memuat daftar tarif pengujian...</p>
+              </div>
+            ) : Object.keys(filteredGrouped).length === 0 ? (
+              <div className="catalog-empty">
+                <IconFlask size={44} className="text-secondary opacity-50 mb-3" />
+                <h5 className="fw-black mb-2">Parameter Tidak Ditemukan</h5>
+                <p className="text-secondary small max-w-600 mx-auto mb-3">
+                  Tidak ada parameter yang cocok dengan kategori yang Anda pilih.
+                </p>
+                <button
+                  className="catalog-pill active px-4"
+                  onClick={() => setSelectedCatId('semua')}
+                >Tampilkan Semua Kategori</button>
+              </div>
+            ) : (
+              <div className="catalog-accordion">
+                {Object.entries(filteredGrouped).map(([catId, data], idx) => {
+                  const color = getCategoryColor(catId);
+                  const isExpanded = expandedCategories[catId];
+                  const total = data.sampels.reduce((s, i) => s + (i.price_sell || 0), 0);
+                  const isPackage = data.category?.name?.toUpperCase().includes('PAKET');
+                  const filledCount = data.sampels.filter(s => s.price_sell).length;
+                  return (
+                    <div key={catId} className={`catalog-group ${isExpanded ? 'expanded' : ''}`}>
+                      {/* Category Header */}
+                      <button
+                        className="catalog-group-header"
+                        onClick={() => toggleCategory(catId)}
+                      >
+                        <div className="catalog-group-left" style={{ borderLeft: `4px solid ${color.text}` }}>
+                          <span className="catalog-group-dot" style={{ background: color.text }} />
+                          <span className="catalog-group-name">{data.category?.name || `Kategori ${catId}`}</span>
+                          <span className="catalog-group-count" style={{ background: color.bg, color: color.text }}>
+                            {data.sampels.length} parameter
+                          </span>
+                          {isPackage && data.sampels.length > 0 && (
+                            <span className="catalog-group-total">Total: {formatCurrency(total)}</span>
+                          )}
+                        </div>
+                        <div className="catalog-group-right">
+                          <span className="catalog-group-progress">{filledCount}/{data.sampels.length} bertarif</span>
+                          <span className={`catalog-group-chevron ${isExpanded ? 'open' : ''}`}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="m6 9 6 6 6-6" />
+                            </svg>
+                          </span>
+                        </div>
+                      </button>
+                      {/* Table */}
+                      {isExpanded && (
+                        <div className="catalog-group-body">
+                          <div className="table-responsive">
+                            <table className="catalog-table">
+                              <thead>
+                                <tr>
+                                  <th className="col-no">No</th>
+                                  <th className="col-param">Nama Parameter Pengujian</th>
+                                  <th className="col-price">Tarif</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {data.sampels.length > 0 ? data.sampels.map((s, i) => (
+                                  <tr key={s.id || i} className={i % 2 === 0 ? 'row-even' : 'row-odd'}>
+                                    <td className="col-no">
+                                      <span className="row-number">{i + 1}</span>
+                                    </td>
+                                    <td className="col-param">
+                                      <span className="param-name" style={{ color: color.text }}>
+                                        {sampelSearch ? (
+                                          <span dangerouslySetInnerHTML={{
+                                            __html: (s.parameter || '-').replace(
+                                              new RegExp(`(${sampelSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'),
+                                              '<mark class="search-highlight">$1</mark>'
+                                            )
+                                          }} />
+                                        ) : (s.parameter || '-')}
+                                      </span>
+                                    </td>
+                                    <td className="col-price">
+                                      {s.price_sell ? (
+                                        <span className="price-tag">{formatCurrency(s.price_sell)}</span>
+                                      ) : (
+                                        <span className="price-na">Hubungi kami</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                )) : (
+                                  <tr>
+                                    <td colSpan="3" className="empty-row">Belum ada parameter dalam kategori ini</td>
+                                  </tr>
+                                )}
+                                {isPackage && data.sampels.length > 0 && (
+                                  <tr className="total-row">
+                                    <td colSpan="2" className="text-end"><span className="total-label">Total Paket</span></td>
+                                    <td><span className="total-price">{formatCurrency(total)}</span></td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {/* CTA Footer */}
+                <div className="catalog-cta">
+                  <div className="catalog-cta-text">
+                    <div className="catalog-cta-title">Siap melakukan pengujian?</div>
+                    <div className="catalog-cta-sub">Ajukan permohonan pengujian online kapan saja dan di mana saja.</div>
+                  </div>
+                  <button onClick={handleActionClick} className="catalog-cta-btn">
+                    <IconFlask size={18} />
+                    <span>Ajukan Pengujian Sekarang</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </section>
+
+
 
         {/* Section: Formulir Pengaduan Pelayanan UPTD. Labkesda Kab. Sidoarjo (Google Form Embedded) */}
         <section id="pengaduan" className="pengaduan-section py-5 bg-body-tertiary">

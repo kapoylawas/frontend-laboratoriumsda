@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/sidoarjo.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
     <title>Laboratorium Kesehatan Daerah - Sidoarjo</title>
     <!-- CSS files -->
     <link href="/css/tabler.min.css?1684106062" rel="stylesheet" />
@@ -62,6 +62,24 @@
 
         .rounded {
             border-radius: 1rem !important
+        }
+
+        /* ── Global mobile overflow fix ── */
+        * { box-sizing: border-box; }
+        html, body, #root, .page, .page-wrapper {
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        /* ── Tabler page content responsive padding ── */
+        @media (max-width: 768px) {
+            .page-body { padding: 0.75rem !important; }
+            .container-xl { padding-left: 12px !important; padding-right: 12px !important; }
+            .row { --bs-gutter-x: 0.75rem; }
+        }
+        @media (max-width: 480px) {
+            .page-body { padding: 0.5rem !important; }
+            .container-xl { padding-left: 8px !important; padding-right: 8px !important; }
         }
     </style>
 </head>

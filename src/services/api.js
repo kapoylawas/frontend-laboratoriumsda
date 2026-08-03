@@ -9,26 +9,21 @@ const Api = axios.create({
     baseURL: import.meta.env.VITE_APP_BASEURL
 })
 
-//handle unathenticated
+//handle unauthenticated
 Api.interceptors.response.use(function(response) {
-
-    //return response
     return response;
 }, ((error) => {
-
     //check if response unauthenticated
-    if (401 === error.response.status) {
-
+    if (error.response && error.response.status === 401) {
         //remove token
         Cookies.remove('token');
 
-        //redirect "/admin/login"
-        window.location = '/';
-    } else {
-
-        //reject promise error
-        return Promise.reject(error);
+        //only redirect if not already on public pages
+        if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
+            window.location = '/login';
+        }
     }
+    return Promise.reject(error);
 }));
 
 export default Api

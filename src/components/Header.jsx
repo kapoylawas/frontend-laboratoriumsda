@@ -65,9 +65,10 @@ export default function Header() {
     };
 
     // Detect screen size changes
+    // iPad (768px+) = desktop nav | HP (<768px) = hamburger sidebar
     useEffect(() => {
         const checkScreenSize = () => {
-            setIsMobileView(window.innerWidth <= 991);
+            setIsMobileView(window.innerWidth < 768);
         };
 
         checkScreenSize();
@@ -107,16 +108,30 @@ export default function Header() {
                         </Link>
                     </div>
 
-                    {/* Mobile Toggle */}
+                    {/* Mobile Toggle — Premium Menu Button */}
                     {isMobileView && (
                         <button
-                            className={`navbar-toggler cashier-toggler ${isMobileMenuOpen ? 'active' : ''}`}
+                            className={`cashier-menu-btn ${isMobileMenuOpen ? 'active' : ''}`}
                             type="button"
                             onClick={toggleMobileMenu}
+                            aria-label="Toggle Menu"
                         >
-                            <span className="toggler-icon"></span>
-                            <span className="toggler-icon"></span>
-                            <span className="toggler-icon"></span>
+                            <div className="menu-btn-inner">
+                                {isMobileMenuOpen ? (
+                                    /* Close (X) icon */
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="menu-btn-icon">
+                                        <path d="M18 6L6 18M6 6l12 12" />
+                                    </svg>
+                                ) : (
+                                    /* Hamburger icon */
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="menu-btn-icon">
+                                        <line x1="3" y1="6" x2="21" y2="6" />
+                                        <line x1="3" y1="12" x2="21" y2="12" />
+                                        <line x1="3" y1="18" x2="21" y2="18" />
+                                    </svg>
+                                )}
+                                <span className="menu-btn-label">{isMobileMenuOpen ? 'TUTUP' : 'MENU'}</span>
+                            </div>
                         </button>
                     )}
 

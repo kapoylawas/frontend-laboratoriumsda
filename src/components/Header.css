@@ -94,8 +94,64 @@
 }
 
 
-/* Custom Toggler */
+/* ─── Premium Menu Button ─── */
 
+.cashier-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    border: 2.5px solid #000000;
+    box-shadow: 3px 3px 0px #000000;
+    border-radius: 10px;
+    padding: 7px 12px;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+    color: #1e1e1e;
+    flex-shrink: 0;
+}
+
+.cashier-menu-btn:hover {
+    background: #fbbf24;
+    box-shadow: 1px 1px 0px #000000;
+    transform: translate(2px, 2px);
+}
+
+.cashier-menu-btn.active {
+    background: #fbbf24;
+    box-shadow: 1px 1px 0px #000000;
+    transform: translate(2px, 2px);
+}
+
+.menu-btn-inner {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    pointer-events: none;
+}
+
+.menu-btn-icon {
+    width: 20px;
+    height: 20px;
+    stroke: #1e1e1e;
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+}
+
+.cashier-menu-btn.active .menu-btn-icon {
+    transform: rotate(90deg);
+}
+
+.menu-btn-label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.6px;
+    color: #1e1e1e;
+    text-transform: uppercase;
+    line-height: 1;
+}
+
+/* Keep old toggler styles for compatibility */
 .cashier-toggler {
     border: none;
     padding: 4px;
@@ -366,6 +422,42 @@
     }
 }
 
+/* Tablet (768px - 1024px): nav tetap tampil, pakai horizontal scroll */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .navbar-cashier-nav {
+        overflow-x: auto;
+        overflow-y: visible;
+        -webkit-overflow-scrolling: touch;
+    }
+    .navbar-nav-wrapper {
+        overflow-x: auto;
+        padding-bottom: 2px;
+        scrollbar-width: none;
+    }
+    .navbar-nav-wrapper::-webkit-scrollbar {
+        display: none;
+    }
+    .cashier-nav-link {
+        padding: 6px 8px !important;
+        font-size: 0.72rem;
+        gap: 3px;
+    }
+    .nav-label {
+        font-size: 0.7rem;
+    }
+    .nav-icon {
+        width: 15px;
+        height: 15px;
+    }
+    /* User profile on tablet — hide email, keep name */
+    .user-role {
+        display: none;
+    }
+    .user-name {
+        font-size: 0.8rem;
+    }
+}
+
 
 /* Search Bar */
 
@@ -520,8 +612,9 @@
     margin: 0;
 }
 
-.mobile-nav-dropdown.active .mobile-submenu {
-    max-height: 200px;
+.mobile-nav-dropdown.active .mobile-submenu,
+.mobile-nav-dropdown.open .mobile-submenu {
+    max-height: 400px;
 }
 
 .mobile-submenu-link {
@@ -587,7 +680,8 @@
 
 /* Responsive */
 
-@media (max-width: 768px) {
+/* Mobile only (<768px) */
+@media (max-width: 767px) {
     .brand-tagline {
         display: none;
     }
@@ -595,17 +689,18 @@
         display: none;
     }
     .cashier-search-input {
-        width: 200px;
+        width: 100%;
     }
     .navbar-nav {
         gap: 1px;
     }
     .cashier-nav-link {
-        padding: 10px 16px !important;
+        padding: 10px 12px !important;
+        font-size: 0.75rem;
     }
     .brand-logo {
-        width: 36px;
-        height: 36px;
+        width: 30px;
+        height: 30px;
     }
 }
 
@@ -629,8 +724,7 @@
 
 
 /* Mobile & Tablet Responsive Styles */
-
-@media (max-width: 991px) {
+@media (max-width: 767px) {
     /* Hide desktop elements on mobile & tablet */
     .desktop-actions,
     .desktop-nav {
@@ -786,10 +880,11 @@
         background: #f8fafc;
         max-height: 0;
         overflow: hidden;
-        transition: max-height 0.3s ease;
+        transition: max-height 0.4s ease;
     }
-    .mobile-nav-dropdown.active .mobile-submenu {
-        max-height: 200px;
+    .mobile-nav-dropdown.active .mobile-submenu,
+    .mobile-nav-dropdown.open .mobile-submenu {
+        max-height: 400px;
     }
     .mobile-submenu-link {
         display: flex;
@@ -853,9 +948,9 @@
 }
 
 
-/* Desktop styles */
+/* Desktop styles (>=768px) */
 
-@media (min-width: 992px) {
+@media (min-width: 768px) {
     .mobile-sidebar,
     .mobile-menu-overlay {
         display: none !important;
@@ -863,9 +958,9 @@
 }
 
 
-/* Touch improvements for mobile & tablet */
+/* Touch improvements for mobile */
 
-@media (max-width: 991px) {
+@media (max-width: 767px) {
     .cashier-nav-link,
     .mobile-nav-link,
     .mobile-action-btn,
@@ -881,7 +976,7 @@
 
 /* Landscape orientation support */
 
-@media (max-width: 991px) and (orientation: landscape) {
+@media (max-width: 767px) and (orientation: landscape) {
     .mobile-sidebar {
         width: 75%;
         max-width: 400px;

@@ -2,6 +2,8 @@
    RESET MINIMAL — Hanya hapus override Vite yang bermasalah
    Jangan gunakan "all: unset" pada button!
    ============================================================ */
+
+@import './responsive.css';
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   font-synthesis: none;
