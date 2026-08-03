@@ -443,6 +443,25 @@ export default function Login() {
                                     )}
                                 </button>
                             </form>
+
+                            {/* BSrE Security & TTE Certification Badge */}
+                            <div className="mt-4 pt-3 border-top border-2 border-dark d-flex align-items-center justify-content-center gap-3 bg-white p-3 rounded-3 border shadow-sm">
+                                <img
+                                    src="/bsre-logo.png"
+                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                    style={{ height: '62px', width: 'auto', objectFit: 'contain' }}
+                                    alt="Logo BSrE"
+                                    className="flex-shrink-0"
+                                />
+                                <div className="text-start lh-sm">
+                                    <span className="d-block fw-black text-dark fs-6">
+                                        Dokumen & TTE Tersertifikasi
+                                    </span>
+                                    <small className="text-secondary fw-bold d-block" style={{ fontSize: '0.78rem' }}>
+                                        Balai Sertifikasi Elektronik
+                                    </small>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

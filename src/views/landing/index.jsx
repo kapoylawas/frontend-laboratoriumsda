@@ -1027,9 +1027,24 @@ export default function LandingPage() {
                   <span className="small text-white-50">UPT Labkesda Kabupaten Sidoarjo</span>
                 </div>
               </div>
-              <p className="footer-desc text-white-75 small">
+              <p className="footer-desc text-white-75 small mb-3">
                 Laboratorium Kesehatan Daerah (Labkesda) Kabupaten Sidoarjo memberikan pelayanan pengujian laboratorium yang profesional, presisi, dan terpercaya bagi masyarakat dan instansi industri.
               </p>
+
+              {/* BSrE Trust Badge in Footer Brand Column */}
+              <div className="d-inline-flex align-items-center gap-3 p-3 px-3.5 rounded-3 bg-white text-dark shadow-sm border border-secondary border-opacity-20 mt-2">
+                <img
+                  src="/bsre-logo.png"
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                  style={{ height: '60px', width: 'auto', objectFit: 'contain' }}
+                  alt="Logo BSrE"
+                  className="flex-shrink-0"
+                />
+                <div className="lh-sm text-start">
+                  <span className="fw-black text-dark d-block fs-6">Tersertifikasi BSrE</span>
+                  <small className="text-secondary fw-bold d-block" style={{ fontSize: '0.78rem' }}>Tanda Tangan Elektronik &amp; Dokumen Sah</small>
+                </div>
+              </div>
             </div>
 
             <div className="col-lg-2 col-md-6 col-6">
@@ -1075,10 +1090,21 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="footer-bottom text-center pt-4 mt-4 border-top border-white-10 text-white-50 small">
+          <div className="footer-bottom pt-4 mt-4 border-top border-white-10 text-white-50 small d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 text-center text-md-start">
             <p className="mb-0">
               &copy; {new Date().getFullYear()} UPT Laboratorium Kesehatan Daerah Kabupaten Sidoarjo. Hak Cipta Dilindungi.
             </p>
+            <div className="d-flex align-items-center gap-2.5 px-3.5 py-2 rounded-pill bg-white text-dark shadow-sm border border-secondary border-opacity-20 flex-shrink-0">
+              <img
+                src="/bsre-logo.png"
+                onError={(e) => { e.target.style.display = 'none'; }}
+                style={{ height: '36px', width: 'auto', objectFit: 'contain' }}
+                alt="BSrE"
+              />
+              <span className="small text-dark fw-bold" style={{ fontSize: '0.85rem' }}>
+                Terintegrasi TTE BSrE
+              </span>
+            </div>
           </div>
         </div>
       </footer>
