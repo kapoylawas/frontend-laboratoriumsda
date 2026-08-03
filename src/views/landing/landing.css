@@ -322,6 +322,18 @@
   border-color: rgba(255, 255, 255, 0.25) !important;
 }
 
+.hero-bsre-card-3d {
+  border: 3px solid #000000;
+  box-shadow: 6px 6px 0px #000000;
+  transition: all 0.2s ease-in-out;
+  cursor: default;
+}
+
+.hero-bsre-card-3d:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 9px 9px 0px #000000;
+}
+
 /* -------------------------------------------------------------
  * 3D MASCOT CARD & FLOATING WIDGET STACK
  * ------------------------------------------------------------- */

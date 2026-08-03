@@ -456,6 +456,30 @@ export default function LandingPage() {
                   </a>
                 </div>
 
+                {/* BSrE 3D Trust Card Banner in Hero */}
+                <div className="mt-4 pt-2">
+                  <div className="hero-bsre-card-3d d-inline-flex align-items-center gap-3 p-3 px-3.5 bg-white text-dark rounded-4">
+                    <img
+                      src="/bsre-logo.png"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                      style={{ height: '54px', width: 'auto', objectFit: 'contain' }}
+                      alt="Logo BSrE"
+                      className="flex-shrink-0"
+                    />
+                    <div className="lh-sm text-start">
+                      <div className="d-flex align-items-center gap-2 mb-1">
+                        <span className="fw-black text-dark fs-6 mb-0">Tersertifikasi BSrE</span>
+                        <span className="badge bg-success text-white fw-bold px-2 py-0.5 rounded-pill" style={{ fontSize: '0.68rem' }}>
+                          ✓ RESMI BSSN
+                        </span>
+                      </div>
+                      <small className="text-secondary fw-extrabold d-block" style={{ fontSize: '0.78rem' }}>
+                        Tanda Tangan Elektronik &amp; Dokumen Digital Sah Hukum
+                      </small>
+                    </div>
+                  </div>
+                </div>
+
 
               </div>
 
