@@ -331,8 +331,8 @@ export default function HasilIndex() {
   const [selectedPrintIds, setSelectedPrintIds] = useState(new Set());
   const [showTteModal, setShowTteModal] = useState(false);
   const [tteUploadFile, setTteUploadFile] = useState(null);
-  const [tteUploadNik, setTteUploadNik] = useState("1234567890123452");
-  const [tteUploadPassphrase, setTteUploadPassphrase] = useState("Bsre2026.#@");
+  const [tteUploadNik, setTteUploadNik] = useState("3515062807940002");
+  const [tteUploadPassphrase, setTteUploadPassphrase] = useState("Fahmi#123");
   const [tteUploading, setTteUploading] = useState(false);
   const navigate = useNavigate();
 
@@ -415,16 +415,16 @@ export default function HasilIndex() {
           title: "🔏 Penandatanganan Elektronik (TTE BSrE)",
           html: `
             <div style="text-align: left; font-size: 13px;">
-              <p style="color: #64748b; margin-bottom: 12px;">Persetujuan TTD Kepala Labkesda via API TTE BSrE: <code>10.1.10.9/api/sign/pdf</code></p>
+              <p style="color: #64748b; margin-bottom: 12px;">Persetujuan TTD Kepala Labkesda via API TTE BSrE: <code>10.1.10.99/api/sign/pdf</code></p>
               
               <div style="margin-bottom: 12px;">
                 <label style="font-weight: bold; display: block; margin-bottom: 4px;">NIK Penandatangan:</label>
-                <input id="swal-nik" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="1234567890123452" placeholder="Masukkan NIK" />
+                <input id="swal-nik" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="3515062807940002" placeholder="Masukkan NIK" />
               </div>
 
               <div style="margin-bottom: 12px;">
                 <label style="font-weight: bold; display: block; margin-bottom: 4px;">Passphrase TTE:</label>
-                <input id="swal-passphrase" type="password" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="Bsre2026.#@" placeholder="Masukkan Passphrase" />
+                <input id="swal-passphrase" type="password" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="Fahmi#123" placeholder="Masukkan Passphrase" />
               </div>
 
               <div style="margin-bottom: 8px;">
@@ -507,8 +507,8 @@ export default function HasilIndex() {
           formData.append("file", pdfBlob, `Laporan_Hasil_${hasilId}.pdf`);
         }
         formData.append("id", hasilId);
-        formData.append("nik", tteData.nik || "1234567890123452");
-        formData.append("passphrase", tteData.passphrase || "Bsre2026.#@");
+        formData.append("nik", tteData.nik || "3515062807940002");
+        formData.append("passphrase", tteData.passphrase || "Fahmi#123");
         formData.append("tampilan", tteData.tampilan || "invisible");
 
         try {
@@ -618,16 +618,16 @@ export default function HasilIndex() {
           title: `🔏 Penandatanganan Elektronik ${ids.length} Sampel (TTE BSrE)`,
           html: `
             <div style="text-align: left; font-size: 13px;">
-              <p style="color: #64748b; margin-bottom: 12px;">Persetujuan TTD Kepala Labkesda untuk ${ids.length} parameter sampel sekaligus (BSrE API: <code>10.1.10.9/api/sign/pdf</code>)</p>
+              <p style="color: #64748b; margin-bottom: 12px;">Persetujuan TTD Kepala Labkesda untuk ${ids.length} parameter sampel sekaligus (BSrE API: <code>10.1.10.99/api/sign/pdf</code>)</p>
               
               <div style="margin-bottom: 12px;">
                 <label style="font-weight: bold; display: block; margin-bottom: 4px;">NIK Penandatangan:</label>
-                <input id="swal-batch-nik" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="1234567890123452" placeholder="Masukkan NIK" />
+                <input id="swal-batch-nik" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="3515062807940002" placeholder="Masukkan NIK" />
               </div>
 
               <div style="margin-bottom: 12px;">
                 <label style="font-weight: bold; display: block; margin-bottom: 4px;">Passphrase TTE:</label>
-                <input id="swal-batch-passphrase" type="password" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="Bsre2026.#@" placeholder="Masukkan Passphrase" />
+                <input id="swal-batch-passphrase" type="password" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="Fahmi#123" placeholder="Masukkan Passphrase" />
               </div>
 
               <div style="margin-bottom: 8px;">
@@ -708,8 +708,8 @@ export default function HasilIndex() {
           formData.append("file", pdfBlob, `Laporan_Hasil_Batch_${ids[0]}.pdf`);
         }
         formData.append("hasil_ids", JSON.stringify(ids));
-        formData.append("nik", tteData.nik || "1234567890123452");
-        formData.append("passphrase", tteData.passphrase || "Bsre2026.#@");
+        formData.append("nik", tteData.nik || "3515062807940002");
+        formData.append("passphrase", tteData.passphrase || "Fahmi#123");
         formData.append("tampilan", tteData.tampilan || "invisible");
 
         try {
@@ -796,8 +796,8 @@ export default function HasilIndex() {
     try {
       const formData = new FormData();
       formData.append("file", tteUploadFile, tteUploadFile.name);
-      formData.append("nik", tteUploadNik || "1234567890123452");
-      formData.append("passphrase", tteUploadPassphrase || "Bsre2026.#@");
+      formData.append("nik", tteUploadNik || "3515062807940002");
+      formData.append("passphrase", tteUploadPassphrase || "Fahmi#123");
       formData.append("tampilan", "invisible");
 
       const token = Cookies.get("token");
