@@ -9,6 +9,17 @@ const Api = axios.create({
     baseURL: import.meta.env.VITE_APP_BASEURL
 })
 
+// Automatically attach Authorization token if available in cookies
+Api.interceptors.request.use((config) => {
+    const token = Cookies.get('token');
+    if (token) {
+        config.headers.Authorization = token;
+    }
+    return config;
+}, (error) => {
+    return Promise.reject(error);
+});
+
 //handle unauthenticated
 Api.interceptors.response.use(function(response) {
     return response;

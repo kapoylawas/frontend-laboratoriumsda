@@ -331,8 +331,8 @@ export default function HasilIndex() {
   const [selectedPrintIds, setSelectedPrintIds] = useState(new Set());
   const [showTteModal, setShowTteModal] = useState(false);
   const [tteUploadFile, setTteUploadFile] = useState(null);
-  const [tteUploadNik, setTteUploadNik] = useState("3515062807940002");
-  const [tteUploadPassphrase, setTteUploadPassphrase] = useState("Fahmi#123");
+  const [tteUploadNik, setTteUploadNik] = useState("");
+  const [tteUploadPassphrase, setTteUploadPassphrase] = useState("");
   const [tteUploading, setTteUploading] = useState(false);
   const navigate = useNavigate();
 
@@ -415,16 +415,16 @@ export default function HasilIndex() {
           title: "🔏 Penandatanganan Elektronik (TTE BSrE)",
           html: `
             <div style="text-align: left; font-size: 13px;">
-              <p style="color: #64748b; margin-bottom: 12px;">Persetujuan TTD Kepala Labkesda via API TTE BSrE: <code>10.1.10.99/api/sign/pdf</code></p>
+              <p style="color: #64748b; margin-bottom: 12px;">Persetujuan TTD Kepala Labkesda via Layanan TTE BSrE Terintegrasi</p>
               
               <div style="margin-bottom: 12px;">
                 <label style="font-weight: bold; display: block; margin-bottom: 4px;">NIK Penandatangan:</label>
-                <input id="swal-nik" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="3515062807940002" placeholder="Masukkan NIK" />
+                <input id="swal-nik" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="" placeholder="Masukkan NIK 16 digit" />
               </div>
 
               <div style="margin-bottom: 12px;">
                 <label style="font-weight: bold; display: block; margin-bottom: 4px;">Passphrase TTE:</label>
-                <input id="swal-passphrase" type="password" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="Fahmi#123" placeholder="Masukkan Passphrase" />
+                <input id="swal-passphrase" type="password" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="" placeholder="Masukkan Passphrase BSrE" />
               </div>
 
               <div style="margin-bottom: 8px;">
@@ -442,11 +442,18 @@ export default function HasilIndex() {
           cancelButtonText: "Batal",
           confirmButtonColor: "#0d6efd",
           preConfirm: () => {
-            return {
-              nik: document.getElementById("swal-nik").value,
-              passphrase: document.getElementById("swal-passphrase").value,
-              tampilan: document.getElementById("swal-tampilan").value
-            };
+            const nik = document.getElementById("swal-nik")?.value?.trim();
+            const passphrase = document.getElementById("swal-passphrase")?.value;
+            const tampilan = document.getElementById("swal-tampilan")?.value;
+            if (!nik) {
+              Swal.showValidationMessage("NIK penandatangan wajib diisi!");
+              return false;
+            }
+            if (!passphrase) {
+              Swal.showValidationMessage("Passphrase TTE wajib diisi!");
+              return false;
+            }
+            return { nik, passphrase, tampilan };
           }
         });
         if (isDismissed || !formValues) return;
@@ -507,8 +514,8 @@ export default function HasilIndex() {
           formData.append("file", pdfBlob, `Laporan_Hasil_${hasilId}.pdf`);
         }
         formData.append("id", hasilId);
-        formData.append("nik", tteData.nik || "3515062807940002");
-        formData.append("passphrase", tteData.passphrase || "Fahmi#123");
+        formData.append("nik", tteData.nik || "");
+        formData.append("passphrase", tteData.passphrase || "");
         formData.append("tampilan", tteData.tampilan || "invisible");
 
         try {
@@ -618,16 +625,16 @@ export default function HasilIndex() {
           title: `🔏 Penandatanganan Elektronik ${ids.length} Sampel (TTE BSrE)`,
           html: `
             <div style="text-align: left; font-size: 13px;">
-              <p style="color: #64748b; margin-bottom: 12px;">Persetujuan TTD Kepala Labkesda untuk ${ids.length} parameter sampel sekaligus (BSrE API: <code>10.1.10.99/api/sign/pdf</code>)</p>
+              <p style="color: #64748b; margin-bottom: 12px;">Persetujuan TTD Kepala Labkesda untuk ${ids.length} parameter sampel sekaligus via Layanan TTE BSrE Terintegrasi</p>
               
               <div style="margin-bottom: 12px;">
                 <label style="font-weight: bold; display: block; margin-bottom: 4px;">NIK Penandatangan:</label>
-                <input id="swal-batch-nik" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="3515062807940002" placeholder="Masukkan NIK" />
+                <input id="swal-batch-nik" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="" placeholder="Masukkan NIK 16 digit" />
               </div>
 
               <div style="margin-bottom: 12px;">
                 <label style="font-weight: bold; display: block; margin-bottom: 4px;">Passphrase TTE:</label>
-                <input id="swal-batch-passphrase" type="password" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="Fahmi#123" placeholder="Masukkan Passphrase" />
+                <input id="swal-batch-passphrase" type="password" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="" placeholder="Masukkan Passphrase BSrE" />
               </div>
 
               <div style="margin-bottom: 8px;">
@@ -645,11 +652,18 @@ export default function HasilIndex() {
           cancelButtonText: "Batal",
           confirmButtonColor: "#0d6efd",
           preConfirm: () => {
-            return {
-              nik: document.getElementById("swal-batch-nik").value,
-              passphrase: document.getElementById("swal-batch-passphrase").value,
-              tampilan: document.getElementById("swal-batch-tampilan").value
-            };
+            const nik = document.getElementById("swal-batch-nik")?.value?.trim();
+            const passphrase = document.getElementById("swal-batch-passphrase")?.value;
+            const tampilan = document.getElementById("swal-batch-tampilan")?.value;
+            if (!nik) {
+              Swal.showValidationMessage("NIK penandatangan wajib diisi!");
+              return false;
+            }
+            if (!passphrase) {
+              Swal.showValidationMessage("Passphrase TTE wajib diisi!");
+              return false;
+            }
+            return { nik, passphrase, tampilan };
           }
         });
         if (isDismissed || !formValues) return;
@@ -708,8 +722,8 @@ export default function HasilIndex() {
           formData.append("file", pdfBlob, `Laporan_Hasil_Batch_${ids[0]}.pdf`);
         }
         formData.append("hasil_ids", JSON.stringify(ids));
-        formData.append("nik", tteData.nik || "3515062807940002");
-        formData.append("passphrase", tteData.passphrase || "Fahmi#123");
+        formData.append("nik", tteData.nik || "");
+        formData.append("passphrase", tteData.passphrase || "");
         formData.append("tampilan", tteData.tampilan || "invisible");
 
         try {
@@ -792,12 +806,20 @@ export default function HasilIndex() {
       Swal.fire({ icon: "warning", title: "Pilih file PDF terlebih dahulu", timer: 2000, showConfirmButton: false });
       return;
     }
+    if (!tteUploadNik?.trim()) {
+      Swal.fire({ icon: "warning", title: "NIK penandatangan wajib diisi", timer: 2000, showConfirmButton: false });
+      return;
+    }
+    if (!tteUploadPassphrase) {
+      Swal.fire({ icon: "warning", title: "Passphrase TTE wajib diisi", timer: 2000, showConfirmButton: false });
+      return;
+    }
     setTteUploading(true);
     try {
       const formData = new FormData();
       formData.append("file", tteUploadFile, tteUploadFile.name);
-      formData.append("nik", tteUploadNik || "3515062807940002");
-      formData.append("passphrase", tteUploadPassphrase || "Fahmi#123");
+      formData.append("nik", tteUploadNik.trim());
+      formData.append("passphrase", tteUploadPassphrase);
       formData.append("tampilan", "invisible");
 
       const token = Cookies.get("token");

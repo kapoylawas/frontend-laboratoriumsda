@@ -22,9 +22,14 @@ export const useStore = create((set, get) => ({
         // Set state token
         set({ token: response.data.data.token });
 
-        // Set cookies
-        Cookies.set("user", JSON.stringify(response.data.data.user));
-        Cookies.set("token", response.data.data.token);
+        // Set cookies with security options
+        const cookieOptions = {
+            sameSite: "strict",
+            secure: window.location.protocol === "https:",
+            expires: 1
+        };
+        Cookies.set("user", JSON.stringify(response.data.data.user), cookieOptions);
+        Cookies.set("token", response.data.data.token, cookieOptions);
     },
 
     //action logout

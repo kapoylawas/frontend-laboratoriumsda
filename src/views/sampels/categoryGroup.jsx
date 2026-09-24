@@ -1,5 +1,6 @@
 import { IconChevronUp, IconChevronDown, IconPackage, IconInfoCircle } from "@tabler/icons-react";
 import SampelRow from './sampelRow';
+import DOMPurify from 'dompurify';
 
 export default function CategoryGroup({
     categoryId,
@@ -15,12 +16,12 @@ export default function CategoryGroup({
 }) {
     // Highlight search terms in category name
     const highlightSearchTerm = (text, searchTerm) => {
-        if (!searchTerm) return text;
+        if (!searchTerm) return DOMPurify.sanitize(text);
 
         // Escape special regex characters
         const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regex = new RegExp(`(${escapedSearchTerm})`, 'gi');
-        return text.replace(regex, '<mark>$1</mark>');
+        return DOMPurify.sanitize(text.replace(regex, '<mark>$1</mark>'));
     };
 
     return (

@@ -5,6 +5,7 @@ import { useStore as useUserStore } from "../../stores/user";
 import { useStore as useThemeStore } from "../../stores/theme";
 import Cookies from "js-cookie";
 import Swal from "sweetalert2";
+import DOMPurify from "dompurify";
 import {
   IconSun,
   IconMoon,
@@ -186,9 +187,8 @@ export default function LandingPage() {
         setApiCategories(catsMap);
         setApiSampels(sampelsList);
         setGroupedSampels(grouped);
-        const expanded = {};
-        Object.keys(catsMap).forEach(id => { expanded[id] = true; });
-        setExpandedCategories(expanded);
+        // Default collapsed: semua kategori tertutup saat pertama kali membuka web
+        setExpandedCategories({});
       } catch (e) {
         console.log('Gagal fetch publik sampels:', e);
       } finally {
@@ -200,6 +200,13 @@ export default function LandingPage() {
 
   const toggleCategory = (id) =>
     setExpandedCategories(prev => ({ ...prev, [id]: !prev[id] }));
+
+  const handleSelectCategory = (id) => {
+    setSelectedCatId(id);
+    if (id !== 'semua') {
+      setExpandedCategories(prev => ({ ...prev, [id]: true }));
+    }
+  };
 
   // Filter grouped by search + selected category
   const filteredGrouped = useMemo(() => {
@@ -748,13 +755,13 @@ export default function LandingPage() {
             <div className="catalog-filter-pills mb-4">
               <button
                 className={`catalog-pill ${selectedCatId === 'semua' ? 'active' : ''}`}
-                onClick={() => setSelectedCatId('semua')}
+                onClick={() => handleSelectCategory('semua')}
               >Semua Kategori</button>
               {Object.entries(apiCategories).map(([id, cat]) => (
                 <button
                   key={id}
                   className={`catalog-pill ${selectedCatId === id ? 'active' : ''}`}
-                  onClick={() => setSelectedCatId(id)}
+                  onClick={() => handleSelectCategory(id)}
                 >{cat.name}</button>
               ))}
             </div>
@@ -775,7 +782,7 @@ export default function LandingPage() {
                 </p>
                 <button
                   className="catalog-pill active px-4"
-                  onClick={() => setSelectedCatId('semua')}
+                  onClick={() => handleSelectCategory('semua')}
                 >Tampilkan Semua Kategori</button>
               </div>
             ) : (
@@ -834,9 +841,11 @@ export default function LandingPage() {
                                       <span className="param-name" style={{ color: color.text }}>
                                         {sampelSearch ? (
                                           <span dangerouslySetInnerHTML={{
-                                            __html: (s.parameter || '-').replace(
-                                              new RegExp(`(${sampelSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'),
-                                              '<mark class="search-highlight">$1</mark>'
+                                            __html: DOMPurify.sanitize(
+                                              (s.parameter || '-').replace(
+                                                new RegExp(`(${sampelSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'),
+                                                '<mark class="search-highlight">$1</mark>'
+                                              )
                                             )
                                           }} />
                                         ) : (s.parameter || '-')}
@@ -1118,17 +1127,6 @@ export default function LandingPage() {
             <p className="mb-0">
               &copy; {new Date().getFullYear()} UPT Laboratorium Kesehatan Daerah Kabupaten Sidoarjo. Hak Cipta Dilindungi.
             </p>
-            <div className="d-flex align-items-center gap-2.5 px-3.5 py-2 rounded-pill bg-white text-dark shadow-sm border border-secondary border-opacity-20 flex-shrink-0">
-              <img
-                src="/bsre-logo.png"
-                onError={(e) => { e.target.style.display = 'none'; }}
-                style={{ height: '36px', width: 'auto', objectFit: 'contain' }}
-                alt="BSrE"
-              />
-              <span className="small text-dark fw-bold" style={{ fontSize: '0.85rem' }}>
-                Terintegrasi TTE BSrE
-              </span>
-            </div>
           </div>
         </div>
       </footer>

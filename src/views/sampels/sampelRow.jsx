@@ -1,14 +1,15 @@
 import SampelEdit from './edit';
 import DeleteButton from '../../components/DeleteButton';
+import DOMPurify from 'dompurify';
 
 export default function SampelRow({ sampel, color, formatCurrency, fetchData, keywords }) {
     // Highlight search terms in parameter name
     const highlightSearchTerm = (text, searchTerm) => {
-        if (!searchTerm) return text;
+        if (!searchTerm) return DOMPurify.sanitize(text);
 
         const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regex = new RegExp(`(${escapedSearchTerm})`, 'gi');
-        return text.replace(regex, '<mark>$1</mark>');
+        return DOMPurify.sanitize(text.replace(regex, '<mark>$1</mark>'));
     };
 
     return (

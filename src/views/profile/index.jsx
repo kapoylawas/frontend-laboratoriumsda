@@ -30,7 +30,11 @@ export default function Profile() {
 
     const handleSave = () => {
         // Simpan perubahan ke cookies (dalam aplikasi nyata, ini akan disimpan ke API)
-        Cookies.set("user", JSON.stringify(formData));
+        Cookies.set("user", JSON.stringify(formData), {
+            sameSite: "strict",
+            secure: window.location.protocol === "https:",
+            expires: 1
+        });
         setUserData(formData);
         setIsEditing(false);
         alert("Profile berhasil diperbarui!");

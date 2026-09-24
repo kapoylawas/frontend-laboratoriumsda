@@ -1,0 +1,20 @@
+# robots.txt for UPTD Laboratorium Kesehatan Daerah Kabupaten Sidoarjo
+User-agent: *
+Disallow: /dashboard/
+Disallow: /users/
+Disallow: /hasil/
+Disallow: /pengajuan/
+Disallow: /penjadwalan/
+Disallow: /categories/
+Disallow: /sampels/
+Disallow: /orders/
+Disallow: /profile/
+Disallow: /stock-opname/
+Disallow: /berita-acara/
+Disallow: /jadwal-pengambilan/
+Disallow: /penawaran-all/
+Disallow: /activite/
+Disallow: /history/
+Allow: /
+Allow: /login
+Allow: /register
