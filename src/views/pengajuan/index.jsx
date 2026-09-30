@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import Api from '../../services/api';
@@ -10,8 +10,12 @@ import { isAdmin } from '../../constants/roles';
 import {
     IconFileText, IconPlus, IconSearch, IconCheck,
     IconClock, IconClockX, IconBan, IconChecklist, IconPackage,
-    IconEye, IconSparkles, IconInfoCircle
+    IconEye, IconSparkles, IconInfoCircle,
+    IconMapPin, IconHome, IconBuilding
 } from '@tabler/icons-react';
+import { parseLocationFromCatatan } from '../../utils/locationParser';
+import PemohonanLocationCard from '../../components/PemohonanLocationCard';
+import PemohonanLocationModal from '../../components/PemohonanLocationModal';
 
 export default function Pengajuan() {
     const { user } = useUserStore();
@@ -21,6 +25,8 @@ export default function Pengajuan() {
     const [pagination, setPagination] = useState({});
     const [keywords, setKeywords] = useState('');
     const [expandedRows, setExpandedRows] = useState({});
+    const [selectedLocationItem, setSelectedLocationItem] = useState(null);
+    const [showLocationModal, setShowLocationModal] = useState(false);
 
     const formatCurrency = (value) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value || 0);
@@ -436,13 +442,13 @@ export default function Pengajuan() {
                         <table className="table table-vcenter mb-0 align-middle">
                             <thead className="table-3d-header">
                                 <tr>
-                                    <th className="text-center" style={{ width: '60px' }}>No</th>
-                                    <th>Jenis Pengajuan</th>
-                                    <th>Rincian Item</th>
-                                    <th>Total Biaya</th>
-                                    <th>Status</th>
-                                    <th>Tanggal Pengajuan</th>
-                                    <th className="text-end pe-4" style={{ width: '140px' }}>Aksi</th>
+                                    <th className="text-center" style={{ width: '50px' }}>No</th>
+                                    <th className="text-center" style={{ width: '140px' }}>Jenis Pengajuan</th>
+                                    <th style={{ minWidth: '260px' }}>Rincian Item</th>
+                                    <th className="text-end" style={{ width: '120px' }}>Total Biaya</th>
+                                    <th className="text-center" style={{ width: '130px' }}>Status</th>
+                                    <th className="text-center" style={{ width: '120px' }}>Tanggal Pengajuan</th>
+                                    <th className="text-center" style={{ width: '100px' }}>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -460,44 +466,108 @@ export default function Pengajuan() {
                                             : index + 1;
                                         const isExpanded = expandedRows[item.id];
                                         const grandTotal = calcGrandTotal(item.items);
+                                        const loc = parseLocationFromCatatan(item.catatan, item);
                                         return (
-                                            <>
+                                            <React.Fragment key={item.id}>
                                                 <tr
-                                                    key={item.id}
                                                     style={{ cursor: 'pointer', transition: 'background-color 0.2s' }}
                                                     onClick={() => toggleRow(item.id)}
                                                     className={isExpanded ? "table-active" : ""}
                                                 >
                                                     <td className="text-center fw-bold text-secondary">{rowNumber}</td>
-                                                    <td>{getJenisBadge(item.jenis)}</td>
+                                                    <td className="text-center">{getJenisBadge(item.jenis)}</td>
                                                     <td>
-                                                        <div>
-                                                            <span className="badge-3d px-2 py-1 bg-white text-dark me-2" style={{ fontSize: '11px' }}>
-                                                                {item.items?.length || 0} item sampel
-                                                            </span>
-                                                            {item.catatan && (
-                                                                <small className="text-muted fst-italic">- {item.catatan}</small>
+                                                        <div className="d-flex flex-column gap-1 py-1">
+                                                            {/* Badges line */}
+                                                            <div className="d-flex align-items-center gap-1 flex-wrap">
+                                                                <span className="badge-3d px-2 py-1 bg-white text-dark" style={{ fontSize: '11px' }}>
+                                                                    {item.items?.length || 0} Sampel
+                                                                </span>
+
+                                                                {loc.isDiRumah && (
+                                                                    <button
+                                                                        type="button"
+                                                                        className="badge-3d px-2 py-1 text-dark d-inline-flex align-items-center gap-1 border-0"
+                                                                        style={{ 
+                                                                            backgroundColor: '#fed7aa', 
+                                                                            fontSize: '11px',
+                                                                            cursor: 'pointer'
+                                                                        }}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setSelectedLocationItem(item);
+                                                                            setShowLocationModal(true);
+                                                                        }}
+                                                                        title="Klik untuk melihat peta lokasi penjemputan"
+                                                                    >
+                                                                        <IconMapPin size={12} className="text-danger" /> Di Rumah • Peta
+                                                                    </button>
+                                                                )}
+
+                                                                {loc.isLabkesda && (
+                                                                    <span 
+                                                                        className="badge-3d px-2 py-1 text-dark d-inline-flex align-items-center gap-1"
+                                                                        style={{ backgroundColor: '#bfdbfe', fontSize: '11px' }}
+                                                                    >
+                                                                        <IconBuilding size={12} /> Di Labkesda
+                                                                    </span>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Alamat Preview */}
+                                                            {loc.alamat && (
+                                                                <div 
+                                                                    className="small text-secondary text-truncate d-flex align-items-center gap-1 mt-1" 
+                                                                    style={{ maxWidth: '280px', fontSize: '11.5px', cursor: 'pointer' }}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setSelectedLocationItem(item);
+                                                                        setShowLocationModal(true);
+                                                                    }}
+                                                                    title={`${loc.alamat} (Klik untuk buka peta)`}
+                                                                >
+                                                                    <span className="text-danger flex-shrink-0">📍</span>
+                                                                    <span className="text-dark fw-bold text-truncate">{loc.alamat}</span>
+                                                                </div>
                                                             )}
+
+                                                            {/* Clean note if exists */}
+                                                            {loc.cleanNote ? (
+                                                                <small className="text-muted fst-italic text-truncate" style={{ maxWidth: '280px', fontSize: '11px' }} title={loc.cleanNote}>
+                                                                    "{loc.cleanNote}"
+                                                                </small>
+                                                            ) : null}
                                                         </div>
                                                     </td>
-                                                    <td className="fw-black text-primary fs-6">{formatCurrency(grandTotal)}</td>
-                                                    <td>{getStatusBadge(item.status)}</td>
-                                                    <td className="text-muted small">
+                                                    <td className="text-end fw-black text-primary fs-6 text-nowrap">{formatCurrency(grandTotal)}</td>
+                                                    <td className="text-center">
+                                                        <div>{getStatusBadge(item.status)}</div>
+                                                        {item.status === 'CANCELLED' && loc.alasanPembatalan && (
+                                                            <small 
+                                                                className="text-danger d-block text-truncate fw-semibold mt-1" 
+                                                                style={{ maxWidth: '120px', fontSize: '10px' }}
+                                                                title={loc.alasanPembatalan}
+                                                            >
+                                                                {loc.alasanPembatalan.replace('Alasan pembatalan oleh admin:', '').trim()}
+                                                            </small>
+                                                        )}
+                                                    </td>
+                                                    <td className="text-center text-muted small text-nowrap">
                                                         {item.tanggal_pengajuan ? (
                                                             <>
                                                                 <div className="fw-semibold text-dark">{new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
-                                                                <small>{new Date(item.tanggal_pengajuan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</small>
+                                                                <small style={{ fontSize: '11px' }}>{new Date(item.tanggal_pengajuan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</small>
                                                             </>
                                                         ) : '-'}
                                                     </td>
-                                                    <td className="text-end pe-4" onClick={(e) => e.stopPropagation()}>
-                                                        <div className="d-flex justify-content-end gap-2">
+                                                    <td className="text-center pe-3" onClick={(e) => e.stopPropagation()}>
+                                                        <div className="d-flex justify-content-center align-items-center gap-1 flex-nowrap">
                                                             <Link to={`/penawaran/${item.id}`} className="btn-3d-secondary py-1 px-2 text-decoration-none" title="Lihat Detail">
-                                                                <IconEye size={16} />
+                                                                <IconEye size={15} />
                                                             </Link>
                                                             {item.status === 'PENDING' && userIsAdmin && (
                                                                 <button className="btn-3d-danger py-1 px-2" onClick={() => handleCancel(item.id)} title="Batalkan">
-                                                                    <IconBan size={16} />
+                                                                    <IconBan size={15} />
                                                                 </button>
                                                             )}
                                                         </div>
@@ -505,47 +575,56 @@ export default function Pengajuan() {
                                                 </tr>
 
                                                 {/* Expanded 3D Sub-Items Container */}
-                                                {isExpanded && item.items && item.items.length > 0 && (
+                                                {isExpanded && (
                                                     <tr key={`${item.id}-detail`}>
                                                         <td colSpan="7" className="p-0 border-top-0">
                                                             <div className="p-3" style={{ backgroundColor: '#f8fafc', borderBottom: '2.5px solid #000' }}>
-                                                                <div className="fw-bold text-uppercase fs-8 text-primary mb-2 d-flex align-items-center gap-1">
-                                                                    <IconInfoCircle size={16} /> Item Sampel & Parameter Pengujian (#{item.id})
-                                                                </div>
-                                                                <div className="row g-2">
-                                                                    {item.items.map((subItem, subIdx) => (
-                                                                        <div key={subItem.id || subIdx} className="col-md-6 col-lg-4">
-                                                                            <div className="item-card-3d p-3">
-                                                                                <div className="d-flex justify-content-between align-items-start mb-2">
-                                                                                    <div>
-                                                                                        <div className="fw-extrabold text-dark fs-6">{subItem.sampel?.parameter || '-'}</div>
-                                                                                        <span className="badge-3d px-2 py-0 bg-info text-white" style={{ fontSize: '10px' }}>
-                                                                                            {subItem.sampel?.category?.name || 'Tanpa Kategori'}
-                                                                                        </span>
-                                                                                    </div>
-                                                                                    <span className="badge-3d px-2 py-1 bg-warning text-dark">
-                                                                                        x{subItem.qty}
-                                                                                    </span>
-                                                                                </div>
-                                                                                <div className="d-flex justify-content-between align-items-center pt-2 border-top">
-                                                                                    <small className="text-muted">{formatCurrency(subItem.sampel?.price_sell || 0)} / item</small>
-                                                                                    <span className="fw-extrabold text-primary">{formatCurrency(subItem.price || 0)}</span>
-                                                                                </div>
-                                                                            </div>
+                                                                {/* 1. Lokasi Pengambilan Sampel & Peta Preview */}
+                                                                <PemohonanLocationCard 
+                                                                    catatan={item.catatan} 
+                                                                    item={item} 
+                                                                    onOpenModal={(selected) => {
+                                                                        setSelectedLocationItem(selected);
+                                                                        setShowLocationModal(true);
+                                                                    }} 
+                                                                />
+
+                                                                {/* 2. Item Sampel & Parameter Pengujian */}
+                                                                {item.items && item.items.length > 0 && (
+                                                                    <>
+                                                                        <div className="fw-bold text-uppercase fs-8 text-primary mb-2 d-flex align-items-center gap-1">
+                                                                            <IconInfoCircle size={16} /> Item Sampel & Parameter Pengujian (#{item.id})
                                                                         </div>
-                                                                    ))}
-                                                                </div>
-                                                                {item.catatan && (
-                                                                    <div className="mt-3 p-2 bg-white rounded-3 border" style={{ border: '2px solid #000' }}>
-                                                                        <small className="text-dark fw-semibold">Catatan Tambahan:</small>
-                                                                        <p className="mb-0 small text-muted">{item.catatan}</p>
-                                                                    </div>
+                                                                        <div className="row g-2">
+                                                                            {item.items.map((subItem, subIdx) => (
+                                                                                <div key={subItem.id || subIdx} className="col-md-6 col-lg-4">
+                                                                                    <div className="item-card-3d p-3">
+                                                                                        <div className="d-flex justify-content-between align-items-start mb-2">
+                                                                                            <div>
+                                                                                                <div className="fw-extrabold text-dark fs-6">{subItem.sampel?.parameter || '-'}</div>
+                                                                                                <span className="badge-3d px-2 py-0 bg-info text-white" style={{ fontSize: '10px' }}>
+                                                                                                    {subItem.sampel?.category?.name || 'Tanpa Kategori'}
+                                                                                                </span>
+                                                                                            </div>
+                                                                                            <span className="badge-3d px-2 py-1 bg-warning text-dark">
+                                                                                                x{subItem.qty}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                        <div className="d-flex justify-content-between align-items-center pt-2 border-top">
+                                                                                            <small className="text-muted">{formatCurrency(subItem.sampel?.price_sell || 0)} / item</small>
+                                                                                            <span className="fw-extrabold text-primary">{formatCurrency(subItem.price || 0)}</span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </>
                                                                 )}
                                                             </div>
                                                         </td>
                                                     </tr>
                                                 )}
-                                            </>
+                                            </React.Fragment>
                                         );
                                     })
                                 ) : (
@@ -573,6 +652,13 @@ export default function Pengajuan() {
                         </div>
                     )}
                 </div>
+
+                {/* Location & Map Modal */}
+                <PemohonanLocationModal 
+                    isOpen={showLocationModal}
+                    onClose={() => setShowLocationModal(false)}
+                    item={selectedLocationItem}
+                />
             </div>
         </LayoutAdmin>
     );

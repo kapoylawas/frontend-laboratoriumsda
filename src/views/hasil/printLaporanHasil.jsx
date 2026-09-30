@@ -18,10 +18,18 @@ export default function PrintLaporanHasil() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [reportMeta, setReportMeta] = useState({
     nomorLaporan: "600.4.26.2/102/438.5.2.3/2026",
+    jenisPemeriksaan: "-",
+    lokasiPengambilan: "-",
     pengambilanLokasi: "-",
-    tanggalPengambilan: "-",
+    jenisSampel: "Air Bersih",
+    titikLokasi: "-",
+    tanggalJamPengambilan: "-",
     tanggalPengerjaan: "-",
     petugasPengambil: "Tim Labkesda",
+    kondisiSampel: "Baik / Segar",
+    volumeSampel: "1000 mL",
+    suhuSampel: "4°C",
+    verifikator: "-",
     tujuanPermenkes: "PERMENKES RI NO. 2 Tahun 2023",
     tanggalCetak: new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }),
   });
@@ -146,24 +154,44 @@ export default function PrintLaporanHasil() {
               }
 
               if (matchedBA) {
-                const jenisLabel = matchedBA.jenis_pengambilan === 'DATANG_KE_LAB'
-                  ? 'Pelanggan datang ke Lab'
-                  : matchedBA.jenis_pengambilan === 'TIM_KE_LOKASI'
-                  ? 'Tim ke Lokasi'
-                  : null;
+                const isDatang = matchedBA.jenis_pengambilan === 'DATANG_KE_LAB';
+                const jenisLabel = isDatang
+                  ? 'Diserahkan langsung ke UPTD Labkesda'
+                  : 'Diambil di rumah pemohon';
+                const lokasi = matchedBA.pelanggan_alamat || scheduleLokasi || (isDatang ? 'UPTD Labkesda Sidoarjo' : 'Di Rumah Pemohon');
+                const titik = matchedBA.titik_pengambilan || scheduleLokasi || 'Kran Utama / Titik Sampling';
+                let hasilObj = {};
+                try {
+                  hasilObj = typeof matchedBA.hasil_lapangan === 'string' ? JSON.parse(matchedBA.hasil_lapangan) : (matchedBA.hasil_lapangan || {});
+                } catch (e) {}
 
-                const lokasi = scheduleLokasi || matchedBA.titik_pengambilan || null;
-                let pengambilanText = [jenisLabel, lokasi].filter(Boolean).join(' - ');
+                const tglJam = matchedBA.tanggal_pengambilan
+                  ? `${new Date(matchedBA.tanggal_pengambilan).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}${matchedBA.waktu_pengambilan ? ' ' + matchedBA.waktu_pengambilan + ' WIB' : ''}`
+                  : '-';
 
                 setReportMeta((prev) => ({
                   ...prev,
-                  pengambilanLokasi: pengambilanText || prev.pengambilanLokasi,
+                  lokasiPengambilan: lokasi,
+                  pengambilanLokasi: [jenisLabel, lokasi].filter(Boolean).join(' - '),
+                  jenisSampel: matchedBA.jenis_sampel || first.sampel?.category?.name || 'Air Bersih',
+                  titikLokasi: titik,
+                  tanggalJamPengambilan: tglJam,
                   petugasPengambil: matchedBA.petugas_pengambil || schedulePetugas || prev.petugasPengambil,
+                  kondisiSampel: matchedBA.kondisi || hasilObj.kondisi || 'Baik / Segar',
+                  volumeSampel: matchedBA.volume || hasilObj.volume || '1000 mL',
+                  suhuSampel: matchedBA.suhu || hasilObj.suhu || '4°C',
+                  verifikator: first.verifikator?.name || prev.verifikator,
                 }));
               } else if (matchedJP) {
+                const tglJam = matchedJP.tanggal_pengambilan
+                  ? `${new Date(matchedJP.tanggal_pengambilan).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}${matchedJP.waktu_pengambilan ? ' ' + matchedJP.waktu_pengambilan + ' WIB' : ''}`
+                  : '-';
                 setReportMeta((prev) => ({
                   ...prev,
+                  lokasiPengambilan: scheduleLokasi || 'Di Rumah Pemohon',
                   pengambilanLokasi: scheduleLokasi || prev.pengambilanLokasi,
+                  titikLokasi: scheduleLokasi || 'Kran Utama',
+                  tanggalJamPengambilan: tglJam,
                   petugasPengambil: schedulePetugas || prev.petugasPengambil,
                 }));
               }
@@ -276,42 +304,94 @@ export default function PrintLaporanHasil() {
           </p>
         </div>
 
-        {/* Metadata */}
-        <table className="table table-borderless table-sm mb-3" style={{ fontSize: "13px", width: "100%" }}>
+        {/* Metadata Revisi Poin 16 (11 Baris Lengkap) */}
+        <table className="table table-borderless table-sm mb-3" style={{ fontSize: "12px", width: "100%", lineHeight: "1.35" }}>
           <tbody>
-            <tr><td style={{ width: "28%", padding: "2px 0" }}>Jenis Pemeriksaan</td><td style={{ width: "2%", padding: "2px 0" }}>:</td><td style={{ padding: "2px 0" }}>{catName}</td></tr>
-            <tr><td style={{ padding: "2px 0", verticalAlign: "top" }}>Pengambilan Lokasi</td><td style={{ padding: "2px 0", verticalAlign: "top" }}>:</td><td style={{ padding: "2px 0", whiteSpace: "pre-line" }}>{reportMeta.pengambilanLokasi}</td></tr>
-            <tr><td style={{ padding: "2px 0" }}>Tanggal Pengerjaan</td><td style={{ padding: "2px 0" }}>:</td><td style={{ padding: "2px 0" }}>{reportMeta.tanggalPengerjaan}</td></tr>
-            <tr><td style={{ padding: "2px 0" }}>Petugas Pengambil Sampel</td><td style={{ padding: "2px 0" }}>:</td><td style={{ padding: "2px 0" }}>{reportMeta.petugasPengambil}</td></tr>
-            <tr><td style={{ padding: "2px 0" }}>Verifikator</td><td style={{ padding: "2px 0" }}>:</td><td style={{ padding: "2px 0" }}>{firstItem.verifikator?.name || "-"}</td></tr>
+            <tr>
+              <td style={{ width: "32%", padding: "2px 0" }}>jenis pemeriksaan</td>
+              <td style={{ width: "2%", padding: "2px 0" }}>:</td>
+              <td style={{ padding: "2px 0" }}>{catName}</td>
+            </tr>
+            <tr>
+              <td style={{ padding: "2px 0" }}>lokasi Pengambilan</td>
+              <td style={{ padding: "2px 0" }}>:</td>
+              <td style={{ padding: "2px 0" }}>{reportMeta.lokasiPengambilan || reportMeta.pengambilanLokasi || "-"}</td>
+            </tr>
+            <tr>
+              <td style={{ padding: "2px 0" }}>jenis sampel</td>
+              <td style={{ padding: "2px 0" }}>:</td>
+              <td style={{ padding: "2px 0" }}>{reportMeta.jenisSampel || firstItem.sampel?.category?.name || "Air Bersih"}</td>
+            </tr>
+            <tr>
+              <td style={{ padding: "2px 0" }}>Titik lokasi Pengambilan sampel</td>
+              <td style={{ padding: "2px 0" }}>:</td>
+              <td style={{ padding: "2px 0" }}>{reportMeta.titikLokasi || "-"}</td>
+            </tr>
+            <tr>
+              <td style={{ padding: "2px 0" }}>tanggal dan jam pengambilan sampel</td>
+              <td style={{ padding: "2px 0" }}>:</td>
+              <td style={{ padding: "2px 0" }}>{reportMeta.tanggalJamPengambilan || "-"}</td>
+            </tr>
+            <tr>
+              <td style={{ padding: "2px 0" }}>tanggal pengerjaan</td>
+              <td style={{ padding: "2px 0" }}>:</td>
+              <td style={{ padding: "2px 0" }}>{reportMeta.tanggalPengerjaan || "-"}</td>
+            </tr>
+            <tr>
+              <td style={{ padding: "2px 0" }}>petugas pengambil sampel</td>
+              <td style={{ padding: "2px 0" }}>:</td>
+              <td style={{ padding: "2px 0" }}>{reportMeta.petugasPengambil || "-"}</td>
+            </tr>
+            <tr>
+              <td style={{ padding: "2px 0" }}>kondisi sampel</td>
+              <td style={{ padding: "2px 0" }}>:</td>
+              <td style={{ padding: "2px 0" }}>{reportMeta.kondisiSampel || "Baik / Segar"}</td>
+            </tr>
+            <tr>
+              <td style={{ padding: "2px 0" }}>volume sampel</td>
+              <td style={{ padding: "2px 0" }}>:</td>
+              <td style={{ padding: "2px 0" }}>{reportMeta.volumeSampel || "1000 mL"}</td>
+            </tr>
+            <tr>
+              <td style={{ padding: "2px 0" }}>suhu</td>
+              <td style={{ padding: "2px 0" }}>:</td>
+              <td style={{ padding: "2px 0" }}>{reportMeta.suhuSampel || "4°C"}</td>
+            </tr>
+            <tr>
+              <td style={{ padding: "2px 0" }}>verivikator</td>
+              <td style={{ padding: "2px 0" }}>:</td>
+              <td style={{ padding: "2px 0" }}>{firstItem.verifikator?.name || reportMeta.verifikator || "-"}</td>
+            </tr>
           </tbody>
         </table>
 
-        {/* Tabel Hasil */}
-        <table className="table table-bordered text-center mb-3" style={{ borderColor: "#000", fontSize: "12px", width: "100%" }}>
+        {/* Tabel Hasil Revisi Poin 16 (8 Kolom) */}
+        <table className="table table-bordered text-center mb-3" style={{ borderColor: "#000", fontSize: "11px", width: "100%" }}>
           <thead style={{ backgroundColor: "#f8f9fa" }}>
             <tr>
-              <th style={{ width: "5%", border: "1px solid #000" }}>No.</th>
-              <th style={{ border: "1px solid #000" }}>Parameter / Jenis Sampel</th>
-              <th style={{ width: "18%", border: "1px solid #000" }}>Kode Sampel</th>
-              <th style={{ width: "16%", border: "1px solid #000" }}>Metode</th>
-              <th style={{ width: "12%", border: "1px solid #000" }}>Satuan</th>
-              <th style={{ width: "15%", border: "1px solid #000" }}>Batas Maksimal</th>
-              <th style={{ width: "10%", border: "1px solid #000" }}>Hasil</th>
+              <th style={{ width: "4%", border: "1px solid #000" }}>no</th>
+              <th style={{ border: "1px solid #000" }}>Parameter</th>
+              <th style={{ width: "14%", border: "1px solid #000" }}>kode sampel</th>
+              <th style={{ width: "13%", border: "1px solid #000" }}>metode</th>
+              <th style={{ width: "9%", border: "1px solid #000" }}>satuan</th>
+              <th style={{ width: "14%", border: "1px solid #000" }}>BATAS MAKSIMAL</th>
+              <th style={{ width: "10%", border: "1px solid #000" }}>HASIL</th>
+              <th style={{ width: "18%", border: "1px solid #000" }}>REFRENSI METODE</th>
             </tr>
           </thead>
           <tbody>
             {items.map((item, idx) => (
               <tr key={item.id || idx}>
-                <td style={{ border: "1px solid #000" }}>{idx + 1}.</td>
+                <td style={{ border: "1px solid #000" }}>{idx + 1}</td>
                 <td className="text-start" style={{ border: "1px solid #000", whiteSpace: "pre-line" }}>
                   {item.sampel?.parameter || "-"}
                 </td>
                 <td style={{ border: "1px solid #000" }}>{item.kode_sampel || "-"}</td>
-                <td style={{ border: "1px solid #000" }}>{item.metode || "-"}</td>
+                <td style={{ border: "1px solid #000" }}>{item.metode || item.sampel?.metode || "-"}</td>
                 <td style={{ border: "1px solid #000" }}>{item.satuan || "-"}</td>
                 <td style={{ border: "1px solid #000" }}>{item.kadar_maksimal ?? "-"}</td>
                 <td style={{ border: "1px solid #000" }}>{item.hasil ?? "-"}</td>
+                <td style={{ border: "1px solid #000" }}>{item.referensi_metode || item.refrensi_metode || item.metode || item.sampel?.metode || "SNI / APHA / Depkes RI"}</td>
               </tr>
             ))}
           </tbody>

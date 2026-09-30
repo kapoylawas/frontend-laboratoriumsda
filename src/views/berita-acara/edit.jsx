@@ -13,7 +13,10 @@ import {
     FaCamera, 
     FaUserCheck,
     FaCheck,
-    FaEdit
+    FaEdit,
+    FaBoxOpen,
+    FaTint,
+    FaTemperatureHigh
 } from 'react-icons/fa';
 import SignaturePad from '../../components/SignaturePad';
 
@@ -84,6 +87,9 @@ export default function BeritaAcaraEdit() {
         tanggal_pengambilan: '',
         waktu_pengambilan: '',
         tanggal_selesai_estimasi: '',
+        kondisi: 'Baik / Segar',
+        volume: '1000 mL',
+        suhu: '4°C',
         wadah_tipe: 'Botol',
         wadah_qty: '',
         wadah_lainnya: '',
@@ -95,7 +101,6 @@ export default function BeritaAcaraEdit() {
         pengendalian_mutu: [],
         pengawet: [],
         pengamanan_transportasi: [],
-        suhu: '',
         dhl: '',
         ph: '',
         sisa_klor: '',
@@ -104,6 +109,7 @@ export default function BeritaAcaraEdit() {
         kekeruhan: '',
         petugas_pengambil: '',
         pelanggan_saksi: '',
+        pelanggan_alamat: '',
         foto_pengambilan: '',
         foto_pelabelan: '',
         foto_pengemasan: '',
@@ -147,6 +153,8 @@ export default function BeritaAcaraEdit() {
 
                 const wadahObj = parseObject(data.jumlah_wadah);
                 const hasilObj = parseObject(data.hasil_lapangan);
+                const userObj = data.jadwals?.[0]?.transaction_detail?.transaction?.user || data.jadwal?.transaction_detail?.transaction?.user || {};
+                const userAlamat = userObj.alamat || userObj.address || data.pelanggan_alamat || '';
 
                 setTtdPetugas(hasilObj.ttd_petugas || '');
                 setTtdPelanggan(hasilObj.ttd_pelanggan || '');
@@ -162,6 +170,9 @@ export default function BeritaAcaraEdit() {
                     tanggal_pengambilan: data.tanggal_pengambilan ? data.tanggal_pengambilan.split('T')[0] : '',
                     waktu_pengambilan: data.waktu_pengambilan || '',
                     tanggal_selesai_estimasi: data.tanggal_selesai_estimasi ? data.tanggal_selesai_estimasi.split('T')[0] : '',
+                    kondisi: data.kondisi || hasilObj.kondisi || 'Baik / Segar',
+                    volume: data.volume || hasilObj.volume || '1000 mL',
+                    suhu: data.suhu || hasilObj.suhu || '4°C',
                     wadah_tipe: wadahObj.tipe || 'Botol',
                     wadah_qty: wadahObj.qty || '',
                     wadah_lainnya: wadahObj.lainnya || '',
@@ -173,7 +184,6 @@ export default function BeritaAcaraEdit() {
                     pengendalian_mutu: safeParse(data.pengendalian_mutu),
                     pengawet: safeParse(data.pengawet),
                     pengamanan_transportasi: safeParse(data.pengamanan_transportasi),
-                    suhu: hasilObj.suhu || '',
                     dhl: hasilObj.dhl || '',
                     ph: hasilObj.ph || '',
                     sisa_klor: hasilObj.sisa_klor || '',
@@ -182,6 +192,7 @@ export default function BeritaAcaraEdit() {
                     kekeruhan: hasilObj.kekeruhan || '',
                     petugas_pengambil: data.petugas_pengambil || '',
                     pelanggan_saksi: data.pelanggan_saksi || '',
+                    pelanggan_alamat: userAlamat,
                     foto_pengambilan: data.foto_pengambilan || '',
                     foto_pelabelan: data.foto_pelabelan || '',
                     foto_pengemasan: data.foto_pengemasan || '',
@@ -283,7 +294,14 @@ export default function BeritaAcaraEdit() {
                 formData.append('pengendalian_mutu', JSON.stringify(form.pengendalian_mutu));
                 formData.append('pengawet', JSON.stringify(form.pengawet));
                 formData.append('pengamanan_transportasi', JSON.stringify(form.pengamanan_transportasi));
+                // Field baru kondisi, volume, suhu sesuai revisi
+                formData.append('kondisi', form.kondisi || 'Baik / Segar');
+                formData.append('volume', form.volume || '1000 mL');
+                formData.append('suhu', form.suhu || '4°C');
+                formData.append('pelanggan_alamat', form.pelanggan_alamat || '');
                 formData.append('hasil_lapangan', JSON.stringify({
+                    kondisi: form.kondisi,
+                    volume: form.volume,
                     suhu: form.suhu,
                     dhl: form.dhl,
                     ph: form.ph,
@@ -408,41 +426,35 @@ export default function BeritaAcaraEdit() {
                                             </div>
 
                                             <div className="col-12 col-md-6">
-                                                <label className="form-label fw-semibold">Jenis Pengambilan Sampel</label>
-                                                <div className="d-flex gap-3 mt-1">
-                                                    <div className="form-check">
-                                                        <input
-                                                            type="radio"
-                                                            className="form-check-input"
-                                                            id="jenis_tim_ke_lokasi"
-                                                            name="jenis_pengambilan"
-                                                            value="TIM_KE_LOKASI"
-                                                            checked={form.jenis_pengambilan === 'TIM_KE_LOKASI'}
-                                                            onChange={handleChange}
-                                                        />
-                                                        <label className="form-check-label" htmlFor="jenis_tim_ke_lokasi">
-                                                            🚗 Tim ke Lokasi
-                                                        </label>
-                                                    </div>
-                                                    <div className="form-check">
-                                                        <input
-                                                            type="radio"
-                                                            className="form-check-input"
-                                                            id="jenis_datang_ke_lab"
-                                                            name="jenis_pengambilan"
-                                                            value="DATANG_KE_LAB"
-                                                            checked={form.jenis_pengambilan === 'DATANG_KE_LAB'}
-                                                            onChange={handleChange}
-                                                        />
-                                                        <label className="form-check-label" htmlFor="jenis_datang_ke_lab">
-                                                            🏥 Pelanggan datang ke Lab
-                                                        </label>
-                                                    </div>
+                                                <label className="form-label fw-semibold">Status / Jenis Berita Acara</label>
+                                                <div className="p-2 rounded border bg-light d-flex align-items-center gap-2">
+                                                    {form.jenis_pengambilan === 'DATANG_KE_LAB' ? (
+                                                        <span className="badge bg-info text-white fs-6 px-3 py-2 rounded-pill">
+                                                            🏥 Berita Acara Penerimaan Sampel (Diserahkan Langsung ke Labkesda)
+                                                        </span>
+                                                    ) : (
+                                                        <span className="badge bg-primary text-white fs-6 px-3 py-2 rounded-pill">
+                                                            🚗 Berita Acara Pengambilan Sampel (Diambil di Rumah Pemohon)
+                                                        </span>
+                                                    )}
                                                 </div>
+                                                <small className="text-muted">Jenis berita acara ditentukan otomatis dari pilihan lokasi pemohon saat order.</small>
+                                            </div>
+
+                                            <div className="col-12">
+                                                <label className="form-label fw-semibold">Alamat Rumah Pemohon (Otomatis dari Registrasi)</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    name="pelanggan_alamat"
+                                                    value={form.pelanggan_alamat}
+                                                    onChange={handleChange}
+                                                    placeholder="Alamat domisili pemohon..."
+                                                />
                                             </div>
 
                                             <div className="col-12 col-sm-6 col-md-4">
-                                                <label className="form-label fw-semibold required">Tanggal Pengambilan *</label>
+                                                <label className="form-label fw-semibold required">Tanggal Pengambilan / Penerimaan *</label>
                                                 <input 
                                                     type="date" 
                                                     className={`form-control ${errors.tanggal_pengambilan ? 'is-invalid' : ''}`} 
@@ -454,13 +466,56 @@ export default function BeritaAcaraEdit() {
                                             </div>
 
                                             <div className="col-12 col-sm-6 col-md-4">
-                                                <label className="form-label fw-semibold">Waktu Pengambilan</label>
+                                                <label className="form-label fw-semibold">Waktu Pengambilan / Penerimaan</label>
                                                 <input type="time" className="form-control" name="waktu_pengambilan" value={form.waktu_pengambilan} onChange={handleChange} />
                                             </div>
 
                                             <div className="col-12 col-sm-6 col-md-4">
                                                 <label className="form-label fw-semibold">Estimasi Selesai Pengujian</label>
                                                 <input type="date" className="form-control" name="tanggal_selesai_estimasi" value={form.tanggal_selesai_estimasi} onChange={handleChange} />
+                                            </div>
+
+                                            {/* Field Tambahan Revisi Poin 9: Kondisi, Volume, Suhu */}
+                                            <div className="col-12 col-sm-6 col-md-4">
+                                                <label className="form-label fw-semibold required d-flex align-items-center gap-1">
+                                                    <FaBoxOpen className="text-primary" /> a. Kondisi Sampel *
+                                                </label>
+                                                <input 
+                                                    type="text" 
+                                                    className="form-control" 
+                                                    name="kondisi" 
+                                                    value={form.kondisi} 
+                                                    onChange={handleChange} 
+                                                    placeholder="cth: Baik / Dingin / Segar" 
+                                                />
+                                            </div>
+
+                                            <div className="col-12 col-sm-6 col-md-4">
+                                                <label className="form-label fw-semibold required d-flex align-items-center gap-1">
+                                                    <FaTint className="text-info" /> b. Volume Sampel *
+                                                </label>
+                                                <input 
+                                                    type="text" 
+                                                    className="form-control" 
+                                                    name="volume" 
+                                                    value={form.volume} 
+                                                    onChange={handleChange} 
+                                                    placeholder="cth: 1000 mL / 500 mL" 
+                                                />
+                                            </div>
+
+                                            <div className="col-12 col-sm-6 col-md-4">
+                                                <label className="form-label fw-semibold required d-flex align-items-center gap-1">
+                                                    <FaTemperatureHigh className="text-danger" /> c. Suhu Sampel *
+                                                </label>
+                                                <input 
+                                                    type="text" 
+                                                    className="form-control" 
+                                                    name="suhu" 
+                                                    value={form.suhu} 
+                                                    onChange={handleChange} 
+                                                    placeholder="cth: 4°C / 25°C" 
+                                                />
                                             </div>
                                         </div>
                                     </div>

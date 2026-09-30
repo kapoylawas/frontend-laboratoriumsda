@@ -9,6 +9,7 @@ import {
     IconArrowLeft, IconCheck, IconSparkles, IconFlask,
     IconInfoCircle, IconReceiptTax, IconClock
 } from '@tabler/icons-react';
+import LocationPicker from '../../components/LocationPicker';
 
 export default function PengajuanCreate() {
     const navigate = useNavigate();
@@ -17,6 +18,20 @@ export default function PengajuanCreate() {
     const [categories, setCategories] = useState({});
     const [fetchingSampels, setFetchingSampels] = useState(true);
     const [searchKeyword, setSearchKeyword] = useState('');
+
+    const userCookie = Cookies.get('user');
+    const loggedInUser = userCookie ? JSON.parse(userCookie) : {};
+    const defaultUserAddress = loggedInUser.alamat || loggedInUser.address || '';
+
+    const [locationData, setLocationData] = useState({
+        tempat_pengambilan: 'LABKESDA',
+        titik_lokasi: 'UPTD Labkesda Sidoarjo (-7.3756, 112.7231)',
+        latitude: -7.3756,
+        longitude: 112.7231,
+        alamat: defaultUserAddress || 'UPTD Labkesda Sidoarjo, Jl. A. Yani Gedangan No. 330',
+        catatan_lokasi: ''
+    });
+
     const [form, setForm] = useState({
         jenis: 'SURAT_PENAWARAN',
         catatan: '',
@@ -145,9 +160,21 @@ export default function PengajuanCreate() {
         if (token) {
             Api.defaults.headers.common['Authorization'] = token;
             try {
+                let fullCatatan = form.catatan ? `${form.catatan}\n` : '';
+                fullCatatan += `[TEMPAT PENGAMBILAN: ${locationData.tempat_pengambilan === 'DI_RUMAH' ? 'Diambil di Rumah / Lokasi Pemohon' : 'Diserahkan Langsung ke Labkesda'}]`;
+                if (locationData.tempat_pengambilan === 'DI_RUMAH') {
+                    if (locationData.titik_lokasi) fullCatatan += `\nTitik Koordinat: ${locationData.titik_lokasi}`;
+                    if (locationData.alamat) fullCatatan += `\nAlamat Pengambilan: ${locationData.alamat}`;
+                    if (locationData.catatan_lokasi) fullCatatan += `\nPatokan Lokasi: ${locationData.catatan_lokasi}`;
+                }
+
                 const payload = {
                     jenis: 'SURAT_PENAWARAN',
-                    catatan: form.catatan || null,
+                    catatan: fullCatatan || '',
+                    tempat_pengambilan: locationData.tempat_pengambilan,
+                    titik_pengambilan: locationData.tempat_pengambilan === 'DI_RUMAH' ? locationData.titik_lokasi : 'UPTD Labkesda Sidoarjo',
+                    alamat_pengambilan: locationData.alamat || '',
+                    catatan_lokasi: locationData.catatan_lokasi || '',
                     items: form.items.map(item => ({
                         sampel_id: parseInt(item.sampel_id),
                         qty: parseInt(item.qty)
@@ -168,10 +195,16 @@ export default function PengajuanCreate() {
 
                 navigate('/penawaran');
             } catch (error) {
+                console.error("Gagal create pemohonan:", error.response?.data || error);
+                const errorDetail = error.response?.data?.meta?.message 
+                    || error.response?.data?.message 
+                    || (Array.isArray(error.response?.data?.errors) ? error.response.data.errors.map(e => e.msg).join(', ') : (typeof error.response?.data?.errors === 'string' ? error.response.data.errors : null))
+                    || error.message 
+                    || 'Gagal membuat Surat Penawaran!';
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal',
-                    text: error.response?.data?.message || 'Gagal membuat Surat Penawaran!',
+                    text: errorDetail,
                     confirmButtonColor: '#ef4444'
                 });
             }
@@ -513,6 +546,13 @@ export default function PengajuanCreate() {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Lokasi Pengambilan & Titik Peta */}
+                                <LocationPicker 
+                                    value={locationData} 
+                                    onChange={setLocationData} 
+                                    defaultAddress={defaultUserAddress} 
+                                />
 
                                 {/* Catatan Card 3D */}
                                 <div className="card-3d p-4 mb-4">

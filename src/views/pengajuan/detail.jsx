@@ -12,6 +12,8 @@ import {
     IconBan, IconPackage, IconInfoCircle, IconSquareCheck, IconPrinter,
     IconFileInvoice, IconFlask
 } from '@tabler/icons-react';
+import PemohonanLocationCard from '../../components/PemohonanLocationCard';
+import PemohonanLocationModal from '../../components/PemohonanLocationModal';
 
 export default function PengajuanDetail() {
     const { id } = useParams();
@@ -22,6 +24,7 @@ export default function PengajuanDetail() {
     const [isLoading, setIsLoading] = useState(true);
     const [approveResult, setApproveResult] = useState(null);
     const [showSurat, setShowSurat] = useState(false);
+    const [showLocationModal, setShowLocationModal] = useState(false);
 
     const formatCurrency = (value) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value || 0);
@@ -396,10 +399,11 @@ export default function PengajuanDetail() {
                                 )}
                                 {data.catatan && (
                                     <div className="col-12">
-                                        <div className="text-muted small fw-bold">Catatan Pemohon</div>
-                                        <div className="p-3 bg-light rounded-3" style={{ border: '2px solid #000' }}>
-                                            {data.catatan}
-                                        </div>
+                                        <PemohonanLocationCard 
+                                            catatan={data.catatan} 
+                                            item={data} 
+                                            onOpenModal={() => setShowLocationModal(true)} 
+                                        />
                                     </div>
                                 )}
                             </div>
@@ -488,6 +492,13 @@ export default function PengajuanDetail() {
             {showSurat && (
                 <SuratPenawaran data={data} onClose={() => setShowSurat(false)} />
             )}
+
+            {/* Modal / Preview Lokasi & Peta */}
+            <PemohonanLocationModal 
+                isOpen={showLocationModal}
+                onClose={() => setShowLocationModal(false)}
+                item={data}
+            />
         </LayoutAdmin>
     );
 }

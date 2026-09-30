@@ -45,6 +45,19 @@ export default function Orders() {
     const [activeCategory, setActiveCategory] = useState(null);
     const [isSummaryMinimized, setIsSummaryMinimized] = useState(false);
 
+    const userCookie = Cookies.get("user");
+    const loggedInUser = userCookie ? JSON.parse(userCookie) : {};
+    const defaultUserAddress = loggedInUser.alamat || loggedInUser.address || '';
+
+    const [locationData, setLocationData] = useState({
+        tempat_pengambilan: 'LABKESDA',
+        titik_lokasi: 'UPTD Labkesda Sidoarjo (-7.3756, 112.7231)',
+        latitude: -7.3756,
+        longitude: 112.7231,
+        alamat: defaultUserAddress || 'UPTD Labkesda Sidoarjo, Jl. A. Yani Gedangan No. 330',
+        catatan_lokasi: ''
+    });
+
     const categoryColors = [
         { bg: '#eff6ff', text: '#1d4ed8', border: '#000000' },
         { bg: '#f0fdf4', text: '#15803d', border: '#000000' },
@@ -277,8 +290,20 @@ export default function Orders() {
                 qty: quantities[sampelId] || 1
             }));
 
+            let orderCatatan = `[TEMPAT PENGAMBILAN: ${locationData.tempat_pengambilan === 'DI_RUMAH' ? 'Diambil di Rumah / Lokasi Pemohon' : 'Diserahkan Langsung ke Labkesda'}]`;
+            if (locationData.tempat_pengambilan === 'DI_RUMAH') {
+                if (locationData.titik_lokasi) orderCatatan += `\nTitik Koordinat: ${locationData.titik_lokasi}`;
+                if (locationData.alamat) orderCatatan += `\nAlamat Pengambilan: ${locationData.alamat}`;
+                if (locationData.catatan_lokasi) orderCatatan += `\nPatokan Lokasi: ${locationData.catatan_lokasi}`;
+            }
+
             await Api.post("/api/order", {
-                items: orderData
+                items: orderData,
+                tempat_pengambilan: locationData.tempat_pengambilan,
+                titik_pengambilan: locationData.tempat_pengambilan === 'DI_RUMAH' ? locationData.titik_lokasi : 'UPTD Labkesda Sidoarjo',
+                lokasi: locationData.tempat_pengambilan === 'DI_RUMAH' ? (locationData.alamat || locationData.titik_lokasi) : 'UPTD Labkesda Sidoarjo',
+                alamat: locationData.alamat,
+                catatan: orderCatatan
             });
 
             const { details, total } = prepareOrderDetails();
@@ -947,6 +972,9 @@ export default function Orders() {
                 isSubmitting={isSubmitting}
                 onSubmit={submitOrder}
                 onBackToEdit={() => setShowOrderModal(false)}
+                locationData={locationData}
+                setLocationData={setLocationData}
+                defaultAddress={defaultUserAddress}
             />
 
             <OrderSuccessModal

@@ -1,5 +1,6 @@
 import { IconShoppingCart, IconCheck, IconInfoCircle } from "@tabler/icons-react";
 import { useState } from "react";
+import LocationPicker from "../../components/LocationPicker";
 
 export default function OrderConfirmationModal({
     show,
@@ -12,7 +13,10 @@ export default function OrderConfirmationModal({
     orderSummary,
     isSubmitting,
     onSubmit,
-    onBackToEdit
+    onBackToEdit,
+    locationData,
+    setLocationData,
+    defaultAddress
 }) {
     const [showConfirmation, setShowConfirmation] = useState(false);
 
@@ -172,6 +176,15 @@ export default function OrderConfirmationModal({
                                         </tr>
                                     </tfoot>
                                 </table>
+                            </div>
+
+                            {/* Tempat & Lokasi Pengambilan Sampel */}
+                            <div className="mt-3">
+                                <LocationPicker 
+                                    value={locationData} 
+                                    onChange={setLocationData} 
+                                    defaultAddress={defaultAddress} 
+                                />
                             </div>
                         </div>
 

@@ -100,19 +100,25 @@ const generateQrCodeDataUrl = (logoBase64) =>
 const generateReportPdfBlob = async (items) => {
   if (!items || items.length === 0) return null;
   const firstItem = items[0] || {};
-  const catName = firstItem.sampel?.category?.name || "PAKET PEMERIKSAAN BERSIH";
+  const catName = firstItem.sampel?.category?.name || "PAKET PEMERIKSAAN AIR BERSIH";
   const tanggalCetak = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
   const tglPengerjaan = firstItem.tanggal_pengerjaan
     ? new Date(firstItem.tanggal_pengerjaan).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
     : tanggalCetak;
   const noLaporan = firstItem.nomor_laporan || "600.4.26.2/102/438.5.2.3/2026";
   const permenkes = firstItem.tujuan_permenkes || "PERMENKES RI NO. 2 Tahun 2023";
-  const pengambilanLokasi = firstItem.sampel?.pengambilan_lokasi || firstItem.pengambilan_lokasi || "Tim ke Lokasi";
-  const petugasPengambil = firstItem.sampel?.petugas_pengambil || firstItem.petugas_pengambil || "-";
-  const verifikatorName = firstItem.verifikator?.name || "Admin";
+  const lokasiPengambilan = firstItem.lokasi_pengambilan || firstItem.sampel?.pengambilan_lokasi || firstItem.pengambilan_lokasi || (firstItem.transaction?.tempat_pengambilan === 'LABKESDA' ? 'UPTD Labkesda Sidoarjo' : 'Di Rumah Pemohon');
+  const jenisSampel = firstItem.jenis_sampel || firstItem.sampel?.category?.name || "Air Bersih";
+  const titikLokasi = firstItem.titik_pengambilan || firstItem.titik_lokasi || "Kran Utama";
+  const tglJamPengambilan = firstItem.tanggal_jam_pengambilan || (firstItem.tanggal_pengambilan ? `${new Date(firstItem.tanggal_pengambilan).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}${firstItem.waktu_pengambilan ? ' ' + firstItem.waktu_pengambilan + ' WIB' : ''}` : tanggalCetak);
+  const petugasPengambil = firstItem.petugas_pengambil || firstItem.sampel?.petugas_pengambil || "Tim Labkesda";
+  const kondisiSampel = firstItem.kondisi || "Baik / Segar";
+  const volumeSampel = firstItem.volume || "1000 mL";
+  const suhuSampel = firstItem.suhu || "4°C";
+  const verifikatorName = firstItem.verifikator?.name || "Verifikator Labkesda";
   const pemeriksaName = firstItem.user?.name || "-";
   const pemeriksaNip = firstItem.user?.nip || "-";
-  const kepalaName = firstItem.kepala?.name || "Admin";
+  const kepalaName = firstItem.kepala?.name || "MISAD, S.KM";
   const kepalaPangkat = firstItem.kepala?.pangkat || "Penata Tk. I / IIId";
   const kepalaNip = firstItem.kepala?.nip || "196909141991021002";
 
@@ -164,68 +170,76 @@ const generateReportPdfBlob = async (items) => {
   doc.setFontSize(11);
   doc.text(`Nomor: ${noLaporan}`, pw / 2, y, { align: "center" }); y += 8;
 
-  // ─── METADATA ────────────────────────────────────────────────
-  doc.setFontSize(11);
+  // ─── METADATA (11 Baris Sesuai Revisi Poin 16) ─────────────
+  doc.setFontSize(9.5);
   const col1 = ml;
-  const col2 = ml + 52;
-  const col3 = col2 + 5;
+  const col2 = ml + 65;
+  const col3 = col2 + 4;
   const metaRows = [
-    ["Jenis Pemeriksaan", catName],
-    ["Pengambilan Lokasi", pengambilanLokasi],
-    ["Tanggal Pengerjaan", tglPengerjaan],
-    ["Petugas Pengambil Sampel", petugasPengambil],
-    ["Verifikator", verifikatorName],
+    ["jenis pemeriksaan", catName],
+    ["lokasi Pengambilan", lokasiPengambilan],
+    ["jenis sampel", jenisSampel],
+    ["Titik lokasi Pengambilan sampel", titikLokasi],
+    ["tanggal dan jam pengambilan sampel", tglJamPengambilan],
+    ["tanggal pengerjaan", tglPengerjaan],
+    ["petugas pengambil sampel", petugasPengambil],
+    ["kondisi sampel", kondisiSampel],
+    ["volume sampel", volumeSampel],
+    ["suhu", suhuSampel],
+    ["verivikator", verifikatorName],
   ];
   for (const [label, val] of metaRows) {
     doc.setFont("times", "normal");
     doc.text(label, col1, y);
     doc.text(":", col2, y);
     doc.text(String(val || "-"), col3, y, { maxWidth: pw - col3 - mr });
-    y += 5;
+    y += 4.5;
   }
-  y += 3;
+  y += 2;
 
-  // ─── TABEL HASIL ─────────────────────────────────────────────
-  const colWidths = [10, 48, 32, 30, 20, 22, 18];
-  const headers = ["NO.", "PARAMETER / JENIS SAMPEL", "KODE SAMPEL", "METODE", "SATUAN", "BATAS MAKSIMAL", "HASIL"];
-  const rowH = 8;
+  // ─── TABEL HASIL (8 Kolom Sesuai Revisi Poin 16) ───────────
+  // Total width = cw = 180mm: [8, 38, 22, 22, 16, 24, 18, 32] = 180mm
+  const colWidths = [8, 38, 22, 22, 16, 24, 18, 32];
+  const headers = ["no", "Parameter", "kode sampel", "metode", "satuan", "BATAS MAKSIMAL", "HASIL", "REFRENSI METODE"];
+  const rowH = 7.5;
   const tableLeft = ml;
 
   doc.setFillColor(248, 249, 250);
   doc.rect(tableLeft, y, cw, rowH, "F");
   doc.setFont("times", "bold");
-  doc.setFontSize(8.5);
+  doc.setFontSize(7.5);
   let cx = tableLeft;
   for (let i = 0; i < headers.length; i++) {
     doc.rect(cx, y, colWidths[i], rowH);
-    doc.text(headers[i], cx + colWidths[i] / 2, y + 5, { align: "center", maxWidth: colWidths[i] - 2 });
+    doc.text(headers[i], cx + colWidths[i] / 2, y + 4.8, { align: "center", maxWidth: colWidths[i] - 1.5 });
     cx += colWidths[i];
   }
   y += rowH;
 
   doc.setFont("times", "normal");
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   items.forEach((item, idx) => {
     const cells = [
-      `${idx + 1}.`,
+      `${idx + 1}`,
       item.sampel?.parameter || "-",
       item.kode_sampel || "-",
-      item.metode || "-",
+      item.metode || item.sampel?.metode || "-",
       item.satuan || "-",
       String(item.kadar_maksimal ?? "-"),
       String(item.hasil ?? "-"),
+      item.referensi_metode || item.refrensi_metode || item.metode || item.sampel?.metode || "SNI / Standard Methods",
     ];
     cx = tableLeft;
     for (let i = 0; i < cells.length; i++) {
       doc.rect(cx, y, colWidths[i], rowH);
       const align = i === 1 ? "left" : "center";
       const xText = i === 1 ? cx + 2 : cx + colWidths[i] / 2;
-      doc.text(String(cells[i]), xText, y + 5, { align, maxWidth: colWidths[i] - 2 });
+      doc.text(String(cells[i]), xText, y + 4.8, { align, maxWidth: colWidths[i] - 1.5 });
       cx += colWidths[i];
     }
     y += rowH;
   });
-  y += 5;
+  y += 4;
 
   // ─── CATATAN ─────────────────────────────────────────────────
   doc.setFontSize(10);
@@ -419,7 +433,7 @@ export default function HasilIndex() {
               
               <div style="margin-bottom: 12px;">
                 <label style="font-weight: bold; display: block; margin-bottom: 4px;">NIK Penandatangan:</label>
-                <input id="swal-nik" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="" placeholder="Masukkan NIK 16 digit" />
+                <input id="swal-nik" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="${currentUser?.nik || currentUser?.nip || ''}" placeholder="Masukkan NIK 16 digit" />
               </div>
 
               <div style="margin-bottom: 12px;">
@@ -629,7 +643,7 @@ export default function HasilIndex() {
               
               <div style="margin-bottom: 12px;">
                 <label style="font-weight: bold; display: block; margin-bottom: 4px;">NIK Penandatangan:</label>
-                <input id="swal-batch-nik" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="" placeholder="Masukkan NIK 16 digit" />
+                <input id="swal-batch-nik" class="swal2-input" style="width: 100%; margin: 0; font-size: 13px;" value="${currentUser?.nik || currentUser?.nip || ''}" placeholder="Masukkan NIK 16 digit" />
               </div>
 
               <div style="margin-bottom: 12px;">
@@ -1563,7 +1577,7 @@ export default function HasilIndex() {
               );
             })()}
 
-            {userRoleId === 5 && (() => {
+            {(userRoleId === 2 || userRoleId === 3 || userRoleId === 5) && (() => {
               const pendingKepalaItems = hasils.filter((i) => i.status_verifikasi === "DIVERIFIKASI");
               const count = pendingKepalaItems.length;
               return (
@@ -1815,7 +1829,7 @@ export default function HasilIndex() {
                               </button>
                             )}
 
-                            {(userRoleId === 2 || userRoleId === 5) && items.some((i) => i.status_verifikasi === "DIVERIFIKASI") && (
+                            {(userRoleId === 2 || userRoleId === 3 || userRoleId === 5) && items.some((i) => i.status_verifikasi === "DIVERIFIKASI") && (
                               <button
                                 className="btn btn-sm btn-success fw-bold"
                                 onClick={(e) => {
@@ -2073,8 +2087,8 @@ export default function HasilIndex() {
                                             </div>
                                           )}
 
-                                          {/* 3. Tombol Persetujuan Kepala Labkesda (Kepala / Admin) */}
-                                          {(userRoleId === 2 || userRoleId === 5) && hasil.status_verifikasi === "DIVERIFIKASI" && (
+                                          {/* 3. Tombol Persetujuan & TTE (Kepala / Analis / Admin) */}
+                                          {(userRoleId === 2 || userRoleId === 3 || userRoleId === 5) && hasil.status_verifikasi === "DIVERIFIKASI" && (
                                             <div className="btn-group btn-group-sm">
                                               <button
                                                 className="btn btn-success fw-bold"

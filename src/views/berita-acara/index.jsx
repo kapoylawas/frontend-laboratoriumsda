@@ -14,7 +14,7 @@ export default function BeritaAcara() {
 
     const userCookie = Cookies.get('user');
     const loggedInUser = userCookie ? JSON.parse(userCookie) : {};
-    const isStaffOrAdmin = loggedInUser.role_id === 2 || loggedInUser.role_id === 3;
+    const isStaffOrAdmin = loggedInUser.role_id === 2 || loggedInUser.role_id === 3 || loggedInUser.role_id === 6 || (loggedInUser.role?.name && loggedInUser.role.name.toLowerCase().includes('sanitarian'));
 
     const fetchData = async (pageNumber = 1, search = '') => {
         setIsLoading(true);

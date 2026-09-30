@@ -133,12 +133,13 @@ export const canAccessHasil = (user) => {
 
 /**
  * Helper function to check if user can access Penjadwalan menu
- * (Admin Labkesda only)
+ * (Admin Labkesda and Sanitarian)
  * @param {Object} user - User object from store
  * @returns {Boolean}
  */
 export const canAccessPenjadwalan = (user) => {
-  return isAdmin(user) && !isAdminStock(user);
+  if (isAdminStock(user)) return false;
+  return isAdmin(user) || isSanitarian(user);
 };
 
 /**

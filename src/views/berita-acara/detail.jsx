@@ -5,6 +5,7 @@ import Api from '../../services/api';
 import LayoutAdmin from '../../layouts/admin';
 import { FaArrowLeft, FaEdit, FaFilePdf } from 'react-icons/fa';
 import html2pdf from 'html2pdf.js';
+import { isPenerimaanSampel } from '../../utils/beritaAcaraUtils';
 
 export default function BeritaAcaraDetail() {
     const { id } = useParams();
@@ -101,6 +102,12 @@ export default function BeritaAcaraDetail() {
     const allJadwals = data.jadwals && data.jadwals.length > 0 ? data.jadwals : (data.jadwal ? [data.jadwal] : []);
     const firstJadwal = allJadwals[0] || {};
     const firstUser = firstJadwal.transaction_detail?.transaction?.user || {};
+
+    const isPenerimaan = isPenerimaanSampel({
+        ...data,
+        tempat_pengambilan: firstJadwal.transaction_detail?.transaction?.tempat_pengambilan,
+        catatan: firstJadwal.transaction_detail?.transaction?.catatan
+    });
 
     const selectedSampleParameters = Array.from(new Set(
         allJadwals.map(j => {
@@ -239,7 +246,9 @@ export default function BeritaAcaraDetail() {
 
                     {/* Title */}
                     <div className="text-center my-3">
-                        <h4 className="font-weight-bold mb-1 text-decoration-underline" style={{ letterSpacing: '1px', fontSize: '15px' }}>BERITA ACARA PENGAMBILAN SAMPEL</h4>
+                        <h4 className="font-weight-bold mb-1 text-decoration-underline" style={{ letterSpacing: '1px', fontSize: '15px' }}>
+                            {isPenerimaan ? 'BERITA ACARA PENERIMAAN SAMPEL' : 'BERITA ACARA PENGAMBILAN SAMPEL'}
+                        </h4>
                     </div>
 
                     {/* Table-based fields to match official format */}
@@ -322,7 +331,7 @@ export default function BeritaAcaraDetail() {
                             <tr>
                                 <td>Alamat</td>
                                 <td>:</td>
-                                <td>{firstUser.address || '-'}</td>
+                                <td>{firstUser.alamat || firstUser.address || data.pelanggan_alamat || '-'}</td>
                             </tr>
                             <tr>
                                 <td>No. Telp / Faks / E-mail</td>
@@ -335,24 +344,39 @@ export default function BeritaAcaraDetail() {
                                 <td>{firstUser.name || '-'}</td>
                             </tr>
                             <tr>
-                                <td>Nama Pengambil Sampel</td>
+                                <td>{isPenerimaan ? 'Nama Penerima Sampel' : 'Nama Pengambil Sampel'}</td>
                                 <td>:</td>
                                 <td>{data.petugas_pengambil}</td>
                             </tr>
                             <tr>
-                                <td>Titik Pengambilan Sampel</td>
+                                <td>{isPenerimaan ? 'Tempat / Titik Penyerahan Sampel' : 'Titik Pengambilan Sampel'}</td>
                                 <td>:</td>
-                                <td>{data.titik_pengambilan || '.....'}</td>
+                                <td>{data.titik_pengambilan || (isPenerimaan ? 'Loket Penerimaan UPTD Labkesda' : '.....')}</td>
                             </tr>
                             <tr>
-                                <td>Tanggal Pengambilan Sampel</td>
+                                <td>{isPenerimaan ? 'Tanggal Penerimaan Sampel' : 'Tanggal Pengambilan Sampel'}</td>
                                 <td>:</td>
                                 <td>{formatDateLong(data.tanggal_pengambilan)}</td>
                             </tr>
                             <tr>
-                                <td>Waktu Pengambilan Sampel</td>
+                                <td>{isPenerimaan ? 'Waktu Penerimaan Sampel' : 'Waktu Pengambilan Sampel'}</td>
                                 <td>:</td>
                                 <td>{data.waktu_pengambilan ? `${data.waktu_pengambilan} WIB` : '.....'}</td>
+                            </tr>
+                            <tr>
+                                <td>Kondisi Sampel</td>
+                                <td>:</td>
+                                <td>{data.kondisi || getHasilValue('kondisi') || 'Baik / Segar'}</td>
+                            </tr>
+                            <tr>
+                                <td>Volume Sampel</td>
+                                <td>:</td>
+                                <td>{data.volume || getHasilValue('volume') || '1000 mL'}</td>
+                            </tr>
+                            <tr>
+                                <td>Suhu Sampel</td>
+                                <td>:</td>
+                                <td>{data.suhu || getHasilValue('suhu') || '4°C'}</td>
                             </tr>
                             <tr>
                                 <td>Tanggal Perkiraan Selesai Pengujian</td>
@@ -518,7 +542,7 @@ export default function BeritaAcaraDetail() {
                         </div>
                         <div className="signatures-row">
                             <div className="sig-col">
-                                <p className="mb-2">Mengetahui,<br /><strong>Petugas Pengambil Sampel</strong></p>
+                                <p className="mb-2">Mengetahui,<br /><strong>{isPenerimaan ? 'Petugas Penerima Sampel' : 'Petugas Pengambil Sampel'}</strong></p>
                                 {getHasilValue('ttd_petugas') ? (
                                     <div style={{ height: '65px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <img src={getHasilValue('ttd_petugas')} alt="TTD Petugas" style={{ maxHeight: '60px', maxWidth: '140px', objectFit: 'contain' }} />

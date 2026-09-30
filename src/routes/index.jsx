@@ -10,6 +10,7 @@ import JadwalPengambilanRoute from '../components/JadwalPengambilanRoute.jsx';
 import PenawaranRoute from '../components/PenawaranRoute.jsx';
 import BeritaAcaraRoute from '../components/BeritaAcaraRoute.jsx';
 import StockOpnameRoute from '../components/StockOpnameRoute.jsx';
+import PenjadwalanRoute from '../components/PenjadwalanRoute.jsx';
 
 //import view login
 import Login from "../views/auth/login.jsx";
@@ -176,11 +177,11 @@ export default function AppRoutes() {
         </StockOpnameRoute>
       } />
 
-      {/* Penjadwalan Route - Admin Only */}
+      {/* Penjadwalan Route - Admin & Sanitarian */}
       <Route path="/penjadwalan" element={
-        <AdminRoute>
+        <PenjadwalanRoute>
           <Penjadwalan />
-        </AdminRoute>
+        </PenjadwalanRoute>
       } />
 
       {/* Semua Penawaran Route - Admin Only */}

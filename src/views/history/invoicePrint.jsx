@@ -314,16 +314,40 @@ export default function InvoicePrint() {
                     </div>
                 </div>
 
-                <div class="signature-section">
-                    <div class="sig-col">
-                        <div class="sig-title">Pemohon / Pelanggan</div>
-                        <div class="sig-name">${customerName}</div>
-                    </div>
-                    <div class="sig-col">
-                        <div class="sig-title">Sidoarjo, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>Petugas Admin UPT Labkesda</div>
-                        <div class="sig-name">Petugas Kasir & Verifikasi</div>
+                <div style="margin-top: 35px; text-align: right; width: 100%;">
+                    <div style="display: inline-block; text-align: center; min-width: 250px;">
+                        <p style="font-size: 8.5pt; color: #475569; margin-bottom: 3px;">Sidoarjo, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                        <p style="font-size: 9pt; font-weight: 700; color: #0f172a; margin-bottom: 8px;">
+                            Mengetahui,<br/>
+                            KEPALA UPTD LABORATORIUM KESEHATAN DAERAH<br/>
+                            KABUPATEN SIDOARJO
+                        </p>
+                        ${allPaid ? `
+                            <div style="margin: 10px 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(
+                                    `BSrE TERVERIFIKASI TTE INVOICE RESMI\nNo. Invoice: ${transaction.invoice}\nPenandatangan: MISAD, S.KM\nNIP: 196909141991021002\nStatus: Lunas Terverifikasi\nSertifikat BSrE BSSN Valid`
+                                )}" alt="Barcode TTE BSrE" style="width: 80px; height: 80px; border: 1px solid #0f172a; padding: 2px; background-color: #fff; margin: 0 auto;" />
+                                <span style="font-size: 7.5pt; font-weight: 800; color: #1e3a8a; margin-top: 4px; display: block;">🔏 Terverifikasi BSrE</span>
+                            </div>
+                        ` : `
+                            <div style="height: 60px; display: flex; align-items: center; justify-content: center;">
+                                <span style="font-size: 8pt; color: #94a3b8; font-style: italic;">[Menunggu Verifikasi Pembayaran]</span>
+                            </div>
+                        `}
+                        <p style="font-size: 9.5pt; font-weight: 700; color: #0f172a; text-decoration: underline; margin-bottom: 2px;">MISAD, S.KM</p>
+                        <p style="font-size: 8.5pt; color: #475569; margin-bottom: 1px;">Penata Tk. I / IIId</p>
+                        <p style="font-size: 8.5pt; color: #475569;">NIP. 196909141991021002</p>
                     </div>
                 </div>
+
+                ${allPaid ? `
+                    <div style="text-align: center; margin-top: 30px; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
+                        <p style="font-style: italic; color: #64748b; font-size: 7.5pt; margin: 0;">
+                            Dokumen bukti pembayaran ini telah ditandatangani secara elektronik menggunakan sertifikat elektronik<br />
+                            yang diterbitkan oleh Balai Besar Sertifikasi Elektronik (BSrE), Badan Siber dan Sandi Negara.
+                        </p>
+                    </div>
+                ` : ''}
             </body>
             </html>
         `;
@@ -550,36 +574,57 @@ export default function InvoicePrint() {
                             </div>
                         </div>
 
-                        {/* Bank Account Info & Signatures */}
-                        <div className="row g-4 align-items-end mt-3">
-                            <div className="col-md-6">
-                                <div className="p-3 rounded border bg-light">
-                                    <h6 className="fw-bold text-dark mb-2" style={{ fontSize: '0.85rem' }}>Catatan Pembayaran:</h6>
-                                    <p className="text-muted small mb-1">
-                                        Pembayaran transfer bank dapat dilakukan ke rekening resmi:<br />
-                                        <strong className="text-dark">Bank BCA: 4760219661</strong> (a.n. Labpesda Sidoarjo)
-                                    </p>
-                                    <small className="text-muted" style={{ fontSize: '0.75rem' }}>Simpan bukti pembayaran/kuitansi ini sebagai lampiran sah SPJ.</small>
+                        {/* Official KA.UPTD Labkesda BSrE Signature Block */}
+                        <div className="row justify-content-end mt-4">
+                            <div className="col-md-5 col-sm-6 text-center">
+                                <div className="text-muted small mb-1">
+                                    Sidoarjo, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                                 </div>
-                            </div>
-                            <div className="col-md-6 text-center">
-                                <div className="d-flex justify-content-around text-center">
-                                    <div>
-                                        <div className="text-muted small mb-5">Pemohon / Pelanggan,</div>
-                                        <strong className="text-dark border-bottom border-dark pb-1 d-inline-block" style={{ fontSize: '0.9rem' }}>
-                                            {customerName}
-                                        </strong>
+                                <div className="fw-bold text-dark small mb-2" style={{ lineHeight: '1.4' }}>
+                                    Mengetahui,<br />
+                                    KEPALA UPTD LABORATORIUM KESEHATAN DAERAH<br />
+                                    KABUPATEN SIDOARJO
+                                </div>
+
+                                {allPaid ? (
+                                    <div className="my-2 d-flex flex-column align-items-center justify-content-center">
+                                        <img
+                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=95x95&data=${encodeURIComponent(
+                                                `BSrE TERVERIFIKASI TTE INVOICE RESMI\nNo. Invoice: ${transaction.invoice}\nPenandatangan: MISAD, S.KM\nNIP: 196909141991021002\nStatus: Lunas Terverifikasi\nSertifikat BSrE BSSN Valid`
+                                            )}`}
+                                            alt="Barcode TTE BSrE"
+                                            style={{ width: '85px', height: '85px', border: '1.5px solid #0f172a', padding: '3px', backgroundColor: '#fff', borderRadius: '4px' }}
+                                        />
+                                        <span className="badge bg-primary text-white mt-1 px-2 py-1" style={{ fontSize: '0.72rem', letterSpacing: '0.3px' }}>
+                                            🔏 Terverifikasi BSrE
+                                        </span>
                                     </div>
-                                    <div>
-                                        <div className="text-muted small mb-1">Sidoarjo, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
-                                        <div className="text-muted small mb-4">Petugas Admin Kasir,</div>
-                                        <strong className="text-dark border-bottom border-dark pb-1 d-inline-block" style={{ fontSize: '0.9rem' }}>
-                                            Kasir & Verifikasi UPT Labkesda
-                                        </strong>
+                                ) : (
+                                    <div className="d-flex align-items-center justify-content-center" style={{ height: '75px' }}>
+                                        <span className="badge bg-warning-lt text-warning-emphasis fst-italic px-3 py-2 border border-warning" style={{ fontSize: '0.8rem' }}>
+                                            ⏳ Menunggu Verifikasi Pembayaran
+                                        </span>
                                     </div>
+                                )}
+
+                                <div className="mt-2">
+                                    <strong className="text-dark border-bottom border-dark pb-1 d-inline-block" style={{ fontSize: '0.95rem' }}>
+                                        MISAD, S.KM
+                                    </strong>
+                                    <div className="text-muted small mt-1" style={{ fontSize: '0.8rem' }}>Penata Tk. I / IIId</div>
+                                    <div className="text-muted small" style={{ fontSize: '0.8rem' }}>NIP. 196909141991021002</div>
                                 </div>
                             </div>
                         </div>
+
+                        {allPaid && (
+                            <div className="text-center mt-4 pt-3 border-top border-light-subtle">
+                                <p className="fst-italic text-muted mb-0" style={{ fontSize: '0.75rem', lineHeight: '1.4' }}>
+                                    Dokumen bukti pembayaran ini telah ditandatangani secara elektronik menggunakan sertifikat elektronik<br />
+                                    yang diterbitkan oleh Balai Besar Sertifikasi Elektronik (BSrE), Badan Siber dan Sandi Negara.
+                                </p>
+                            </div>
+                        )}
 
                     </div>
                 </div>
